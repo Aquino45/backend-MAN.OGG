@@ -1,0 +1,29 @@
+# Secretos y entorno
+.env
+.env.*
+!.env.example
+
+# Claude Code (personal)
+CLAUDE.local.md
+.claude/settings.local.json
+.claude/worktrees/
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+.idea/
+
+# Sistema
+Thumbs.db
+.DS_Store
+
+# Logs
+*.log
+
+# Back
+__pycache__/
+.venv/
+*.pyc
+media/
+staticfiles/

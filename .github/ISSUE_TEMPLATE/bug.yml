@@ -1,0 +1,22 @@
+name: Bug
+description: Reportar un error
+title: "[BUG] "
+body:
+  - type: textarea
+    id: que_pasa
+    attributes:
+      label: Qué pasa
+      description: Qué esperabas y qué ocurrió
+    validations:
+      required: true
+  - type: textarea
+    id: pasos
+    attributes:
+      label: Pasos para reproducirlo
+    validations:
+      required: true
+  - type: textarea
+    id: evidencia
+    attributes:
+      label: Evidencia
+      description: Captura, log o comando (sin contraseñas ni datos personales)

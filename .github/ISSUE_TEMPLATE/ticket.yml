@@ -1,0 +1,51 @@
+name: Ticket
+description: Ticket de trabajo (todo nace de un ticket)
+title: "[ID] "
+body:
+  - type: input
+    id: id
+    attributes:
+      label: ID del ticket
+      description: "BE-<n> en el back, FE-<n> en el front, DOC-<n> para documentación"
+      placeholder: BE-012
+    validations:
+      required: true
+  - type: textarea
+    id: objetivo
+    attributes:
+      label: Objetivo
+      description: Qué se quiere lograr y por qué
+    validations:
+      required: true
+  - type: textarea
+    id: archivos_permitidos
+    attributes:
+      label: Archivos permitidos
+      description: Lista de archivos o carpetas que el ticket puede tocar. Nada fuera de la lista.
+    validations:
+      required: true
+  - type: textarea
+    id: criterios_aceptacion
+    attributes:
+      label: Criterios de aceptación
+      description: Condiciones verificables, de preferencia con un test o un comando
+    validations:
+      required: true
+  - type: dropdown
+    id: presupuesto
+    attributes:
+      label: Presupuesto
+      options:
+        - S
+        - M
+        - L
+    validations:
+      required: true
+  - type: input
+    id: agente
+    attributes:
+      label: Agente
+      description: Agente o rol que lo ejecuta
+      placeholder: api-mvc
+    validations:
+      required: true
