@@ -49,4 +49,10 @@ Stack completo: back Django 5 + DRF + GeoDjango + PostgreSQL/PostGIS en Docker; 
 Cada afirmación del informe lleva un test, un comando corrido o un `archivo:línea`. Si no, va marcada «(sin verificar)».
 
 ## 8. Comandos
-Se completan en BE-001/FE-001.
+En Git Bash, desde la raíz del repo (los puertos y claves salen de tu `.env`):
+- Preparar: `cp .env.example .env`
+- Levantar: `docker compose up -d --build`
+- Apagar: `docker compose down` (sin `-v`, para conservar los datos)
+- Tests (contra la PostGIS real): `docker compose run --rm api pytest`
+- Lint: `ruff check .`
+- Formato: `ruff format --check .` (para aplicarlo: `ruff format .`)

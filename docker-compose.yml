@@ -1,0 +1,40 @@
+# Base del back MAN.OGG: PostgreSQL 16 + PostGIS 3.4 y API Django.
+# Todo valor sale de .env (ver .env.example). Sin container_name.
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    restart: unless-stopped
+    command: ["postgres", "-p", "${DB_PUERTO}"]
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TZ}
+      PGTZ: ${TZ}
+      PGPORT: ${DB_PUERTO}
+    ports:
+      - "${DB_PUERTO_HOST}:${DB_PUERTO}"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -p ${DB_PUERTO} -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  api:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    command: ["python", "manage.py", "runserver", "0.0.0.0:${API_PUERTO}"]
+    ports:
+      - "${API_PUERTO}:${API_PUERTO}"
+    volumes:
+      - .:/app
+
+volumes:
+  pgdata:
