@@ -1,6 +1,6 @@
 # ESTADO — backend-MAN.OGG
 
-Actualizado: 09/10/2026 (ticket BE-004).
+Actualizado: 09/10/2026 (ticket BE-006).
 
 ## Dónde estamos
 - El repo levanta con `docker compose up -d --build`: BD PostgreSQL 16 + PostGIS 3.4 (`db`) y API Django 5.2 + DRF + GeoDjango (`api`).
@@ -8,16 +8,16 @@ Actualizado: 09/10/2026 (ticket BE-004).
 - Seguridad mínima activa: solo lectura por defecto, throttling para anónimos (`API_LIMITE_ANONIMO`), CORS con lista blanca y `SECURE_*` / cookies seguras desde el `.env`.
 - Modelos `Sector` y `Arbol` (app `censo`) en el esquema `DB_ESQUEMA`, que lo crea una migración. Importadores repetibles: `importar_sectores` (5 sectores, 50.16 ha) e `importar_planilla` (118 árboles reales del S01, 34 con coordenadas).
 - CI en GitHub Actions con los jobs `lint` (Ruff), `tests` (pytest contra la PostGIS del compose) y `contrato`.
-- El contrato v0 vive en `contrato/` (`openapi.yaml` y `ejemplos/`) y se valida con `scripts/validar_contrato.py`.
+- El contrato vive en `contrato/` (`openapi.yaml` 0.2.0 y `ejemplos/`) y se valida con `scripts/validar_contrato.py`. La cartilla (`/arboles/{codigo}`) entrega también `origen`, `identificacion`, `observaciones` y las UTM guardadas (`utm_este_m`, `utm_norte_m`, con `DECIMALES_UTM`).
 - La arquitectura del back está escrita en `docs/ARQUITECTURA.md` (capas, árbol y quién llama a quién). Los agentes la leen antes de empezar y la QA bloquea un archivo fuera de su capa.
 - Hito M0 (disciplina) en curso.
 
 ## Último ticket
-- BE-004 — las 3 rutas del contrato con tests, seguridad mínima y ajustes de la § 8 de la arquitectura (EN REVISIÓN, Issue #9). Resumen en `docs/tickets/BE-004.md`.
-- Antes: DOC-002 — arquitectura escrita en el back (mergeado, #8).
+- BE-006 — contrato 0.2.0: la cartilla suma origen, identificación, observaciones y UTM (EN REVISIÓN, Issue #11; lo aprueba @Risc117). Resumen en `docs/tickets/BE-006.md`.
+- Antes: BE-004 — las 3 rutas del contrato (mergeado, #10).
 
 ## Siguiente ticket
-- BE-005 (árboles demo) o BE-006 (fotos), según despache el asesor.
+- DOC-003 (entrega limpia, parte del back). Después, BE-005 (árboles demo) o BE-007 (fotos), según despache el asesor. FE-003 se desbloquea con el merge de BE-006.
 
 ## Pendiente fuera de este repo
 - Protección de `main` (PR obligatorio con aprobación de Code Owner, status checks y solo squash).

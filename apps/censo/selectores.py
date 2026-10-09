@@ -35,7 +35,11 @@ def arboles_de_sector(sector_id):
 
 
 def arbol_por_codigo(codigo):
-    """La cartilla de un árbol con su posición lista para el mapa, o `None` si no existe."""
+    """La cartilla de un árbol, o `None` si no existe.
+
+    Trae la posición lista para el mapa (`ubicacion_mapa`, en WGS 84) y también la ubicación UTM
+    tal como está guardada (`ubicacion`), de donde salen las coordenadas UTM de la cartilla.
+    """
     return Arbol.objects.annotate(**_con_ubicacion_mapa()).filter(codigo=codigo).first()
 
 

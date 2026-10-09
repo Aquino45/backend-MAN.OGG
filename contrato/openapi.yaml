@@ -1,9 +1,9 @@
 openapi: 3.1.0
 info:
-  title: MAN.OGG — API del censo arbóreo
-  version: 0.1.0
+  title: Censo arbóreo UPeU Lima — API
+  version: 0.2.0
   description: |
-    Contrato v0 entre `backend-MAN.OGG` y `frontend-MAN.OGG` (solo lectura, v1 del lunes 12/10/2026).
+    Contrato entre el back y el front (solo lectura, v1 del lunes 12/10/2026).
 
     Reglas:
     - Este archivo manda. Un campo nuevo exige primero un ticket que cambie el contrato; después el back y al final el front, que genera sus tipos con `openapi-typescript`.
@@ -54,7 +54,7 @@ paths:
               schema: { $ref: '#/components/schemas/SectorColeccion' }
               examples:
                 v0:
-                  summary: Los 5 sectores del borrador GEO-001 (S2–S5 provisionales)
+                  summary: Los 5 sectores (S2–S5 provisionales)
                   externalValue: ./ejemplos/sectores.json
   /sectores/{sector_id}/arboles:
     get:
@@ -73,7 +73,7 @@ paths:
               schema: { $ref: '#/components/schemas/ArbolResumenColeccion' }
               examples:
                 sector1:
-                  summary: Tres árboles reales del sector 1 (uno sin especie todavía)
+                  summary: Tres árboles reales del sector 1 (uno sin especie todavía) y uno de ejemplo (demo)
                   externalValue: ./ejemplos/sector-1-arboles.json
         '404':
           $ref: '#/components/responses/NoEncontrado'
@@ -89,7 +89,7 @@ paths:
           schema: { $ref: '#/components/schemas/CodigoArbol' }
       responses:
         '200':
-          description: La cartilla con los 19 campos de la visión, más su trazabilidad.
+          description: La cartilla con los 19 campos de la visión, más su contexto de campo y su trazabilidad.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Arbol' }
@@ -227,15 +227,19 @@ components:
           items: { $ref: '#/components/schemas/ArbolResumenFeature' }
     Arbol:
       type: object
-      description: La cartilla del árbol. Los 19 campos de la visión del stakeholder, más su trazabilidad. Los textos de estado son los del catálogo de la planilla de la brigada.
+      description: La cartilla del árbol. Los 19 campos de la visión del stakeholder, más su contexto de campo y su trazabilidad. Los textos de estado son los del catálogo de la planilla de la brigada.
       required:
         - codigo
         - sector
         - nombre_comun
         - nombre_cientifico
+        - identificacion
+        - origen
         - condicion_conservacion
         - lat
         - lon
+        - utm_este_m
+        - utm_norte_m
         - altura_total_m
         - dap_cm
         - copa_ns_m
@@ -245,6 +249,7 @@ components:
         - tronco_danos
         - raices_base
         - interferencia_entorno
+        - observaciones
         - foto_url
         - foto_miniatura_url
         - co2_almacenado_kg
@@ -257,9 +262,13 @@ components:
         sector: { type: integer, minimum: 1 }
         nombre_comun: { type: [string, 'null'] }
         nombre_cientifico: { type: [string, 'null'], description: En cursiva en la UI. }
+        identificacion: { type: [string, 'null'], description: Estado de la identificación según la planilla de la brigada (por ejemplo Identificada o Especie por verificar). }
+        origen: { type: [string, 'null'], description: Valor del catálogo de la planilla de la brigada (por ejemplo Nativa o Introducida / exótica). }
         condicion_conservacion: { type: [string, 'null'], description: Según DS 043-2006-AG; la llena el stakeholder. }
         lat: { type: [number, 'null'], minimum: -90, maximum: 90, description: Grados WGS84 con 6 decimales. }
         lon: { type: [number, 'null'], minimum: -180, maximum: 180, description: Grados WGS84 con 6 decimales. }
+        utm_este_m: { type: [number, 'null'], description: 'Metros este en UTM 18S (EPSG:32718), leídos de la ubicación tal como está guardada, sin transformar; con 2 decimales. Es null si el árbol no tiene ubicación.' }
+        utm_norte_m: { type: [number, 'null'], description: 'Metros norte en UTM 18S (EPSG:32718), leídos de la ubicación tal como está guardada, sin transformar; con 2 decimales. Es null si el árbol no tiene ubicación.' }
         altura_total_m: { type: [number, 'null'], minimum: 0 }
         dap_cm: { type: [number, 'null'], minimum: 0, description: Diámetro a la altura del pecho (1.30 m). }
         copa_ns_m: { type: [number, 'null'], minimum: 0, description: Diámetro de copa norte-sur. }
@@ -269,6 +278,7 @@ components:
         tronco_danos: { type: [string, 'null'] }
         raices_base: { type: [string, 'null'] }
         interferencia_entorno: { type: [string, 'null'] }
+        observaciones: { type: [string, 'null'], description: 'Texto de campo de la planilla de la brigada, junto con las notas de la importación (por ejemplo un DAP no numérico).' }
         foto_url: { type: [string, 'null'], format: uri }
         foto_miniatura_url: { type: [string, 'null'], format: uri }
         co2_almacenado_kg: { type: [number, 'null'], minimum: 0, description: kg de CO₂ equivalente; lo calcula el stakeholder. }

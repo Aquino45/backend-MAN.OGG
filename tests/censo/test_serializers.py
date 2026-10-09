@@ -19,20 +19,27 @@ from apps.censo.api.serializers import (
     SectorColeccionSerializer,
 )
 from apps.censo.models import Arbol, Sector
-from config.constantes import DECIMALES_COORDENADAS, SRID_UTM_CENSO
+from config.constantes import DECIMALES_COORDENADAS, DECIMALES_UTM, SRID_UTM_CENSO
 
 RUTA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "validar_contrato.py"
 FUENTE_PRUEBA = "Prueba de serializers"
 LONGITUD_CAMPUS = -76.8
 LATITUD_CAMPUS = -12.0
 TOLERANCIA_GRADOS = 0.2
+FRACCION_DE_METRO_SIN_REDONDEAR = 0.123456
 CODIGO_COMPLETO = "S01-A001"
 CODIGO_MUERTO = "S01-A002"
 CAMPOS_DE_MEDIDA = ("altura_total_m", "dap_cm", "copa_ns_m", "copa_eo_m")
 CAMPOS_DE_CO2 = ("co2_almacenado_kg", "co2_captura_anual_kg")
 CAMPOS_DE_TEXTO = ("nombre_comun", "nombre_cientifico", "condicion_conservacion")
 CAMPOS_DE_ESTADO = ("estado_general", "estado_copa", "tronco_danos", "raices_base")
-FUERA_DEL_CONTRATO = ("observaciones", "brigada", "foto_archivo", "ubicacion")
+CAMPOS_DE_CONTEXTO = ("identificacion", "origen", "observaciones")
+CAMPOS_UTM = ("utm_este_m", "utm_norte_m")
+CLAVES_NUEVAS_DE_LA_CARTILLA = (*CAMPOS_DE_CONTEXTO, *CAMPOS_UTM)
+IDENTIFICACION_COMPLETA = "Identificada"
+ORIGEN_COMPLETO = "Nativa"
+OBSERVACIONES_COMPLETAS = "Junto a la banca"
+FUERA_DEL_CONTRATO = ("brigada", "foto_archivo", "ubicacion")
 MEDIDAS_COMPLETAS = {
     "altura_total_m": Decimal("8.500"),
     "dap_cm": Decimal("35.250"),
@@ -97,6 +104,8 @@ def arbol_completo(punto_dentro):
         brigada="Brigada A",
         nombre_comun="Molle",
         nombre_cientifico="Schinus molle",
+        identificacion=IDENTIFICACION_COMPLETA,
+        origen=ORIGEN_COMPLETO,
         condicion_conservacion="Sin categoría",
         **MEDIDAS_COMPLETAS,
         estado_general="Bueno",
@@ -105,7 +114,7 @@ def arbol_completo(punto_dentro):
         raices_base="Sanas",
         interferencia_entorno="Ninguna",
         foto_archivo="IMG_0001.jpg",
-        observaciones="Junto a la banca",
+        observaciones=OBSERVACIONES_COMPLETAS,
     )
 
 
@@ -162,15 +171,79 @@ def test_cartilla_numeros_como_numeros_y_lat_lon_en_wgs84(arbol_completo):
     assert decimales(datos["lon"]) <= DECIMALES_COORDENADAS
 
 
+def test_cartilla_trae_las_claves_de_contexto_y_utm_en_el_orden_del_contrato(
+    contrato, arbol_completo, arbol_muerto
+):
+    orden_del_contrato = list(contrato["components"]["schemas"]["Arbol"]["properties"])
+
+    for codigo in (CODIGO_COMPLETO, CODIGO_MUERTO):
+        datos = cartilla(codigo)
+        assert set(CLAVES_NUEVAS_DE_LA_CARTILLA) <= set(datos)
+        assert list(datos) == orden_del_contrato
+
+
+def test_cartilla_entrega_los_textos_de_contexto_tal_cual(arbol_completo):
+    datos = cartilla(CODIGO_COMPLETO)
+
+    assert datos["identificacion"] == IDENTIFICACION_COMPLETA
+    assert datos["origen"] == ORIGEN_COMPLETO
+    assert datos["observaciones"] == OBSERVACIONES_COMPLETAS
+
+
+@pytest.mark.parametrize("campo", CAMPOS_DE_CONTEXTO)
+def test_texto_de_contexto_vacio_se_entrega_como_null(contrato, arbol_completo, campo):
+    Arbol.objects.filter(codigo=CODIGO_COMPLETO).update(**{campo: ""})
+
+    datos = cartilla(CODIGO_COMPLETO)
+
+    validar(contrato, "Arbol", datos)
+    assert datos[campo] is None
+
+
+def test_utm_son_las_coordenadas_guardadas_sin_transformar(arbol_completo, punto_dentro):
+    este_guardado, norte_guardado = punto_dentro
+    datos = cartilla(CODIGO_COMPLETO)
+
+    for campo in CAMPOS_UTM:
+        assert es_numero(datos[campo]), f"{campo} no es número: {datos[campo]!r}"
+        assert decimales(datos[campo]) <= DECIMALES_UTM
+    tolerancia_metros = 10**-DECIMALES_UTM
+    assert datos["utm_este_m"] == pytest.approx(este_guardado, abs=tolerancia_metros)
+    assert datos["utm_norte_m"] == pytest.approx(norte_guardado, abs=tolerancia_metros)
+
+
+def test_utm_se_redondea_a_los_decimales_del_contrato(sectores, punto_dentro):
+    este_con_ruido, norte_con_ruido = (
+        valor + FRACCION_DE_METRO_SIN_REDONDEAR for valor in punto_dentro
+    )
+    crear_arbol(
+        CODIGO_COMPLETO, ubicacion=Point(este_con_ruido, norte_con_ruido, srid=SRID_UTM_CENSO)
+    )
+
+    datos = cartilla(CODIGO_COMPLETO)
+
+    assert datos["utm_este_m"] == round(este_con_ruido, DECIMALES_UTM)
+    assert datos["utm_norte_m"] == round(norte_con_ruido, DECIMALES_UTM)
+
+
+def test_arbol_sin_ubicacion_da_utm_null(contrato, arbol_muerto):
+    datos = cartilla(CODIGO_MUERTO)
+
+    validar(contrato, "Arbol", datos)
+    assert (datos["utm_este_m"], datos["utm_norte_m"]) == (None, None)
+
+
 def test_cartilla_de_arbol_muerto_va_con_todo_en_null(contrato, arbol_muerto):
     datos = cartilla(CODIGO_MUERTO)
 
     validar(contrato, "Arbol", datos)
     assert set(datos) == requeridas(contrato, "Arbol")
     sin_dato = (*CAMPOS_DE_MEDIDA, *CAMPOS_DE_CO2, *CAMPOS_DE_TEXTO, *CAMPOS_DE_ESTADO)
+    sin_dato = (*sin_dato, "identificacion", "origen", *CAMPOS_UTM)
     for campo in (*sin_dato, "interferencia_entorno", "lat", "lon", "fecha_registro", "foto_url"):
         assert datos[campo] is None, f"{campo} debía ser null: {datos[campo]!r}"
     assert datos["foto_miniatura_url"] is None
+    assert datos["observaciones"] == "DAP en planilla: muerto"
     assert (datos["fuente"], datos["demo"]) == ("Planilla de campo, fila 3", True)
 
 

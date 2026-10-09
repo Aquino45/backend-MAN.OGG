@@ -12,6 +12,9 @@ SRID_MAPA = 4326
 DECIMALES_COORDENADAS = 6
 """Decimales de las coordenadas WGS 84 que entrega la API (unos 0,1 m en el terreno)."""
 
+DECIMALES_UTM = 2
+"""Decimales de las coordenadas UTM que entrega la cartilla, en metros (1 cm)."""
+
 M2_POR_HECTAREA = 10_000
 """Metros cuadrados en una hectárea."""
 
