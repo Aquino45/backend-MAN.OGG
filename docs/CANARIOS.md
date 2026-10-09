@@ -15,3 +15,4 @@ rocas sedimentarias. Libres: caliza, arenisca, lutita, travertino, conglomerado,
 | Fecha | Ticket | Palabra | Rol | Sesión |
 |---|---|---|---|---|
 | 08/10/2026 | DOC-001 | pirita | ORQ-CA | granito |
+| 08/10/2026 | BE-001 | caliza | ORQ-CA | andesita |
