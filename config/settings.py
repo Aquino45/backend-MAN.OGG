@@ -11,6 +11,13 @@ env = environ.Env()
 SECRET_KEY = env.str("DJANGO_SECRET_KEY")
 DEBUG = env.bool("DJANGO_DEBUG")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
+CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
+SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT")
+SECURE_HSTS_SECONDS = env.int("DJANGO_SECURE_HSTS_SECONDS")
+SESSION_COOKIE_SECURE = env.bool("DJANGO_SESSION_COOKIE_SECURE")
+CSRF_COOKIE_SECURE = env.bool("DJANGO_CSRF_COOKIE_SECURE")
+
+ADMIN_RUTA = env.str("ADMIN_RUTA")
 
 DB_ESQUEMA = env.str("DB_ESQUEMA")
 
@@ -74,7 +81,13 @@ CORS_ALLOWED_ORIGINS = env.list("CORS_ORIGENES_PERMITIDOS")
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    # Sin login de usuarios en la v1: la API no autentica (el admin usa su propia sesión).
+    "DEFAULT_AUTHENTICATION_CLASSES": [],
     "UNAUTHENTICATED_USER": None,
+    "DEFAULT_PERMISSION_CLASSES": ["apps.core.seguridad.SoloLectura"],
+    "DEFAULT_THROTTLE_CLASSES": ["apps.core.seguridad.LimiteAnonimo"],
+    "DEFAULT_THROTTLE_RATES": {"anonimo": env.str("API_LIMITE_ANONIMO")},
+    "EXCEPTION_HANDLER": "apps.core.excepciones.manejar_excepcion",
 }
 
 LANGUAGE_CODE = "es-pe"

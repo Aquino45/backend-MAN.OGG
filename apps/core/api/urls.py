@@ -2,7 +2,7 @@
 
 from django.urls import path
 
-from apps.core.views import salud
+from apps.core.api.views import salud
 
 urlpatterns = [
     path("salud", salud, name="salud"),
