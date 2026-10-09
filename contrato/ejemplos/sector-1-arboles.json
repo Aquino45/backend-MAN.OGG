@@ -43,6 +43,26 @@
   },
   {
    "type": "Feature",
+   "id": "S01-A012",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -76.841485,
+     -11.993413
+    ]
+   },
+   "properties": {
+    "codigo": "S01-A012",
+    "sector": 1,
+    "nombre_comun": "Huarango",
+    "nombre_cientifico": "Prosopis pallida",
+    "estado_general": "Regular",
+    "foto_miniatura_url": null,
+    "demo": true
+   }
+  },
+  {
+   "type": "Feature",
    "id": "S01-A015",
    "geometry": {
     "type": "Point",
