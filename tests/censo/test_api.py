@@ -10,7 +10,7 @@ from django.urls import reverse
 
 from apps.censo.models import Arbol
 from apps.core.seguridad import LimiteAnonimo
-from config.constantes import DECIMALES_COORDENADAS, SRID_UTM_CENSO
+from config.constantes import DECIMALES_COORDENADAS, DECIMALES_UTM, SRID_UTM_CENSO
 
 RUTA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "validar_contrato.py"
 FUENTE_PRUEBA = "Prueba de la API del censo"
@@ -18,7 +18,11 @@ SECTOR_INEXISTENTE = 99
 CODIGO_INEXISTENTE = "S01-Z999"
 CODIGOS_MAL_FORMADOS = ["S01-A0010", "abc"]
 METODOS_DE_ESCRITURA = ["post", "put", "patch", "delete"]
-LLAVES_DE_ARBOL_EN_EL_CONTRATO = 23
+LLAVES_DE_ARBOL_EN_EL_CONTRATO = 28
+CAMPOS_UTM = ("utm_este_m", "utm_norte_m")
+IDENTIFICACION_COMPLETA = "Identificada"
+ORIGEN_COMPLETO = "Nativa"
+OBSERVACIONES_COMPLETAS = "Junto a la banca"
 TASA_BAJA = "2/min"
 
 
@@ -80,8 +84,10 @@ def arboles_del_sector_1(punto_dentro):
         nombre_cientifico="Schinus molle",
         dap_cm="35.250",
         altura_total_m="8.500",
+        identificacion=IDENTIFICACION_COMPLETA,
+        origen=ORIGEN_COMPLETO,
         estado_general="Bueno",
-        observaciones="Junto a la banca",
+        observaciones=OBSERVACIONES_COMPLETAS,
         brigada="Brigada A",
         foto_archivo="IMG_0001.jpg",
     )
@@ -227,8 +233,33 @@ def test_arbol_entrega_lat_y_lon_en_wgs84_dentro_del_campus(cliente_api, arboles
 def test_arbol_no_expone_campos_fuera_del_contrato(cliente_api, arboles_del_sector_1):
     cartilla = cliente_api.get(url_arbol("S01-A001")).json()
 
-    for campo in ("observaciones", "brigada", "foto_archivo", "ubicacion", "fila_origen"):
+    for campo in ("brigada", "foto_archivo", "ubicacion", "fila_origen"):
         assert campo not in cartilla
+
+
+def test_arbol_entrega_contexto_de_campo_y_utm_guardadas(
+    cliente_api, arboles_del_sector_1, punto_dentro
+):
+    cartilla = cliente_api.get(url_arbol("S01-A001")).json()
+
+    assert cartilla["identificacion"] == IDENTIFICACION_COMPLETA
+    assert cartilla["origen"] == ORIGEN_COMPLETO
+    assert cartilla["observaciones"] == OBSERVACIONES_COMPLETAS
+    este_guardado, norte_guardado = punto_dentro
+    tolerancia_metros = 10**-DECIMALES_UTM
+    assert cartilla["utm_este_m"] == pytest.approx(este_guardado, abs=tolerancia_metros)
+    assert cartilla["utm_norte_m"] == pytest.approx(norte_guardado, abs=tolerancia_metros)
+
+
+def test_arbol_sin_ubicacion_ni_contexto_trae_las_claves_nuevas_en_null(
+    cliente_api, arboles_del_sector_1, cumple_schema
+):
+    cartilla = cliente_api.get(url_arbol("S01-A003")).json()
+
+    cumple_schema(cartilla, "Arbol")
+    for campo in ("identificacion", "origen", "observaciones", *CAMPOS_UTM):
+        assert campo in cartilla
+        assert cartilla[campo] is None
 
 
 def test_arbol_sin_dato_sale_en_null_y_no_se_inventa(cliente_api, arboles_del_sector_1):

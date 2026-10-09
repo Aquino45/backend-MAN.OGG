@@ -116,3 +116,10 @@ def test_arbol_por_codigo_trae_ubicacion_mapa(sectores, punto_dentro):
 
 def test_codigo_inexistente_da_none(sectores):
     assert arbol_por_codigo("S01-Z999") is None
+
+
+def test_arbol_por_codigo_trae_la_ubicacion_utm_tal_como_se_guardo(sectores, punto_dentro):
+    crear_arbol("S01-A001", ubicacion=punto_utm(punto_dentro))
+    arbol = arbol_por_codigo("S01-A001")
+    assert arbol.ubicacion.srid == SRID_UTM_CENSO
+    assert (arbol.ubicacion.x, arbol.ubicacion.y) == pytest.approx(punto_dentro)

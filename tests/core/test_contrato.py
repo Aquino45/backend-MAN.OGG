@@ -6,6 +6,13 @@ from pathlib import Path
 import pytest
 from jsonschema import ValidationError
 
+CLAVES_DE_LA_CARTILLA_NUEVAS = {
+    "identificacion",
+    "origen",
+    "observaciones",
+    "utm_este_m",
+    "utm_norte_m",
+}
 RUTA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "validar_contrato.py"
 
 
@@ -34,6 +41,13 @@ def test_cada_ejemplo_cumple_su_schema(contrato, archivo, nombre_schema):
     errores = validar_contrato.errores_de_ejemplos(contrato)[archivo]
 
     assert errores == [], f"{archivo} no cumple {nombre_schema}"
+
+
+def test_la_cartilla_exige_las_claves_de_contexto_y_utm_pero_no_el_resumen(contrato):
+    esquemas = contrato["components"]["schemas"]
+
+    assert CLAVES_DE_LA_CARTILLA_NUEVAS <= set(esquemas["Arbol"]["required"])
+    assert not CLAVES_DE_LA_CARTILLA_NUEVAS & set(esquemas["ArbolResumen"]["required"])
 
 
 def test_codigo_bien_formado_se_acepta(contrato):
