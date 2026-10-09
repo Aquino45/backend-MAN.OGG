@@ -3,7 +3,7 @@ info:
   title: Censo arbóreo UPeU Lima — API
   version: 0.2.0
   description: |
-    Contrato v0 entre el back y el front (solo lectura, v1 del lunes 12/10/2026).
+    Contrato entre el back y el front (solo lectura, v1 del lunes 12/10/2026).
 
     Reglas:
     - Este archivo manda. Un campo nuevo exige primero un ticket que cambie el contrato; después el back y al final el front, que genera sus tipos con `openapi-typescript`.
