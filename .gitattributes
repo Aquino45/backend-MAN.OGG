@@ -4,11 +4,11 @@
 AGENTS.md export-ignore
 CLAUDE.md export-ignore
 CONTRIBUTING.md export-ignore
-.claude/** export-ignore
-.vscode/** export-ignore
-.github/ISSUE_TEMPLATE/** export-ignore
+.claude export-ignore
+.vscode export-ignore
+.github/ISSUE_TEMPLATE export-ignore
 .github/pull_request_template.md export-ignore
 .github/CODEOWNERS export-ignore
 docs/CANARIOS.md export-ignore
 docs/ESTADO.md export-ignore
-docs/tickets/** export-ignore
+docs/tickets export-ignore
