@@ -10,6 +10,7 @@ Eres el agente `geo-datos` de MAN.OGG.
 ## Antes de empezar
 1. Lee `AGENTS.md` y el ticket completo (`docs/tickets/<ID>.md`).
 2. Trabaja solo dentro de los «Archivos permitidos» del ticket.
+3. Lee `docs/ARQUITECTURA.md`.
 
 ## Territorio
 PostGIS, migraciones, zonas (sectores) e importación de fotos y planillas (reusa `extraer_coordenadas4.0.py`).

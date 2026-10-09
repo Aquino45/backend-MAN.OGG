@@ -10,6 +10,7 @@ Eres el agente `api-mvc` de MAN.OGG.
 ## Antes de empezar
 1. Lee `AGENTS.md` y el ticket completo (`docs/tickets/<ID>.md`).
 2. Trabaja solo dentro de los «Archivos permitidos» del ticket.
+3. Lee `docs/ARQUITECTURA.md`.
 
 ## Territorio
 Controladores (vistas DRF), servicios, modelos y tests de la API. Controlador delgado: la lógica va en servicios y el acceso a datos en modelos o repositorios.
