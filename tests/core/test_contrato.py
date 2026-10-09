@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 from jsonschema import ValidationError
 
-RUTA_SCRIPT = Path(__file__).resolve().parent.parent / "scripts" / "validar_contrato.py"
+RUTA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "validar_contrato.py"
 
 
 def _cargar_script():

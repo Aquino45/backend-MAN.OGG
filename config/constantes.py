@@ -9,6 +9,15 @@ SRID_UTM_CENSO = 32718
 SRID_MAPA = 4326
 """SRID de salida para el mapa: WGS 84 en longitud y latitud."""
 
+DECIMALES_COORDENADAS = 6
+"""Decimales de las coordenadas WGS 84 que entrega la API (unos 0,1 m en el terreno)."""
+
+M2_POR_HECTAREA = 10_000
+"""Metros cuadrados en una hectárea."""
+
+PROPIEDADES_OBLIGATORIAS_SECTOR = ("id", "nombre", "provisional", "fuente")
+"""Propiedades que cada feature del GeoJSON de sectores debe traer."""
+
 PATRON_CODIGO_ARBOL = r"^S\d{2}-[A-Z]\d{3}$"
 """Forma del código de un árbol, por ejemplo S01-A001. Es el mismo patrón del contrato."""
 

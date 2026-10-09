@@ -126,7 +126,7 @@ def test_admin_registra_sector_y_arbol():
 
 @pytest.mark.django_db
 def test_admin_redirige_a_login_sin_sesion(client):
-    respuesta = client.get("/admin/")
+    respuesta = client.get(f"/{settings.ADMIN_RUTA}")
 
     assert respuesta.status_code == 302
-    assert respuesta.url.startswith("/admin/login/")
+    assert respuesta.url.startswith(f"/{settings.ADMIN_RUTA}login/")

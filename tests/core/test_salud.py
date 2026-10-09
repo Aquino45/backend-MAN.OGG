@@ -25,7 +25,7 @@ def test_postgis_version_responde():
 
 
 def test_salud_responde_503_sin_base_de_datos(cliente_api, url_salud):
-    with mock.patch("apps.core.views.connection") as conexion_falsa:
+    with mock.patch("apps.core.api.views.connection") as conexion_falsa:
         conexion_falsa.cursor.side_effect = OperationalError("sin conexion")
         respuesta = cliente_api.get(url_salud)
 
