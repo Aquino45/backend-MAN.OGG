@@ -1,6 +1,6 @@
 # ESTADO — backend-MAN.OGG
 
-Actualizado: 09/10/2026 (ticket DOC-003).
+Actualizado: 09/10/2026 (ticket DOC-004).
 
 ## Dónde estamos
 - El repo levanta con `docker compose up -d --build`: BD PostgreSQL 16 + PostGIS 3.4 (`db`) y API Django 5.2 + DRF + GeoDjango (`api`).
@@ -13,11 +13,24 @@ Actualizado: 09/10/2026 (ticket DOC-003).
 - Hito M0 (disciplina) en curso.
 
 ## Último ticket
-- DOC-003 (parte del back) — `docs/requerimientos.md` neutro (copia literal del contexto), `export-ignore` para los archivos del proceso y README que solo enlaza a lo que se exporta (EN REVISIÓN, Issue #13). Resumen en `docs/tickets/DOC-003.md`.
-- Antes: BE-006 — contrato 0.2.0 (mergeado, #12).
+- DOC-004 (parte del back) — nombre público «Censo arbóreo UPeU Lima» en todo lo que se exporta y `docs/ARQUITECTURA.md` neutro; el exportador de la entrega sale en verde (EN REVISIÓN, Issue #15). Resumen en `docs/tickets/DOC-004.md`.
+- Antes: DOC-003 — docs neutras y `export-ignore` (mergeado, #14).
 
 ## Siguiente ticket
-- DOC-004 del back (nombre público; el exportador de la entrega en verde), que espera el merge de DOC-003. Después, BE-005 (árboles demo) o BE-007 (fotos), según despache el asesor.
+- BE-005 (árboles demo) o BE-007 (fotos), según despache el asesor.
+
+## Estado actual frente al objetivo (09/10/2026)
+Viene de la § 8 que tenía `docs/ARQUITECTURA.md` hasta DOC-004; cada fila se comprobó en el árbol de `main`.
+
+| Pieza | Hoy | Se ajustó en |
+|---|---|---|
+| `apps/censo/models.py`, `servicios/`, `admin.py`, `management/` | ✅ como en el árbol | BE-003 |
+| Salud (`views.py` y `urls.py`) | ✅ en `apps/core/api/`, misma ruta | BE-004 |
+| `test_salud.py`, `test_configuracion.py`, `test_contrato.py` | ✅ en `tests/core/` | BE-004 |
+| `selectores.py`, `api/` de censo, `excepciones.py`, `seguridad.py` | ✅ existen y siguen las capas | BE-004 |
+| Admin | ✅ en `ADMIN_RUTA` desde `.env` (`config/urls.py`) | BE-004 |
+| 2 constantes de `importar_sectores.py` | ✅ en `config/constantes.py` | BE-004 |
+| `*.xlsx` en `.gitignore` | ✅ | DOC-002 |
 
 ## Pendiente fuera de este repo
 - Protección de `main` (PR obligatorio con aprobación de Code Owner, status checks y solo squash).
