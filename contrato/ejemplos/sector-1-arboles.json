@@ -1,0 +1,65 @@
+{
+ "type": "FeatureCollection",
+ "features": [
+  {
+   "type": "Feature",
+   "id": "S01-A001",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -76.841165,
+     -11.993641
+    ]
+   },
+   "properties": {
+    "codigo": "S01-A001",
+    "sector": 1,
+    "nombre_comun": "Molle",
+    "nombre_cientifico": "Schinus",
+    "estado_general": null,
+    "foto_miniatura_url": null,
+    "demo": false
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "S01-A002",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -76.841193,
+     -11.993614
+    ]
+   },
+   "properties": {
+    "codigo": "S01-A002",
+    "sector": 1,
+    "nombre_comun": "Palma real",
+    "nombre_cientifico": "Roystonea",
+    "estado_general": null,
+    "foto_miniatura_url": null,
+    "demo": false
+   }
+  },
+  {
+   "type": "Feature",
+   "id": "S01-A015",
+   "geometry": {
+    "type": "Point",
+    "coordinates": [
+     -76.841112,
+     -11.993904
+    ]
+   },
+   "properties": {
+    "codigo": "S01-A015",
+    "sector": 1,
+    "nombre_comun": null,
+    "nombre_cientifico": null,
+    "estado_general": null,
+    "foto_miniatura_url": null,
+    "demo": false
+   }
+  }
+ ]
+}

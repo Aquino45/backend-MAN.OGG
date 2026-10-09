@@ -56,3 +56,4 @@ En Git Bash, desde la raíz del repo (los puertos y claves salen de tu `.env`):
 - Tests (contra la PostGIS real): `docker compose run --rm api pytest`
 - Lint: `ruff check .`
 - Formato: `ruff format --check .` (para aplicarlo: `ruff format .`)
+- Contrato: `docker compose run --rm --no-deps api python scripts/validar_contrato.py`
