@@ -9,13 +9,7 @@ from django.contrib.gis.geos import Polygon
 from django.db import transaction
 
 from apps.censo.models import Sector
-from config.constantes import SRID_UTM_CENSO
-
-M2_POR_HECTAREA = 10_000
-"""Metros cuadrados en una hectárea."""
-
-PROPIEDADES_OBLIGATORIAS = ("id", "nombre", "provisional", "fuente")
-"""Propiedades que cada feature del GeoJSON debe traer."""
+from config.constantes import M2_POR_HECTAREA, PROPIEDADES_OBLIGATORIAS_SECTOR, SRID_UTM_CENSO
 
 
 @dataclass
@@ -101,7 +95,7 @@ def importar_sectores(ruta):
 def _leer_sector(rasgo):
     """Convierte un feature en los datos del modelo, validando lo que trae."""
     nombres = set(rasgo.fields)
-    faltan = [nombre for nombre in PROPIEDADES_OBLIGATORIAS if nombre not in nombres]
+    faltan = [nombre for nombre in PROPIEDADES_OBLIGATORIAS_SECTOR if nombre not in nombres]
     if faltan:
         raise ValueError(f"Un sector no trae las propiedades: {', '.join(faltan)}.")
     id_sector = int(rasgo.get("id"))
