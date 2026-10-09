@@ -57,3 +57,4 @@ En Git Bash, desde la raíz del repo (los puertos y claves salen de tu `.env`):
 - Lint: `ruff check .`
 - Formato: `ruff format --check .` (para aplicarlo: `ruff format .`)
 - Contrato: `docker compose run --rm --no-deps api python scripts/validar_contrato.py`
+- Datos: `docker compose run --rm api python manage.py importar_sectores <geojson>` e `importar_planilla <xlsx montado> [--seco]` (ver `datos/README.md`)

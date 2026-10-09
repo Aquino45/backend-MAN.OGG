@@ -14,6 +14,17 @@ Después abre `http://localhost:<API_PUERTO>/api/v1/salud` (el puerto está en t
 
 Apagar: `docker compose down` (los datos se conservan; `-v` los borra).
 
+## Cargar datos
+Con los contenedores arriba, en Git Bash:
+
+```bash
+docker compose run --rm api python manage.py migrate
+docker compose run --rm api python manage.py importar_sectores datos/sectores/sectores-utm18s-v0.geojson
+MSYS_NO_PATHCONV=1 docker compose run --rm -v /ruta/local/arb2-corregido.xlsx:/tmp/arb2-corregido.xlsx:ro   api python manage.py importar_planilla /tmp/arb2-corregido.xlsx --seco   # quita --seco para escribir
+```
+
+Los dos importadores se pueden repetir sin duplicar. La planilla de la brigada **no entra al repo**: se monta desde fuera, de solo lectura. Detalle y licencias en [datos/README.md](datos/README.md). Contorno del campus © colaboradores de OpenStreetMap, ODbL.
+
 ## Documentación
 - [AGENTS.md](AGENTS.md): reglas del repo (también para Claude Code, vía [CLAUDE.md](CLAUDE.md)).
 - [CONTRIBUTING.md](CONTRIBUTING.md): cómo dejar tu PC lista y el flujo diario.
