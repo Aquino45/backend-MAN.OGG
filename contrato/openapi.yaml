@@ -1,0 +1,278 @@
+openapi: 3.1.0
+info:
+  title: MAN.OGG — API del censo arbóreo
+  version: 0.1.0
+  description: |
+    Contrato v0 entre `backend-MAN.OGG` y `frontend-MAN.OGG` (solo lectura, v1 del lunes 12/10/2026).
+
+    Reglas:
+    - Este archivo manda. Un campo nuevo exige primero un ticket que cambie el contrato; después el back y al final el front, que genera sus tipos con `openapi-typescript`.
+    - Los nombres son los de `docs/requerimientos.md`, con la unidad en el nombre (`_m`, `_cm`, `_kg`).
+    - Coordenadas: la BD guarda UTM 18S (EPSG:32718) y la API entrega WGS84 (EPSG:4326). En GeoJSON el orden es `[longitud, latitud]`; en la cartilla van `lat` y `lon` aparte.
+    - Todo campo de la cartilla viene siempre en la respuesta. Si no hay dato, viene `null`, y el front muestra «Sin dato». Nunca se rellena con un valor inventado.
+    - `demo: true` marca los datos de ejemplo. El front los muestra como «Dato de ejemplo».
+    - El CO₂ lo calcula el stakeholder en gabinete. La API solo lo entrega.
+servers:
+  - url: '{base}/api/v1'
+    description: El back. En desarrollo, `{base}` sale de `API_PUERTO` del `.env` del back; el front lo lee de `VITE_API_URL`.
+    variables:
+      base:
+        default: http://localhost:8000
+tags:
+  - name: sistema
+  - name: sectores
+  - name: arboles
+paths:
+  /salud:
+    get:
+      tags: [sistema]
+      operationId: obtenerSalud
+      summary: Estado de la API y de la base de datos
+      responses:
+        '200':
+          description: La API y la BD responden.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Salud' }
+              example: { estado: ok, base_de_datos: ok, postgis: '3.4 USE_GEOS=1 USE_PROJ=1 USE_STATS=1' }
+        '503':
+          description: La API responde, pero la BD no.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Salud' }
+              example: { estado: error, base_de_datos: sin conexión }
+  /sectores:
+    get:
+      tags: [sectores]
+      operationId: listarSectores
+      summary: Los sectores del campus como GeoJSON (polígonos en WGS84)
+      responses:
+        '200':
+          description: Todos los sectores, ordenados por `id`.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SectorColeccion' }
+              examples:
+                v0:
+                  summary: Los 5 sectores del borrador GEO-001 (S2–S5 provisionales)
+                  externalValue: ./ejemplos/sectores.json
+  /sectores/{sector_id}/arboles:
+    get:
+      tags: [arboles]
+      operationId: listarArbolesDeSector
+      summary: Los árboles de un sector como GeoJSON (puntos en WGS84)
+      description: |
+        Trae todos los árboles del sector, ordenados por `codigo`. Un árbol sin coordenadas viene con `geometry: null`: aparece en la lista, pero no en el mapa. La v0 no pagina; un sector tiene cientos de árboles, no miles.
+      parameters:
+        - $ref: '#/components/parameters/SectorId'
+      responses:
+        '200':
+          description: Árboles del sector (puede ser una colección vacía).
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ArbolResumenColeccion' }
+              examples:
+                sector1:
+                  summary: Tres árboles reales del sector 1 (uno sin especie todavía)
+                  externalValue: ./ejemplos/sector-1-arboles.json
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+  /arboles/{codigo}:
+    get:
+      tags: [arboles]
+      operationId: obtenerArbol
+      summary: La cartilla completa de un árbol
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          schema: { $ref: '#/components/schemas/CodigoArbol' }
+      responses:
+        '200':
+          description: La cartilla con los 19 campos de la visión, más su trazabilidad.
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Arbol' }
+              examples:
+                real:
+                  summary: Dato real de la brigada (los campos que no se midieron vienen en null)
+                  externalValue: ./ejemplos/arbol-real.json
+                demo:
+                  summary: Dato de ejemplo (demo true) con todos los campos llenos
+                  externalValue: ./ejemplos/arbol-demo.json
+        '404':
+          $ref: '#/components/responses/NoEncontrado'
+components:
+  parameters:
+    SectorId:
+      name: sector_id
+      in: path
+      required: true
+      schema: { type: integer, minimum: 1 }
+      description: El `id` del sector (1, 2, 3…). No hay un máximo fijo; agregar sectores no cambia el contrato.
+  responses:
+    NoEncontrado:
+      description: No existe un recurso con ese identificador.
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+          example: { detail: No encontrado. }
+  schemas:
+    Salud:
+      type: object
+      required: [estado, base_de_datos]
+      properties:
+        estado: { type: string, enum: [ok, error] }
+        base_de_datos: { type: string, description: '`ok` o una explicación corta del problema.' }
+        postgis: { type: string, description: Versión de PostGIS que responde la BD. Solo viene cuando `estado` es `ok`. }
+    Error:
+      type: object
+      required: [detail]
+      properties:
+        detail: { type: string, description: Mensaje en español. Es el formato de error de Django REST Framework. }
+    CodigoArbol:
+      type: string
+      pattern: '^S\d{2}-[A-Z]\d{3}$'
+      description: Código del árbol, por ejemplo `S01-A001` (sector 01, árbol 001). Es el mismo que va en la nota de la foto NoteCam.
+      examples: [S01-A001]
+    Posicion:
+      type: array
+      description: '[longitud, latitud] en grados WGS84.'
+      prefixItems:
+        - { type: number, minimum: -180, maximum: 180 }
+        - { type: number, minimum: -90, maximum: 90 }
+      minItems: 2
+      maxItems: 2
+    Poligono:
+      type: object
+      required: [type, coordinates]
+      properties:
+        type: { const: Polygon }
+        coordinates:
+          type: array
+          minItems: 1
+          items:
+            type: array
+            minItems: 4
+            items: { $ref: '#/components/schemas/Posicion' }
+    Punto:
+      type: object
+      required: [type, coordinates]
+      properties:
+        type: { const: Point }
+        coordinates: { $ref: '#/components/schemas/Posicion' }
+    SectorPropiedades:
+      type: object
+      required: [id, nombre, color, provisional, total_arboles]
+      properties:
+        id: { type: integer, minimum: 1 }
+        nombre: { type: string, examples: [Sector 1] }
+        color:
+          type: [string, 'null']
+          pattern: '^[a-z0-9-]+$'
+          description: Nombre de un token de `src/styles/tokens.css` del front (sin `--`), por ejemplo `copa-carmin`. Si es `null`, el front usa el color de reposo de los sectores.
+        provisional:
+          type: boolean
+          description: '`true` si el límite es una propuesta todavía no confirmada en campo.'
+        total_arboles:
+          type: integer
+          minimum: 0
+          description: Árboles registrados en el sector, reales y demo juntos.
+    SectorFeature:
+      type: object
+      required: [type, id, geometry, properties]
+      properties:
+        type: { const: Feature }
+        id: { type: integer, minimum: 1 }
+        geometry: { $ref: '#/components/schemas/Poligono' }
+        properties: { $ref: '#/components/schemas/SectorPropiedades' }
+    SectorColeccion:
+      type: object
+      required: [type, features]
+      properties:
+        type: { const: FeatureCollection }
+        features:
+          type: array
+          items: { $ref: '#/components/schemas/SectorFeature' }
+    ArbolResumen:
+      type: object
+      description: Lo mínimo para listar el árbol y dibujarlo como punto. La cartilla completa sale de `/arboles/{codigo}`.
+      required: [codigo, sector, nombre_comun, nombre_cientifico, estado_general, foto_miniatura_url, demo]
+      properties:
+        codigo: { $ref: '#/components/schemas/CodigoArbol' }
+        sector: { type: integer, minimum: 1 }
+        nombre_comun: { type: [string, 'null'] }
+        nombre_cientifico: { type: [string, 'null'] }
+        estado_general: { type: [string, 'null'], description: Valor del catálogo de la planilla (Bueno, Regular, Malo). }
+        foto_miniatura_url: { type: [string, 'null'], format: uri }
+        demo: { type: boolean }
+    ArbolResumenFeature:
+      type: object
+      required: [type, id, geometry, properties]
+      properties:
+        type: { const: Feature }
+        id: { $ref: '#/components/schemas/CodigoArbol' }
+        geometry:
+          oneOf:
+            - { $ref: '#/components/schemas/Punto' }
+            - { type: 'null' }
+        properties: { $ref: '#/components/schemas/ArbolResumen' }
+    ArbolResumenColeccion:
+      type: object
+      required: [type, features]
+      properties:
+        type: { const: FeatureCollection }
+        features:
+          type: array
+          items: { $ref: '#/components/schemas/ArbolResumenFeature' }
+    Arbol:
+      type: object
+      description: La cartilla del árbol. Los 19 campos de la visión del stakeholder, más su trazabilidad. Los textos de estado son los del catálogo de la planilla de la brigada.
+      required:
+        - codigo
+        - sector
+        - nombre_comun
+        - nombre_cientifico
+        - condicion_conservacion
+        - lat
+        - lon
+        - altura_total_m
+        - dap_cm
+        - copa_ns_m
+        - copa_eo_m
+        - estado_general
+        - estado_copa
+        - tronco_danos
+        - raices_base
+        - interferencia_entorno
+        - foto_url
+        - foto_miniatura_url
+        - co2_almacenado_kg
+        - co2_captura_anual_kg
+        - fuente
+        - fecha_registro
+        - demo
+      properties:
+        codigo: { $ref: '#/components/schemas/CodigoArbol' }
+        sector: { type: integer, minimum: 1 }
+        nombre_comun: { type: [string, 'null'] }
+        nombre_cientifico: { type: [string, 'null'], description: En cursiva en la UI. }
+        condicion_conservacion: { type: [string, 'null'], description: Según DS 043-2006-AG; la llena el stakeholder. }
+        lat: { type: [number, 'null'], minimum: -90, maximum: 90, description: Grados WGS84 con 6 decimales. }
+        lon: { type: [number, 'null'], minimum: -180, maximum: 180, description: Grados WGS84 con 6 decimales. }
+        altura_total_m: { type: [number, 'null'], minimum: 0 }
+        dap_cm: { type: [number, 'null'], minimum: 0, description: Diámetro a la altura del pecho (1.30 m). }
+        copa_ns_m: { type: [number, 'null'], minimum: 0, description: Diámetro de copa norte-sur. }
+        copa_eo_m: { type: [number, 'null'], minimum: 0, description: Diámetro de copa este-oeste. }
+        estado_general: { type: [string, 'null'] }
+        estado_copa: { type: [string, 'null'] }
+        tronco_danos: { type: [string, 'null'] }
+        raices_base: { type: [string, 'null'] }
+        interferencia_entorno: { type: [string, 'null'] }
+        foto_url: { type: [string, 'null'], format: uri }
+        foto_miniatura_url: { type: [string, 'null'], format: uri }
+        co2_almacenado_kg: { type: [number, 'null'], minimum: 0, description: kg de CO₂ equivalente; lo calcula el stakeholder. }
+        co2_captura_anual_kg: { type: [number, 'null'], minimum: 0, description: kg de CO₂ por año; lo calcula el stakeholder. }
+        fuente: { type: string, minLength: 1, description: De dónde sale el registro (planilla, fila, foto). Nunca vacío. }
+        fecha_registro: { type: [string, 'null'], format: date }
+        demo: { type: boolean }
