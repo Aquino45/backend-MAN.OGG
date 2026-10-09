@@ -38,3 +38,16 @@ jobs:
       - name: Apagar
         if: always()
         run: docker compose down -v
+
+  contrato:
+    name: contrato
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Instalar dependencias del contrato (mismas versiones que requirements-dev.txt)
+        run: pip install "$(grep -E '^openapi-spec-validator==' requirements-dev.txt)" "$(grep -E '^jsonschema==' requirements-dev.txt)" "$(grep -E '^pyyaml==' requirements-dev.txt)"
+      - name: Validar contrato y ejemplos
+        run: python scripts/validar_contrato.py
