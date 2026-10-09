@@ -82,4 +82,12 @@ npm run dev
 ## 7. Qué puede hacer ya (mientras llegan DOC-001, BE-001 y FE-001)
 - Instalar y verificar todo (pasos 1 a 3) y clonar (paso 4).
 - Leer `docs/requerimientos.md`: qué pide el stakeholder, la cartilla de 19 campos y la paleta.
-- **Datos del censo:** llenar la plantilla la plantilla `plantilla-censo-arboreo.xlsx` con los árboles del sector que ya tiene datos. Es el formato de entrada que va a importar el back (la plantilla te la entrega el director; no está en este repo).
+- **Datos del censo:** llenar la plantilla `plantilla-censo-arboreo.xlsx` con los árboles del sector que ya tiene datos. Es el formato de entrada que va a importar el back (la plantilla te la entrega el director; no está en este repo).
+
+## 8. Documentación del equipo
+- [AGENTS.md](AGENTS.md): reglas del repo (también para Claude Code, vía [CLAUDE.md](CLAUDE.md)).
+- [docs/ESTADO.md](docs/ESTADO.md): estado actual y siguiente ticket.
+- [docs/CANARIOS.md](docs/CANARIOS.md): registro de canarios.
+- [docs/tickets/](docs/tickets/): un archivo por ticket.
+
+Estos archivos, y esta guía, son del proceso de trabajo: llevan `export-ignore` en `.gitattributes` y no salen en la entrega.

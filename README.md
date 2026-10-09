@@ -47,9 +47,5 @@ MSYS_NO_PATHCONV=1 docker compose run --rm -v /ruta/local/arb2-corregido.xlsx:/t
 Los dos importadores se pueden repetir sin duplicar. La planilla de la brigada **no entra al repo**: se monta desde fuera, de solo lectura. Detalle y licencias en [datos/README.md](datos/README.md). Contorno del campus © colaboradores de OpenStreetMap, ODbL.
 
 ## Documentación
-- [AGENTS.md](AGENTS.md): reglas del repo (también para Claude Code, vía [CLAUDE.md](CLAUDE.md)).
-- [CONTRIBUTING.md](CONTRIBUTING.md): cómo dejar tu PC lista y el flujo diario.
-- [docs/ESTADO.md](docs/ESTADO.md): estado actual y siguiente ticket.
+- [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md): capas del back y quién llama a quién.
 - [docs/requerimientos.md](docs/requerimientos.md): qué pide el stakeholder.
-- [docs/CANARIOS.md](docs/CANARIOS.md): registro de canarios.
-- [docs/tickets/](docs/tickets/): un archivo por ticket.

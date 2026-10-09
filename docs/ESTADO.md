@@ -1,6 +1,6 @@
 # ESTADO — backend-MAN.OGG
 
-Actualizado: 09/10/2026 (ticket BE-006).
+Actualizado: 09/10/2026 (ticket DOC-003).
 
 ## Dónde estamos
 - El repo levanta con `docker compose up -d --build`: BD PostgreSQL 16 + PostGIS 3.4 (`db`) y API Django 5.2 + DRF + GeoDjango (`api`).
@@ -13,11 +13,11 @@ Actualizado: 09/10/2026 (ticket BE-006).
 - Hito M0 (disciplina) en curso.
 
 ## Último ticket
-- BE-006 — contrato 0.2.0: la cartilla suma origen, identificación, observaciones y UTM (EN REVISIÓN, Issue #11; lo aprueba @Risc117). Resumen en `docs/tickets/BE-006.md`.
-- Antes: BE-004 — las 3 rutas del contrato (mergeado, #10).
+- DOC-003 (parte del back) — `docs/requerimientos.md` neutro (copia literal del contexto), `export-ignore` para los archivos del proceso y README que solo enlaza a lo que se exporta (EN REVISIÓN, Issue #13). Resumen en `docs/tickets/DOC-003.md`.
+- Antes: BE-006 — contrato 0.2.0 (mergeado, #12).
 
 ## Siguiente ticket
-- DOC-003 (entrega limpia, parte del back). Después, BE-005 (árboles demo) o BE-007 (fotos), según despache el asesor. FE-003 se desbloquea con el merge de BE-006.
+- DOC-004 del back (nombre público; el exportador de la entrega en verde), que espera el merge de DOC-003. Después, BE-005 (árboles demo) o BE-007 (fotos), según despache el asesor.
 
 ## Pendiente fuera de este repo
 - Protección de `main` (PR obligatorio con aprobación de Code Owner, status checks y solo squash).
