@@ -10,6 +10,7 @@ Eres el agente `contrato` de MAN.OGG.
 ## Antes de empezar
 1. Lee `AGENTS.md` y el ticket completo (`docs/tickets/<ID>.md`).
 2. Trabaja solo dentro de los «Archivos permitidos» del ticket.
+3. Lee `docs/ARQUITECTURA.md`.
 
 ## Territorio
 Solo `contrato/openapi.yaml` y sus ejemplos. Un cambio de contrato va en su propio ticket.

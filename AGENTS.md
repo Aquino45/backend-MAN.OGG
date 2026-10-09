@@ -9,9 +9,12 @@ Este repo es el **back**: API REST (arquitectura MVC/MVT) con Python 3.12, Djang
 
 Stack completo: back Django 5 + DRF + GeoDjango + PostgreSQL/PostGIS en Docker; front React + Vite + TypeScript + Framer Motion (+ MapLibre GL opcional).
 
+Dónde va cada archivo (capas, árbol y reglas): [`docs/ARQUITECTURA.md`](docs/ARQUITECTURA.md).
+
 ## 2. Reglas de oro
 - **Todo nace de un ticket** (Issue en GitHub + `docs/tickets/<ID>.md`).
 - **Solo se tocan los «Archivos permitidos»** del ticket. La config de agentes (`.claude/`) también cambia solo por ticket.
+- **Arquitectura:** antes de crear un archivo, ubícalo en `docs/ARQUITECTURA.md`. Si no encaja, detente y pregunta.
 - El contrato `contrato/openapi.yaml` (en este repo) manda. Un campo nuevo exige primero un ticket de contrato, después el back y al final el front.
 - **Nunca se inventan datos del censo.** Todo árbol lleva `fuente`; los datos de prueba van solo en fixtures, con `demo: true`.
 - **Tests obligatorios** en cada pieza nueva. Nunca push con tests en rojo.
