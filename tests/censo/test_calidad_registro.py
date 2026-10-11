@@ -10,6 +10,7 @@ from django.core.management import call_command
 
 from apps.censo.models import Arbol, ValorCatalogo
 from apps.censo.servicios.calidad_registro import (
+    CAMPOS_DEL_ESTADO,
     aplicar,
     aviso_catalogo_sin_cargar,
     buscar_duplicado_por_ubicacion,
@@ -387,3 +388,59 @@ def test_el_comando_recalcular_calidad_imprime_el_reporte(sectores):
     assert "Publicados: 1" in texto
     assert "En revisión: 1" in texto
     assert "Catálogo sin cargar en: " in texto
+
+
+# --- CO₂ simulado (BE-015) ---------------------------------------------------------------------
+
+
+def aplicado(**cambios):
+    arbol = arbol_en_memoria(**cambios)
+    aplicar(arbol, {}, SECTOR_DE_PRUEBA)
+    return arbol
+
+
+def test_un_ejemplo_con_co2_queda_marcado_como_simulado():
+    assert aplicado(demo=True, brigada=None, co2_simulado=False).co2_simulado is True
+
+
+def test_un_ejemplo_con_un_solo_co2_queda_marcado_como_simulado():
+    arbol = aplicado(demo=True, brigada=None, co2_captura_anual_kg=None, co2_simulado=False)
+
+    assert arbol.co2_simulado is True
+
+
+@pytest.mark.parametrize("demo", [True, False])
+def test_sin_ningun_co2_la_marca_se_quita(demo):
+    arbol = aplicado(
+        demo=demo, co2_almacenado_kg=None, co2_captura_anual_kg=None, co2_simulado=True
+    )
+
+    assert arbol.co2_simulado is False
+
+
+def test_un_real_con_co2_respeta_la_marca_puesta_a_mano():
+    assert aplicado(demo=False, co2_simulado=False).co2_simulado is False
+    assert aplicado(demo=False, co2_simulado=True).co2_simulado is True
+
+
+def test_la_marca_de_co2_simulado_se_persiste_con_los_campos_del_estado():
+    assert "co2_simulado" in CAMPOS_DEL_ESTADO
+
+
+def test_recalcular_calidad_quita_y_guarda_la_marca_de_un_arbol_sin_co2(sectores):
+    arbol = arbol_evaluado("S01-A001", co2_almacenado_kg=None, co2_captura_anual_kg=None)
+    Arbol.todos.filter(pk=arbol.pk).update(co2_simulado=True)
+
+    reporte = recalcular_calidad()
+
+    assert Arbol.todos.get(pk=arbol.pk).co2_simulado is False
+    assert reporte.cambiaron == 1
+
+
+def test_recalcular_calidad_respeta_un_real_con_co2_desmarcado(sectores):
+    arbol = arbol_evaluado("S01-A001", co2_simulado=False)
+
+    reporte = recalcular_calidad()
+
+    assert Arbol.todos.get(pk=arbol.pk).co2_simulado is False
+    assert reporte.cambiaron == 0

@@ -19,6 +19,7 @@ from config.constantes import (
     CAMPOS_CON_AYUDA,
     ESTADO_REGISTRO_EN_REVISION,
     ESTADOS_REGISTRO,
+    ETIQUETA_CO2_SIMULADO,
     MENSAJE_CODIGO_EN_PAPELERA,
     PATRON_CODIGO_ARBOL,
     PERMISO_CAMBIAR_DEMO,
@@ -93,6 +94,9 @@ class Arbol(models.Model):
     `estado_registro` y `motivos_revision` los pone la regla de calidad (nunca se editan a mano):
     un árbol nuevo nace «en revisión» y solo sale en la API cuando la regla lo publica.
 
+    `co2_simulado` dice que el CO₂ es una estimación que se reemplazará por el dato real. Un árbol
+    de ejemplo con algún CO₂ siempre lo lleva marcado (lo aseguran la regla de calidad y la BD).
+
     El `uid` identifica al árbol para siempre, aunque su `codigo` se corrija. La administración
     del censo puede destacar árboles de un sector, con un motivo y hasta un tope por sector.
     """
@@ -119,6 +123,7 @@ class Arbol(models.Model):
     copa_eo_m = _medida()
     co2_almacenado_kg = _medida()
     co2_captura_anual_kg = _medida()
+    co2_simulado = models.BooleanField(default=False, verbose_name=ETIQUETA_CO2_SIMULADO)
     estado_general = _texto_opcional()
     estado_copa = _texto_opcional()
     tronco_danos = _texto_opcional()
@@ -160,6 +165,12 @@ class Arbol(models.Model):
         permissions = [(PERMISO_CAMBIAR_DEMO, "Puede cambiar la marca demo de un árbol")]
         constraints = [
             models.CheckConstraint(condition=~Q(fuente=""), name="arbol_fuente_no_vacia"),
+            models.CheckConstraint(
+                condition=Q(demo=False)
+                | Q(co2_simulado=True)
+                | (Q(co2_almacenado_kg__isnull=True) & Q(co2_captura_anual_kg__isnull=True)),
+                name="arbol_demo_con_co2_es_simulado",
+            ),
         ]
 
     def clean(self):
