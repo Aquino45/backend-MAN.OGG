@@ -16,6 +16,7 @@ from django.core.exceptions import ValidationError
 from django.db import models, transaction
 
 from apps.censo.models import Arbol, Sector
+from apps.censo.servicios.calidad_registro import CAMPOS_DEL_ESTADO, aplicar, cargar_catalogo
 from apps.censo.servicios.importar_planilla import ArbolFueraDeSector
 from config.constantes import (
     CLAVES_EXTRA_DEMO,
@@ -80,6 +81,7 @@ def cargar_demo(ruta):
     existentes = Arbol.todos.filter(codigo__in=[r.codigo for r in registros]).in_bulk(
         field_name="codigo"
     )
+    catalogo = cargar_catalogo()
     guardados = {}
     reporte = ReporteDemo(archivo=ruta.name)
     with transaction.atomic():
@@ -90,7 +92,7 @@ def cargar_demo(ruta):
                 reporte.creados += 1
             else:
                 reporte.actualizados += 1
-            guardados[registro.codigo] = _guardar(arbol, registro)
+            guardados[registro.codigo] = _guardar(arbol, registro, catalogo)
         for registro in registros:
             aviso = _aviso_fuera_de_sector(guardados[registro.codigo], sectores[registro.id_sector])
             if aviso is not None:
@@ -172,8 +174,6 @@ def _problemas_del_registro(crudo, ids_sectores):
     sector = crudo.get("sector")
     if type(sector) is not int or sector not in ids_sectores:
         problemas.append(f"el sector «{sector}» no existe en la BD")
-    if crudo.get("destacado") is True and not str(crudo.get("motivo_destacado") or "").strip():
-        problemas.append("un destacado necesita motivo")
     desconocidas = sorted(set(crudo) - CLAVES_CONOCIDAS)
     if desconocidas:
         problemas.append("claves desconocidas: " + ", ".join(desconocidas))
@@ -260,8 +260,8 @@ def _problemas_con_la_bd(registros):
     return problemas
 
 
-def _guardar(arbol, registro):
-    """Copia los valores, valida con el modelo (segunda barrera) y guarda el árbol."""
+def _guardar(arbol, registro, catalogo):
+    """Copia los valores, valida con el modelo, guarda y aplica la regla de calidad."""
     for nombre, valor in registro.valores.items():
         setattr(arbol, nombre, valor)
     arbol.sector_id = registro.id_sector
@@ -272,7 +272,9 @@ def _guardar(arbol, registro):
     except ValidationError as error:
         raise ValueError(f"{registro.codigo}: {'; '.join(error.messages)}") from error
     arbol.save()
-    arbol.refresh_from_db(fields=["ubicacion"])
+    arbol.refresh_from_db(fields=["ubicacion"])  # ya en UTM: la regla mide contra el sector
+    aplicar(arbol, catalogo)
+    arbol.save(update_fields=CAMPOS_DEL_ESTADO)
     return arbol
 
 

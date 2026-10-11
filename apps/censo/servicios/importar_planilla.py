@@ -1,4 +1,8 @@
-"""Importa la planilla de la brigada (hoja Registro_Campo). Se puede repetir sin duplicar."""
+"""Importa la planilla de la brigada (hoja Registro_Campo). Se puede repetir sin duplicar.
+
+No descarta nada por calidad: cada registro pasa por la regla (`calidad_registro`) y entra
+publicado o en revisión, con sus motivos. Solo se dejan fuera los duplicados, que se listan.
+"""
 
 import re
 from dataclasses import dataclass, field
@@ -12,6 +16,12 @@ from openpyxl import load_workbook
 from openpyxl.utils.cell import range_boundaries
 
 from apps.censo.models import Arbol, Sector
+from apps.censo.servicios.calidad_registro import (
+    aplicar,
+    aviso_catalogo_sin_cargar,
+    buscar_duplicado_por_ubicacion,
+    cargar_catalogo,
+)
 from config.constantes import (
     CAMPOS_CON_NOTA_PLANILLA,
     CAMPOS_NUMERICOS_PLANILLA,
@@ -22,6 +32,8 @@ from config.constantes import (
     FORMATOS_FECHA_PLANILLA,
     HOJA_PLANILLA,
     MENSAJE_CODIGO_EN_PAPELERA,
+    MOTIVO_DUPLICADO_CODIGO,
+    MOTIVO_DUPLICADO_UBICACION,
     PATRON_CODIGO_ARBOL,
     SEPARADOR_NOTAS,
     SRID_UTM_CENSO,
@@ -67,6 +79,22 @@ class ArbolFueraDeSector:
 
 
 @dataclass
+class RegistroEnRevision:
+    """Un registro que entró a la BD pero no sale en la web, con sus motivos."""
+
+    codigo: str
+    motivos: list[str]
+
+
+@dataclass
+class FilaDuplicada:
+    """Una fila que no se incorporó porque repite un código o una ubicación con su especie."""
+
+    codigo: str
+    motivo: str
+
+
+@dataclass
 class ReportePlanilla:
     """Resultado de importar la planilla (el mismo con y sin `--seco`)."""
 
@@ -81,6 +109,12 @@ class ReportePlanilla:
     fechas_no_validas: list[ValorNoValido] = field(default_factory=list)
     fuera_de_catalogo: list[ValorNoValido] = field(default_factory=list)
     fuera_de_sector: list[ArbolFueraDeSector] = field(default_factory=list)
+    publicados: int = 0
+    en_revision: list[RegistroEnRevision] = field(default_factory=list)
+    duplicados: list[FilaDuplicada] = field(default_factory=list)
+    ejemplo_sin_cambios: list[str] = field(default_factory=list)
+    ejemplo_reemplazados: list[str] = field(default_factory=list)
+    catalogo_sin_cargar: str | None = None
 
 
 @dataclass
@@ -93,6 +127,7 @@ class _Contexto:
     reporte: ReportePlanilla
     orden_en_sector: dict = field(default_factory=dict)
     codigos_vistos: set = field(default_factory=set)
+    catalogo_calidad: dict = field(default_factory=dict)
 
 
 def importar_planilla(ruta, seco=False):
@@ -107,11 +142,14 @@ def importar_planilla(ruta, seco=False):
     columnas = _ubicar_columnas(hoja_formulas)
     filas = _leer_filas(hoja_formulas, hoja_valores, columnas)
     reporte = ReportePlanilla(archivo=ruta.name, seco=seco, filas_leidas=len(filas))
+    catalogo_calidad = cargar_catalogo()
+    reporte.catalogo_sin_cargar = aviso_catalogo_sin_cargar(catalogo_calidad)
     contexto = _Contexto(
         nombre_archivo=ruta.name,
         sectores=_cargar_sectores(filas),
         catalogos=_leer_catalogos(hoja_formulas, columnas),
         reporte=reporte,
+        catalogo_calidad=catalogo_calidad,
     )
     with transaction.atomic():
         for numero_fila, fila in filas:
@@ -205,7 +243,9 @@ def _importar_fila(numero_fila, fila, contexto):
     if not re.fullmatch(PATRON_CODIGO_ARBOL, codigo):
         raise ValueError(f"Fila {numero_fila}: el código «{codigo}» no cumple el patrón.")
     if codigo in contexto.codigos_vistos:
-        raise ValueError(f"Fila {numero_fila}: el código «{codigo}» está repetido en la planilla.")
+        motivo = MOTIVO_DUPLICADO_CODIGO.format(codigo=codigo)
+        reporte.duplicados.append(FilaDuplicada(codigo, motivo))
+        return
     contexto.codigos_vistos.add(codigo)
     if Arbol.todos.filter(codigo=codigo, eliminado_en__isnull=False).exists():
         raise ValueError(f"Fila {numero_fila}: " + MENSAJE_CODIGO_EN_PAPELERA.format(codigo=codigo))
@@ -217,11 +257,13 @@ def _importar_fila(numero_fila, fila, contexto):
                 ValorNoValido(codigo, ENCABEZADO_POR_CAMPO[campo], valores[campo])
             )
     notas = []
+    textos_no_numericos = {}
     for campo in (c for c in COLUMNAS_PLANILLA.values() if c in CAMPOS_NUMERICOS_PLANILLA):
         valores[campo], texto = _numero(fila[campo], campo)
         if texto is not None:
             encabezado = ENCABEZADO_POR_CAMPO[campo]
             reporte.numeros_no_validos.append(ValorNoValido(codigo, encabezado, texto))
+            textos_no_numericos[campo] = texto
             if campo in CAMPOS_CON_NOTA_PLANILLA:
                 notas.append(FORMATO_NOTA_PLANILLA.format(encabezado=encabezado, texto=texto))
     valores["fecha_registro"], texto_fecha = _fecha(fila["fecha_registro"])
@@ -249,11 +291,47 @@ def _importar_fila(numero_fila, fila, contexto):
     valores["fuente"] = ", ".join(parte for parte in partes_fuente if parte)
     valores["fila_origen"] = numero_fila
     valores["demo"] = False
-    _, creado = Arbol.todos.update_or_create(codigo=codigo, defaults=valores)
+    _guardar_fila(codigo, valores, textos_no_numericos, contexto)
+
+
+def _guardar_fila(codigo, valores, textos_no_numericos, contexto):
+    """Aplica la regla de calidad y guarda la fila (o la deja fuera si es un duplicado).
+
+    Un árbol de ejemplo (`demo`) solo se reemplaza por una fila completa y consistente: con una
+    fila incompleta se queda como está.
+    """
+    reporte = contexto.reporte
+    otro = buscar_duplicado_por_ubicacion(
+        codigo, valores["ubicacion"], valores["nombre_cientifico"]
+    )
+    if otro is not None:
+        reporte.duplicados.append(
+            FilaDuplicada(codigo, MOTIVO_DUPLICADO_UBICACION.format(otro=otro))
+        )
+        return
+    candidato = Arbol(codigo=codigo, **valores)
+    motivos = aplicar(
+        candidato, contexto.catalogo_calidad, valores["sector"].geom, textos_no_numericos
+    )
+    existente = Arbol.todos.filter(codigo=codigo).first()
+    if existente is not None and existente.demo:
+        if motivos:
+            reporte.ejemplo_sin_cambios.append(codigo)
+            return
+        reporte.ejemplo_reemplazados.append(codigo)
+    estado = {
+        "estado_registro": candidato.estado_registro,
+        "motivos_revision": candidato.motivos_revision,
+    }
+    _, creado = Arbol.todos.update_or_create(codigo=codigo, defaults={**valores, **estado})
     if creado:
         reporte.creados += 1
     else:
         reporte.actualizados += 1
+    if motivos:
+        reporte.en_revision.append(RegistroEnRevision(codigo, [str(motivo) for motivo in motivos]))
+    else:
+        reporte.publicados += 1
 
 
 def _entero_sector(valor):

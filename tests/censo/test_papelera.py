@@ -154,7 +154,7 @@ def test_importar_planilla_rechaza_la_fila_de_un_arbol_en_la_papelera(
 
 
 def test_importar_planilla_sigue_actualizando_a_los_vigentes(nuevo_arbol, ruta_planilla):
-    nuevo_arbol("S01-A001", nombre_comun="Molle")
+    nuevo_arbol("S01-A001", nombre_comun="Molle", demo=False)
     crear_planilla(ruta_planilla, [fila(codigo="S01-A001", nombre_comun="Palma")])
 
     reporte = importar_planilla(ruta_planilla)
