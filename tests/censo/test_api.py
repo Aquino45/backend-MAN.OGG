@@ -18,12 +18,13 @@ SECTOR_INEXISTENTE = 99
 CODIGO_INEXISTENTE = "S01-Z999"
 CODIGOS_MAL_FORMADOS = ["S01-A0010", "abc"]
 METODOS_DE_ESCRITURA = ["post", "put", "patch", "delete"]
-LLAVES_DE_ARBOL_EN_EL_CONTRATO = 28
+LLAVES_DE_ARBOL_EN_EL_CONTRATO = 31
 CAMPOS_UTM = ("utm_este_m", "utm_norte_m")
 IDENTIFICACION_COMPLETA = "Identificada"
 ORIGEN_COMPLETO = "Nativa"
 OBSERVACIONES_COMPLETAS = "Junto a la banca"
 TASA_BAJA = "2/min"
+MOTIVO_DESTACADO = "Ejemplar de mayor copa del sector"
 
 
 def _cargar_script():
@@ -193,12 +194,15 @@ def test_resumen_no_expone_campos_fuera_del_contrato(cliente_api, arboles_del_se
 
     assert set(feature["properties"]) == {
         "codigo",
+        "uid",
         "sector",
         "nombre_comun",
         "nombre_cientifico",
         "estado_general",
         "foto_miniatura_url",
         "demo",
+        "destacado",
+        "motivo_destacado",
     }
 
 
@@ -219,6 +223,37 @@ def test_arbol_200_con_la_forma_del_contrato(cliente_api, arboles_del_sector_1, 
     assert cartilla["fuente"] == FUENTE_PRUEBA
     assert cartilla["foto_url"] is None
     assert cartilla["foto_miniatura_url"] is None
+
+
+def test_arbol_trae_uid_y_destacado_en_la_cartilla(cliente_api, arboles_del_sector_1):
+    Arbol.objects.filter(codigo="S01-A001").update(
+        destacado=True, motivo_destacado=MOTIVO_DESTACADO
+    )
+
+    cartilla = cliente_api.get(url_arbol("S01-A001")).json()
+
+    assert cartilla["uid"] == str(Arbol.objects.get(codigo="S01-A001").uid)
+    assert (cartilla["destacado"], cartilla["motivo_destacado"]) == (True, MOTIVO_DESTACADO)
+    assert cliente_api.get(url_arbol("S01-A002")).json()["destacado"] is False
+
+
+def test_lista_trae_uid_y_destacado_sin_consultas_extra(
+    cliente_api, arboles_del_sector_1, django_assert_num_queries
+):
+    Arbol.objects.filter(codigo="S01-A001").update(
+        destacado=True, motivo_destacado=MOTIVO_DESTACADO
+    )
+
+    with django_assert_num_queries(2):
+        respuesta = cliente_api.get(url_arboles_de_sector(1))
+
+    propiedades = {f["id"]: f["properties"] for f in respuesta.json()["features"]}
+    assert propiedades["S01-A001"]["destacado"] is True
+    assert propiedades["S01-A001"]["motivo_destacado"] == MOTIVO_DESTACADO
+    assert propiedades["S01-A002"]["destacado"] is False
+    assert propiedades["S01-A002"]["motivo_destacado"] is None
+    uids = [p["uid"] for p in propiedades.values()]
+    assert len(set(uids)) == len(uids) == 3
 
 
 def test_arbol_entrega_lat_y_lon_en_wgs84_dentro_del_campus(cliente_api, arboles_del_sector_1):

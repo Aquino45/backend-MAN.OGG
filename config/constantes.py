@@ -84,3 +84,6 @@ FORMATOS_FECHA_PLANILLA = ("%d/%m/%Y", "%Y-%m-%d")
 
 FILA_ENCABEZADOS_PLANILLA = 1
 """Fila de la hoja donde están los encabezados."""
+
+TOPE_DESTACADOS_POR_SECTOR = 5
+"""Árboles destacados por sector que la administración del censo puede marcar."""

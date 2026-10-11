@@ -3,11 +3,14 @@
 # así que los textos opcionales usan null=True y nunca guardan "".
 """Modelos del censo: Sector y Arbol. Los nombres de campo son los del contrato v0."""
 
+from uuid import uuid4
+
 from django.contrib.gis.db import models
+from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator, RegexValidator
 from django.db.models import Q
 
-from config.constantes import PATRON_CODIGO_ARBOL, SRID_UTM_CENSO
+from config.constantes import PATRON_CODIGO_ARBOL, SRID_UTM_CENSO, TOPE_DESTACADOS_POR_SECTOR
 
 LARGO_TEXTO = 255
 """Largo máximo de los textos cortos (nombres, catálogos, archivos de foto)."""
@@ -52,13 +55,18 @@ class Sector(models.Model):
 
 
 class Arbol(models.Model):
-    """Un árbol del censo, con su ubicación UTM y su trazabilidad (`fuente`)."""
+    """Un árbol del censo, con su ubicación UTM y su trazabilidad (`fuente`).
+
+    El `uid` identifica al árbol para siempre, aunque su `codigo` se corrija. La administración
+    del censo puede destacar árboles de un sector, con un motivo y hasta un tope por sector.
+    """
 
     codigo = models.CharField(
         max_length=LARGO_CODIGO,
         unique=True,
         validators=[RegexValidator(PATRON_CODIGO_ARBOL)],
     )
+    uid = models.UUIDField(default=uuid4, unique=True, editable=False)
     sector = models.ForeignKey(Sector, on_delete=models.PROTECT, related_name="arboles")
     fecha_registro = models.DateField(null=True, blank=True)
     brigada = _texto_opcional()
@@ -86,6 +94,8 @@ class Arbol(models.Model):
     fuente = models.TextField(validators=[MinLengthValidator(1)])
     fila_origen = models.PositiveIntegerField(null=True, blank=True)
     demo = models.BooleanField(default=False)
+    destacado = models.BooleanField(default=False)
+    motivo_destacado = models.TextField(null=True, blank=True)
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
 
@@ -93,7 +103,38 @@ class Arbol(models.Model):
         ordering = ["codigo"]
         constraints = [
             models.CheckConstraint(condition=~Q(fuente=""), name="arbol_fuente_no_vacia"),
+            models.CheckConstraint(
+                condition=Q(destacado=False)
+                | (Q(motivo_destacado__isnull=False) & ~Q(motivo_destacado="")),
+                name="arbol_destacado_con_motivo",
+            ),
         ]
+
+    def clean(self):
+        """Un destacado lleva motivo y cabe en el tope del sector; los demás no guardan motivo."""
+        super().clean()
+        if not self.destacado:
+            self.motivo_destacado = None
+            return
+        if not (self.motivo_destacado or "").strip():
+            raise ValidationError(
+                {"motivo_destacado": "Un árbol destacado necesita un motivo que lo explique."}
+            )
+        otros_destacados = Arbol.objects.filter(sector_id=self.sector_id, destacado=True).exclude(
+            pk=self.pk
+        )
+        if otros_destacados.count() >= TOPE_DESTACADOS_POR_SECTOR:
+            codigos = ", ".join(
+                otros_destacados.order_by("codigo").values_list("codigo", flat=True)
+            )
+            raise ValidationError(
+                {
+                    "destacado": (
+                        f"Cada sector admite hasta {TOPE_DESTACADOS_POR_SECTOR} árboles "
+                        f"destacados. Ya están destacados: {codigos}."
+                    )
+                }
+            )
 
     def __str__(self):
         if self.nombre_comun:

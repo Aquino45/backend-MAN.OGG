@@ -81,3 +81,41 @@ def test_todo_external_value_esta_en_la_lista_de_ejemplos(contrato):
 
     assert archivos_referidos, "el contrato no referencia ningún ejemplo"
     assert archivos_referidos <= set(validar_contrato.EJEMPLOS)
+
+
+def test_la_version_del_contrato_es_la_vigente(contrato):
+    assert contrato["info"]["version"] == "0.3.0"
+
+
+@pytest.mark.parametrize("nombre_schema", ["Arbol", "ArbolResumen"])
+def test_el_arbol_exige_uid_y_marca_de_destacado(contrato, nombre_schema):
+    requeridos = set(contrato["components"]["schemas"][nombre_schema]["required"])
+
+    assert {"uid", "destacado", "motivo_destacado"} <= requeridos
+
+
+@pytest.mark.parametrize("nombre_schema", ["Arbol", "ArbolResumen"])
+def test_el_uid_es_un_uuid_de_solo_lectura(contrato, nombre_schema):
+    propiedad = contrato["components"]["schemas"][nombre_schema]["properties"]["uid"]
+
+    assert propiedad["type"] == "string"
+    assert propiedad["format"] == "uuid"
+    assert propiedad["readOnly"] is True
+
+
+@pytest.mark.parametrize("nombre_schema", ["Arbol", "ArbolResumen"])
+def test_la_marca_de_destacado_tiene_el_tipo_del_contrato(contrato, nombre_schema):
+    propiedades = contrato["components"]["schemas"][nombre_schema]["properties"]
+
+    assert propiedades["destacado"]["type"] == "boolean"
+    assert propiedades["motivo_destacado"]["type"] == ["string", "null"]
+
+
+@pytest.mark.parametrize("nombre_schema", ["Arbol", "ArbolResumen"])
+def test_la_descripcion_del_destacado_no_escribe_el_tope(contrato, nombre_schema):
+    propiedades = contrato["components"]["schemas"][nombre_schema]["properties"]
+    descripciones = [
+        propiedades[clave]["description"] for clave in ("destacado", "motivo_destacado")
+    ]
+
+    assert not any(caracter.isdigit() for texto in descripciones for caracter in texto)

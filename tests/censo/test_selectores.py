@@ -123,3 +123,23 @@ def test_arbol_por_codigo_trae_la_ubicacion_utm_tal_como_se_guardo(sectores, pun
     arbol = arbol_por_codigo("S01-A001")
     assert arbol.ubicacion.srid == SRID_UTM_CENSO
     assert (arbol.ubicacion.x, arbol.ubicacion.y) == pytest.approx(punto_dentro)
+
+
+def test_la_lista_y_la_cartilla_traen_uid_y_destacado_sin_consultas_extra(
+    sectores, django_assert_num_queries
+):
+    motivo = "Ejemplar de mayor copa del sector"
+    crear_arbol("S01-A001", destacado=True, motivo_destacado=motivo)
+    crear_arbol("S01-A002")
+    with django_assert_num_queries(2):
+        arboles = list(arboles_de_sector(1))
+    with django_assert_num_queries(1):
+        cartilla = arbol_por_codigo("S01-A001")
+
+    with django_assert_num_queries(0):
+        assert [(a.destacado, a.motivo_destacado) for a in arboles] == [
+            (True, motivo),
+            (False, None),
+        ]
+        assert arboles[0].uid != arboles[1].uid
+        assert (cartilla.uid, cartilla.destacado) == (arboles[0].uid, True)

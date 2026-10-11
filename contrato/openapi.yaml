@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Censo arbóreo UPeU Lima — API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     Contrato entre el back y el front (solo lectura, v1 del lunes 12/10/2026).
 
@@ -197,15 +197,18 @@ components:
     ArbolResumen:
       type: object
       description: Lo mínimo para listar el árbol y dibujarlo como punto. La cartilla completa sale de `/arboles/{codigo}`.
-      required: [codigo, sector, nombre_comun, nombre_cientifico, estado_general, foto_miniatura_url, demo]
+      required: [codigo, uid, sector, nombre_comun, nombre_cientifico, estado_general, foto_miniatura_url, demo, destacado, motivo_destacado]
       properties:
         codigo: { $ref: '#/components/schemas/CodigoArbol' }
+        uid: { type: string, format: uuid, readOnly: true, description: 'Identificador estable del árbol: no cambia aunque cambie su código' }
         sector: { type: integer, minimum: 1 }
         nombre_comun: { type: [string, 'null'] }
         nombre_cientifico: { type: [string, 'null'] }
         estado_general: { type: [string, 'null'], description: Valor del catálogo de la planilla (Bueno, Regular, Malo). }
         foto_miniatura_url: { type: [string, 'null'], format: uri }
         demo: { type: boolean }
+        destacado: { type: boolean, description: 'Árbol destacado del sector, elegido por la administración del censo (con un tope por sector)' }
+        motivo_destacado: { type: [string, 'null'], description: 'Por qué se destaca; `null` si no es destacado' }
     ArbolResumenFeature:
       type: object
       required: [type, id, geometry, properties]
@@ -230,6 +233,7 @@ components:
       description: La cartilla del árbol. Los 19 campos de la visión del stakeholder, más su contexto de campo y su trazabilidad. Los textos de estado son los del catálogo de la planilla de la brigada.
       required:
         - codigo
+        - uid
         - sector
         - nombre_comun
         - nombre_cientifico
@@ -257,8 +261,11 @@ components:
         - fuente
         - fecha_registro
         - demo
+        - destacado
+        - motivo_destacado
       properties:
         codigo: { $ref: '#/components/schemas/CodigoArbol' }
+        uid: { type: string, format: uuid, readOnly: true, description: 'Identificador estable del árbol: no cambia aunque cambie su código' }
         sector: { type: integer, minimum: 1 }
         nombre_comun: { type: [string, 'null'] }
         nombre_cientifico: { type: [string, 'null'], description: En cursiva en la UI. }
@@ -286,3 +293,5 @@ components:
         fuente: { type: string, minLength: 1, description: De dónde sale el registro (planilla, fila, foto). Nunca vacío. }
         fecha_registro: { type: [string, 'null'], format: date }
         demo: { type: boolean }
+        destacado: { type: boolean, description: 'Árbol destacado del sector, elegido por la administración del censo (con un tope por sector)' }
+        motivo_destacado: { type: [string, 'null'], description: 'Por qué se destaca; `null` si no es destacado' }

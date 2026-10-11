@@ -13,12 +13,15 @@
    },
    "properties": {
     "codigo": "S01-A001",
+    "uid": "849b8bf1-aef7-540b-b63f-20ab72eee0ca",
     "sector": 1,
     "nombre_comun": "Molle",
     "nombre_cientifico": "Schinus",
     "estado_general": null,
     "foto_miniatura_url": null,
-    "demo": false
+    "demo": false,
+    "destacado": false,
+    "motivo_destacado": null
    }
   },
   {
@@ -33,12 +36,15 @@
    },
    "properties": {
     "codigo": "S01-A002",
+    "uid": "48e6b386-9b6a-5770-a944-693d4c47e5da",
     "sector": 1,
     "nombre_comun": "Palma real",
     "nombre_cientifico": "Roystonea",
     "estado_general": null,
     "foto_miniatura_url": null,
-    "demo": false
+    "demo": false,
+    "destacado": false,
+    "motivo_destacado": null
    }
   },
   {
@@ -53,12 +59,15 @@
    },
    "properties": {
     "codigo": "S01-A012",
+    "uid": "7dfe9d59-bac7-5194-9d89-17245c0d5c30",
     "sector": 1,
     "nombre_comun": "Huarango",
     "nombre_cientifico": "Prosopis pallida",
     "estado_general": "Regular",
     "foto_miniatura_url": null,
-    "demo": true
+    "demo": true,
+    "destacado": true,
+    "motivo_destacado": "Dato de ejemplo: ejemplar de mayor copa del sector"
    }
   },
   {
@@ -73,12 +82,15 @@
    },
    "properties": {
     "codigo": "S01-A015",
+    "uid": "39915cca-b64d-563c-863a-69562fb416de",
     "sector": 1,
     "nombre_comun": null,
     "nombre_cientifico": null,
     "estado_general": null,
     "foto_miniatura_url": null,
-    "demo": false
+    "demo": false,
+    "destacado": false,
+    "motivo_destacado": null
    }
   }
  ]
