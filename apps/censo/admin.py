@@ -90,7 +90,14 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
         "destacado",
         "demo",
     )
-    list_filter = (FiltroEstadoRegistro, "sector", "estado_general", "destacado", "demo")
+    list_filter = (
+        FiltroEstadoRegistro,
+        "sector",
+        "estado_general",
+        "destacado",
+        "demo",
+        "co2_simulado",
+    )
     search_fields = ("codigo", "nombre_comun", "nombre_cientifico")
     readonly_fields = (
         "tipo_de_dato",
@@ -142,7 +149,7 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
         (
             "CO₂",
             {
-                "fields": ("co2_almacenado_kg", "co2_captura_anual_kg"),
+                "fields": ("co2_almacenado_kg", "co2_captura_anual_kg", "co2_simulado"),
                 "description": AYUDA_CO2_ADMIN,
             },
         ),

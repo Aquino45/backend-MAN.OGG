@@ -22,7 +22,7 @@ SECTOR_INEXISTENTE = 99
 CODIGO_INEXISTENTE = "S01-Z999"
 CODIGOS_MAL_FORMADOS = ["S01-A0010", "abc"]
 METODOS_DE_ESCRITURA = ["post", "put", "patch", "delete"]
-LLAVES_DE_ARBOL_EN_EL_CONTRATO = 33
+LLAVES_DE_ARBOL_EN_EL_CONTRATO = 34
 CAMPOS_UTM = ("utm_este_m", "utm_norte_m")
 IDENTIFICACION_COMPLETA = "Identificada"
 ORIGEN_COMPLETO = "Nativa"
@@ -231,6 +231,9 @@ def test_resumen_no_expone_campos_fuera_del_contrato(cliente_api, arboles_del_se
         "demo",
         "destacado",
         "motivo_destacado",
+        "co2_almacenado_kg",
+        "co2_captura_anual_kg",
+        "co2_simulado",
     }
 
 
@@ -281,6 +284,27 @@ def test_arbol_200_con_la_forma_del_contrato(cliente_api, arboles_del_sector_1, 
     assert cartilla["fuente"] == FUENTE_PRUEBA
     assert cartilla["foto_url"] is None
     assert cartilla["foto_miniatura_url"] is None
+
+
+def test_lista_trae_el_co2_y_su_marca_sin_sumar_consultas(
+    cliente_api, arboles_del_sector_1, django_assert_max_num_queries, cumple_schema
+):
+    with django_assert_max_num_queries(2):
+        respuesta = cliente_api.get(url_arboles_de_sector(1))
+
+    cumple_schema(respuesta.json(), "ArbolResumenColeccion")
+    for feature in respuesta.json()["features"]:
+        propiedades = feature["properties"]
+        assert propiedades["co2_almacenado_kg"] == 120.5
+        assert propiedades["co2_captura_anual_kg"] == 10.25
+        assert propiedades["co2_simulado"] is True
+
+
+def test_la_cartilla_trae_la_marca_de_co2_simulado(cliente_api, arboles_del_sector_1):
+    cartilla = cliente_api.get(url_arbol("S01-A001")).json()
+
+    assert cartilla["co2_simulado"] is True
+    assert cartilla["co2_almacenado_kg"] == 120.5
 
 
 def test_arbol_trae_uid_y_destacado_en_la_cartilla(cliente_api, arboles_del_sector_1):
