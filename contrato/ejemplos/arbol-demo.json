@@ -1,5 +1,6 @@
 {
  "codigo": "S01-A012",
+ "uid": "7dfe9d59-bac7-5194-9d89-17245c0d5c30",
  "sector": 1,
  "nombre_comun": "Huarango",
  "nombre_cientifico": "Prosopis pallida",
@@ -26,5 +27,7 @@
  "co2_captura_anual_kg": 1503.7,
  "fuente": "Dato de ejemplo (demo): medidas reales de la brigada y estado, fecha y CO₂ sintéticos; ver datos/arboles-S01-demo.json del contexto",
  "fecha_registro": "2026-10-07",
- "demo": true
+ "demo": true,
+ "destacado": true,
+ "motivo_destacado": "Dato de ejemplo: ejemplar de mayor copa del sector"
 }

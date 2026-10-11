@@ -1,5 +1,6 @@
 {
  "codigo": "S01-A001",
+ "uid": "849b8bf1-aef7-540b-b63f-20ab72eee0ca",
  "sector": 1,
  "nombre_comun": "Molle",
  "nombre_cientifico": "Schinus",
@@ -26,5 +27,7 @@
  "co2_captura_anual_kg": null,
  "fuente": "Brigada A, hoja Registro_Campo de arb2-corregido.xlsx, fila 2",
  "fecha_registro": null,
- "demo": false
+ "demo": false,
+ "destacado": false,
+ "motivo_destacado": null
 }
