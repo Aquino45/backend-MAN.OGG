@@ -1,6 +1,6 @@
 # ESTADO — backend-MAN.OGG
 
-Actualizado: 11/10/2026 (ticket BE-011, PR 2).
+Actualizado: 11/10/2026 (ticket BE-012).
 
 ## Dónde estamos
 - El repo levanta con `docker compose up -d --build`: BD PostgreSQL 16 + PostGIS 3.4 (`db`) y API Django 5.2 + DRF + GeoDjango (`api`).
@@ -13,14 +13,17 @@ Actualizado: 11/10/2026 (ticket BE-011, PR 2).
 - Cartilla y resumen entregan el `uid` del árbol (UUID estable, no cambia aunque cambie el `codigo`; el `id` numérico no sale por la API) y la marca de árbol destacado (`destacado`, `motivo_destacado`), con hasta `TOPE_DESTACADOS_POR_SECTOR` por sector validado en `Arbol.clean()`. Las rutas siguen por `codigo`.
 - La arquitectura del back está escrita en `docs/ARQUITECTURA.md` (capas, árbol y quién llama a quién). Los agentes la leen antes de empezar y la QA bloquea un archivo fuera de su capa.
 - Panel de administración temporal (BE-009, admin de Django en `ADMIN_RUTA`): papelera con restauración (un árbol nunca se borra por error; la API solo ve los vigentes), historial con versiones (`django-simple-history`), roles Administrador y Editor (grupos creados por migración), destacados con el tope y el mapa centrado en el campus. No cambia el contrato.
-- Cápsulas de ayuda (BE-011, PR 2, en revisión): modelos `AyudaCampo`, `ValorCatalogo` y `FichaEspecie` con historial, migraciones `0005` (esquema) y `0006` (permisos de los roles; solo el Administrador borra), servicio `servicios/capsulas.py`, comando `cargar_capsulas <ruta> [--actualizar]` con `datos/capsulas/capsulas-v0.json`, la cartilla entrega `capsulas` y `ficha_especie` (3 consultas extra) y el panel suma el catálogo con conteo de árboles vigentes y la vista «Valores fuera del catálogo» (`admin_capsulas.py`). Las fichas cargadas entran sin publicar. Aún no se cargó en ninguna BD real.
+- Cápsulas de ayuda (BE-011, cerrado: PR 1 #24 y PR 2 #25): modelos `AyudaCampo`, `ValorCatalogo` y `FichaEspecie` con historial, migraciones `0005` (esquema) y `0006` (permisos de los roles; solo el Administrador borra), servicio `servicios/capsulas.py`, comando `cargar_capsulas <ruta> [--actualizar]` con `datos/capsulas/capsulas-v0.json`, la cartilla entrega `capsulas` y `ficha_especie` (3 consultas extra) y el panel suma el catálogo con conteo de árboles vigentes y la vista «Valores fuera del catálogo» (`admin_capsulas.py`). Las fichas cargadas entran sin publicar (la web no muestra ninguna hasta que alguien las publique en el panel). El catálogo de valores vive en la BD y la regla de calidad lo usa.
+- Calidad del registro (BE-012, en revisión; Issue #26): cada árbol lleva `estado_registro` (`publicado` / `en_revision`, por defecto `en_revision`) y `motivos_revision` (uno por línea). Lo calcula la regla pura `servicios/calidad_registro.py` (campos vacíos, rangos, texto en un número, valor fuera del catálogo, ubicación a más de `TOLERANCIA_FUERA_DE_SECTOR_M` del sector) y se aplica en todo camino de escritura: importador, `cargar_demo`, `completar_ejemplo`, `recalcular_calidad` y el guardado del panel. La API (`selectores.publicados()`) solo muestra los publicados: un árbol en revisión no sale en las listas, da 404 en la cartilla y no cuenta en `total_arboles`. El panel suma el filtro «Estado del registro», la columna de motivos, un bloque de solo lectura, el aviso al guardar y, en el índice, «N registros en revisión». El motivo de un destacado es opcional (migración `0007`, solo de esquema). El importador ya no descarta nada por calidad: lista publicados, en revisión (con motivos), duplicados no incorporados y ejemplos sin cambios, y no pisa un árbol de ejemplo con una fila incompleta. `completar_ejemplo datos/demo/completar-ejemplo-v1.json` llena el `tipo_individuo` de los 73 simulados sin pisar nada. No cambia el contrato.
+- Orden en una BD ya cargada: `migrate` → `recalcular_calidad` → `completar_ejemplo` → `importar_planilla` (planilla del S01 con 34 árboles) → vaciar a mano el motivo de los destacados del S01 si se quiere. Pendiente de la prueba en la PC (con OK de Cristhian y `pg_dump` primero).
 - Hito M0 (disciplina) en curso.
 
 ## Último ticket
-- BE-011 — cápsulas de ayuda en la cartilla: PR 1 (contrato 0.4.0) y PR 2 (implementación, EN REVISIÓN; Issue #23). Ficha en `docs/tickets/BE-011.md`.
-- Antes: BE-009 — panel de administración temporal (mergeado, #22; Issue #21), BE-005 (mergeado, #20) y BE-008 (mergeado, #18).
+- BE-012 — calidad del registro: «publicado» o «en revisión» (EN REVISIÓN; Issue #26). Ficha en `docs/tickets/BE-012.md`.
+- Antes: BE-011 — cápsulas de ayuda (mergeado, PR 1 #24 y PR 2 #25; Issue #23), BE-009 — panel de administración temporal (mergeado, #22; Issue #21), BE-005 (mergeado, #20) y BE-008 (mergeado, #18).
 
 ## Siguiente ticket
+- BE-013 — ingesta web con alertas (reusa la regla de BE-012).
 - BE-010 (producción en Render), en espera hasta que se decida el despliegue.
 
 ## Estado actual frente al objetivo (09/10/2026)
@@ -39,12 +42,12 @@ Viene de la § 8 que tenía `docs/ARQUITECTURA.md` hasta DOC-004; cada fila se c
 ## Pendiente para M2 (seguridad del panel)
 - Bloqueo de la cuenta tras varios intentos fallidos de login, segundo factor (2FA) y login por API con JWT y refresh: el panel de la v1 solo tiene el login y el CSRF de Django, las contraseñas validadas y las cookies seguras del `.env`.
 - El tope de destacados por sector es «comprobar y luego guardar», sin bloqueo: dos Editores a la vez pueden pasarse del tope. Resolverlo (bloqueo de la fila del sector o restricción en la BD) queda para M2.
-- `apps/censo/servicios/importar_planilla.py` tiene 316 líneas: conviene partirlo en otro ticket.
+- `apps/censo/servicios/importar_planilla.py` tiene unas 390 líneas (BE-012 sumó la calidad): BE-013 lo parte en `carga_planilla.py`. `config/constantes.py` (~414 líneas) y `admin.py` (~310) pasan el tope: excepción de la v1, se parten en M2.
 
 ## Pendiente fuera de este repo
 - Protección de `main` (PR obligatorio con aprobación de Code Owner, status checks y solo squash).
 - Checks obligatorios de `main`: `lint`, `tests` y `contrato`.
-- Decisión pendiente con la brigada: los 36 árboles «muerto» del S01 (sin DAP, especie ni coordenadas) se sirven tal cual; si se sacan, va en otro ticket.
+- Los 36 árboles «muerto» del S01 (sin DAP, especie ni coordenadas) y cualquier registro incompleto ya no salen en la web: quedan en revisión, visibles en el panel con sus motivos (BE-012).
 - Riesgo de BE-003: los códigos de árbol salen de un COUNTIF que depende del orden de las filas. Congelarlos en la planilla (pegar como valores) antes de seguir llenando.
 - Requerimientos del stakeholder aprobados.
 - DOC-002 en el front: después de que FE-001 (PR #2 del front) esté mergeado.
