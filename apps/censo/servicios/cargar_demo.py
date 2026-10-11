@@ -265,6 +265,7 @@ def _guardar(arbol, registro, catalogo):
     for nombre, valor in registro.valores.items():
         setattr(arbol, nombre, valor)
     arbol.sector_id = registro.id_sector
+    arbol.co2_simulado = True  # el CO₂ de un ejemplo siempre es simulado; sin CO₂ la regla lo quita
     # PostGIS transforma el punto de WGS84 al SRID del campo al guardar; Python no lo toca.
     arbol.ubicacion = registro.ubicacion
     try:
