@@ -1,6 +1,6 @@
-# backend-MAN.OGG
+# Censo arbóreo UPeU Lima — back
 
-API de **MAN.OGG**, sistema web de censo arbóreo del campus UPeU Ñaña con un mapa dividido en sectores. Este repo es el back: Django 5 + Django REST Framework + GeoDjango sobre PostgreSQL 16 + PostGIS 3.4, en Docker. Aquí vive el contrato `contrato/openapi.yaml`, que manda sobre el front.
+API del **Censo arbóreo UPeU Lima**, sistema web del censo de árboles del campus UPeU Ñaña con un mapa dividido en sectores. Este repo es el back: Django 5 + Django REST Framework + GeoDjango sobre PostgreSQL 16 + PostGIS 3.4, en Docker. Aquí vive el contrato `contrato/openapi.yaml`, que manda sobre el front.
 
 ## Levantar
 Requiere Docker. En Git Bash, desde la raíz del repo:

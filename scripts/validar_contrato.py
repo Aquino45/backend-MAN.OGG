@@ -17,7 +17,7 @@ from referencing.jsonschema import DRAFT202012
 CARPETA_CONTRATO = Path(__file__).resolve().parent.parent / "contrato"
 RUTA_CONTRATO = CARPETA_CONTRATO / "openapi.yaml"
 CARPETA_EJEMPLOS = CARPETA_CONTRATO / "ejemplos"
-URI_CONTRATO = "urn:manogg:contrato"
+URI_CONTRATO = "urn:censo-arboreo:contrato"
 
 # Cada ejemplo con el schema de `components/schemas` contra el que se valida.
 EJEMPLOS = {

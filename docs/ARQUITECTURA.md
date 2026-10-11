@@ -1,6 +1,6 @@
-# Arquitectura del back — MAN.OGG
+# Arquitectura del back — Censo arbóreo UPeU Lima
 
-Este archivo manda sobre dónde va cada cosa en `backend-MAN.OGG`. **Antes de crear un archivo, ubícalo aquí.** Si no encaja en ninguna capa, el agente se detiene y pregunta; nunca inventa una carpeta nueva.
+Este archivo manda sobre dónde va cada cosa en el back. **Antes de crear un archivo, ubícalo aquí.** Si no encaja en ninguna capa, se detiene el trabajo y se pregunta; nunca inventa una carpeta nueva.
 
 ## 1. Idea en una línea
 API REST de solo lectura (v1), en capas: **controlador delgado → servicio/selector → modelo**. Django + DRF + GeoDjango sobre PostGIS. El contrato `contrato/openapi.yaml` define la forma de cada respuesta.
@@ -24,7 +24,7 @@ API REST de solo lectura (v1), en capas: **controlador delgado → servicio/sele
 
 ## 3. Árbol
 ```text
-backend-MAN.OGG/
+backend/
 ├── config/                    ← transversal: settings, urls raíz, constantes
 │   ├── settings.py            ← todo desde el entorno; nada de valores sueltos
 │   ├── urls.py                ← monta cada app bajo PREFIJO_API; el admin bajo ADMIN_RUTA
@@ -51,7 +51,7 @@ backend-MAN.OGG/
 ├── db/init/                   ← SQL del primer arranque de PostGIS
 ├── scripts/                   ← herramientas de CI (validar_contrato.py)
 ├── tests/                     ← espejo de apps/: tests/core/, tests/censo/
-└── docs/                      ← ARQUITECTURA (este), ESTADO, CANARIOS, tickets
+└── docs/                      ← ARQUITECTURA (este) y requerimientos
 ```
 
 ## 4. Reglas de capas (quién puede llamar a quién)
@@ -68,7 +68,7 @@ backend-MAN.OGG/
 - Un archivo de más de ~300 líneas se parte, y cada pieza nueva viene con su test.
 
 ## 5. Receta: agregar un endpoint
-1. ¿Está en el contrato? Si no, primero va un ticket de contrato, y Risc lo aprueba.
+1. ¿Está en el contrato? Si no, primero se cambia el contrato, y lo aprueba quien lleva el front.
 2. **Selector** en `selectores.py`, con su test en `tests/<dominio>/test_selectores.py`.
 3. **Serializer** en `api/serializers.py` con la forma exacta del schema del contrato. Su test valida la salida contra el schema con `jsonschema`, igual que `scripts/validar_contrato.py`.
 4. **Vista** en `api/views.py`: solo GET, valida el parámetro de ruta (por ejemplo el `codigo` con `PATRON_CODIGO_ARBOL`), llama al selector y devuelve el serializer. Un 404 sale de una excepción, que transforma `apps/core/excepciones.py`.
@@ -89,14 +89,3 @@ backend-MAN.OGG/
 - Python en `snake_case` y en español; constantes en `MAYÚSCULAS`.
 - Los campos se llaman igual que en el contrato y llevan la unidad (`dap_cm`, `altura_total_m`).
 - Selectores con nombre de lo que devuelven (`arboles_de_sector`); servicios con verbo (`importar_planilla`).
-
-## 8. Estado actual frente al objetivo (09/10/2026)
-| Pieza | Hoy | Se ajusta en |
-|---|---|---|
-| `apps/censo/models.py`, `servicios/`, `admin.py`, `management/` | ✅ como en el árbol (BE-003) | — |
-| `apps/core/views.py` y `urls.py` (salud) | en la raíz de `core/` | BE-004: pasan a `apps/core/api/` sin cambiar la ruta |
-| `tests/test_salud.py`, `test_configuracion.py`, `test_contrato.py` | en la raíz de `tests/` | BE-004: pasan a `tests/core/` |
-| `selectores.py`, `api/` de censo, `excepciones.py`, `seguridad.py` | no existen | BE-004 |
-| Admin en `admin/` fijo | escrito a mano en `config/urls.py` | BE-004: `ADMIN_RUTA` desde `.env` |
-| 2 constantes en `importar_sectores.py` | dentro del servicio | BE-004: a `config/constantes.py` |
-| `*.xlsx` en `.gitignore` | falta | DOC-002 |

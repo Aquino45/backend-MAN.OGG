@@ -1,4 +1,4 @@
-# Base del back MAN.OGG: PostgreSQL 16 + PostGIS 3.4 y API Django.
+# Base del back del Censo arbóreo UPeU Lima: PostgreSQL 16 + PostGIS 3.4 y API Django.
 # Todo valor sale de .env (ver .env.example). Sin container_name.
 services:
   db:
