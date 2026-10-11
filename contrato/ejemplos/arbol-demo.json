@@ -25,6 +25,7 @@
  "foto_miniatura_url": null,
  "co2_almacenado_kg": 75185.3,
  "co2_captura_anual_kg": 1503.7,
+ "co2_simulado": true,
  "fuente": "Dato de ejemplo (demo): medidas reales de la brigada y estado, fecha y CO₂ sintéticos; ver datos/arboles-S01-demo.json del contexto",
  "fecha_registro": "2026-10-07",
  "demo": true,
