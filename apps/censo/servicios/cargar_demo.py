@@ -20,6 +20,7 @@ from apps.censo.servicios.importar_planilla import ArbolFueraDeSector
 from config.constantes import (
     CLAVES_EXTRA_DEMO,
     LETRA_CODIGO_DEMO,
+    MENSAJE_CODIGO_EN_PAPELERA,
     PATRON_CODIGO_ARBOL,
     PATRON_CODIGO_DEMO,
     SRID_MAPA,
@@ -76,7 +77,7 @@ def cargar_demo(ruta):
     crudos = _leer_archivo(ruta)
     sectores = Sector.objects.in_bulk()
     registros = _validar(crudos, set(sectores))
-    existentes = Arbol.objects.filter(codigo__in=[r.codigo for r in registros]).in_bulk(
+    existentes = Arbol.todos.filter(codigo__in=[r.codigo for r in registros]).in_bulk(
         field_name="codigo"
     )
     guardados = {}
@@ -101,9 +102,10 @@ def cargar_demo(ruta):
 def borrar_demo():
     """Borra en definitivo los árboles simulados (demo y con la letra demo) y cuenta los borrados.
 
-    Un árbol real nunca se toca: los simulados no son registros del censo.
+    Incluye los que están en la papelera. Un árbol real nunca se toca: los simulados no son
+    registros del censo.
     """
-    _, borrados_por_modelo = Arbol.objects.filter(
+    _, borrados_por_modelo = Arbol.todos.filter(
         demo=True, codigo__regex=PATRON_CODIGO_DEMO
     ).delete()
     return borrados_por_modelo.get(Arbol._meta.label, 0)
@@ -229,11 +231,16 @@ def _armar_registro(crudo, valores):
 
 
 def _problemas_con_la_bd(registros):
-    """Códigos que ya son de un árbol real y sectores que pasarían el tope de destacados."""
+    """Códigos de árboles reales o de la papelera y sectores que pasarían el tope de destacados."""
     problemas = []
     codigos = [registro.codigo for registro in registros]
-    reales = Arbol.objects.filter(codigo__in=codigos, demo=False).values_list("codigo", flat=True)
+    reales = Arbol.todos.filter(codigo__in=codigos, demo=False).values_list("codigo", flat=True)
     problemas += [f"{codigo}: ya pertenece a un árbol real; no se pisa" for codigo in reales]
+    en_papelera = Arbol.todos.filter(codigo__in=codigos, demo=True, eliminado_en__isnull=False)
+    problemas += [
+        f"{codigo}: " + MENSAJE_CODIGO_EN_PAPELERA.format(codigo=codigo)
+        for codigo in en_papelera.values_list("codigo", flat=True)
+    ]
     nuevos_por_sector = {}
     for registro in registros:
         if registro.destacado:

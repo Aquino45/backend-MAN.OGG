@@ -21,6 +21,7 @@ from config.constantes import (
     FORMATO_NOTA_PLANILLA,
     FORMATOS_FECHA_PLANILLA,
     HOJA_PLANILLA,
+    MENSAJE_CODIGO_EN_PAPELERA,
     PATRON_CODIGO_ARBOL,
     SEPARADOR_NOTAS,
     SRID_UTM_CENSO,
@@ -206,6 +207,8 @@ def _importar_fila(numero_fila, fila, contexto):
     if codigo in contexto.codigos_vistos:
         raise ValueError(f"Fila {numero_fila}: el código «{codigo}» está repetido en la planilla.")
     contexto.codigos_vistos.add(codigo)
+    if Arbol.todos.filter(codigo=codigo, eliminado_en__isnull=False).exists():
+        raise ValueError(f"Fila {numero_fila}: " + MENSAJE_CODIGO_EN_PAPELERA.format(codigo=codigo))
 
     valores = {campo: _texto(fila[campo]) for campo in CAMPOS_TEXTO}
     for campo in valores.keys() & contexto.catalogos.keys():
@@ -246,7 +249,7 @@ def _importar_fila(numero_fila, fila, contexto):
     valores["fuente"] = ", ".join(parte for parte in partes_fuente if parte)
     valores["fila_origen"] = numero_fila
     valores["demo"] = False
-    _, creado = Arbol.objects.update_or_create(codigo=codigo, defaults=valores)
+    _, creado = Arbol.todos.update_or_create(codigo=codigo, defaults=valores)
     if creado:
         reporte.creados += 1
     else:
