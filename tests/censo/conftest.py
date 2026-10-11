@@ -8,13 +8,20 @@ Nunca se usa el archivo real.
 from pathlib import Path
 
 import pytest
+from django.contrib.auth.models import Group, User
+from django.test import Client
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from apps.censo.models import Sector
+from apps.censo.models import Arbol, Sector
 from apps.censo.servicios.importar_sectores import importar_sectores
-from config.constantes import COLUMNAS_PLANILLA, HOJA_PLANILLA
+from config.constantes import (
+    COLUMNAS_PLANILLA,
+    HOJA_PLANILLA,
+    NOMBRE_ROL_ADMINISTRADOR,
+    NOMBRE_ROL_EDITOR,
+)
 
 RUTA_GEOJSON = (
     Path(__file__).resolve().parents[2] / "datos" / "sectores" / "sectores-utm18s-v0.geojson"
@@ -110,3 +117,53 @@ def fila(**extra):
     datos = {"sector": 1, "brigada": "Brigada A"}
     datos.update(extra)
     return datos
+
+
+FUENTE_PANEL = "Prueba del panel de administración"
+CLAVE_PRUEBA = "clave-de-prueba-1234"
+
+
+@pytest.fixture
+def nuevo_arbol(sectores):
+    """Fábrica de árboles de prueba: siempre con fuente y `demo=True` (nunca datos del censo)."""
+
+    def crear(codigo="S01-A001", sector_id=1, **extra):
+        datos = {"fuente": FUENTE_PANEL, "demo": True}
+        datos.update(extra)
+        return Arbol.objects.create(codigo=codigo, sector_id=sector_id, **datos)
+
+    return crear
+
+
+def usuario_con_rol(nombre_usuario, nombre_rol):
+    """Usuario del panel (con acceso al admin) dentro del grupo que creó la migración de roles."""
+    usuario = User.objects.create_user(nombre_usuario, password=CLAVE_PRUEBA, is_staff=True)
+    usuario.groups.add(Group.objects.get(name=nombre_rol))
+    return usuario
+
+
+@pytest.fixture
+def usuario_administrador(db):
+    return usuario_con_rol("administrador-prueba", NOMBRE_ROL_ADMINISTRADOR)
+
+
+@pytest.fixture
+def usuario_editor(db):
+    return usuario_con_rol("editor-prueba", NOMBRE_ROL_EDITOR)
+
+
+def cliente_de(usuario):
+    """Cliente del admin con la sesión de ese usuario."""
+    cliente = Client()
+    cliente.force_login(usuario)
+    return cliente
+
+
+@pytest.fixture
+def cliente_administrador(usuario_administrador):
+    return cliente_de(usuario_administrador)
+
+
+@pytest.fixture
+def cliente_editor(usuario_editor):
+    return cliente_de(usuario_editor)

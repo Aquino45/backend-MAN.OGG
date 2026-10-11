@@ -1,5 +1,7 @@
 """Tests de los selectores del censo: orden, totales, transformación a WGS84 y casos vacíos."""
 
+from datetime import UTC, datetime
+
 import pytest
 from django.contrib.gis.geos import Point
 
@@ -143,3 +145,14 @@ def test_la_lista_y_la_cartilla_traen_uid_y_destacado_sin_consultas_extra(
         ]
         assert arboles[0].uid != arboles[1].uid
         assert (cartilla.uid, cartilla.destacado) == (arboles[0].uid, True)
+
+
+def test_la_papelera_no_cuenta_en_los_totales_ni_sale_en_las_lecturas(sectores):
+    crear_arbol("S01-A001")
+    crear_arbol("S01-A002", eliminado_en=datetime.now(tz=UTC), motivo_eliminacion="Duplicado")
+
+    totales = {sector.id: sector.total_arboles for sector in sectores_con_total()}
+
+    assert totales[1] == 1
+    assert [arbol.codigo for arbol in arboles_de_sector(1)] == ["S01-A001"]
+    assert arbol_por_codigo("S01-A002") is None
