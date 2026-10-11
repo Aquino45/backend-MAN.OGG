@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "django.contrib.gis",
     "rest_framework",
     "corsheaders",
+    "simple_history",
     "apps.core",
     "apps.censo",
 ]
@@ -42,6 +43,7 @@ MIDDLEWARE = [
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
+    "simple_history.middleware.HistoryRequestMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
@@ -90,10 +92,24 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "apps.core.excepciones.manejar_excepcion",
 }
 
+AUTH_PASSWORD_VALIDATORS = [
+    {"NAME": f"django.contrib.auth.password_validation.{nombre}"}
+    for nombre in (
+        "UserAttributeSimilarityValidator",
+        "MinimumLengthValidator",
+        "CommonPasswordValidator",
+        "NumericPasswordValidator",
+    )
+]
+"""Contraseñas del panel: ni parecidas al usuario, ni cortas, ni comunes, ni solo números."""
+
 LANGUAGE_CODE = "es-pe"
 TIME_ZONE = env.str("TZ")
 USE_I18N = True
 USE_TZ = True
+
+SIMPLE_HISTORY_HISTORY_CHANGE_REASON_USE_TEXT_FIELD = True
+"""La razón de cada versión del historial lleva el motivo completo (texto largo)."""
 
 STATIC_URL = "static/"
 

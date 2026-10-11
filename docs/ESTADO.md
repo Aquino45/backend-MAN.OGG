@@ -1,6 +1,6 @@
 # ESTADO — backend-MAN.OGG
 
-Actualizado: 11/10/2026 (ticket BE-005).
+Actualizado: 11/10/2026 (ticket BE-009).
 
 ## Dónde estamos
 - El repo levanta con `docker compose up -d --build`: BD PostgreSQL 16 + PostGIS 3.4 (`db`) y API Django 5.2 + DRF + GeoDjango (`api`).
@@ -12,11 +12,12 @@ Actualizado: 11/10/2026 (ticket BE-005).
 - El contrato vive en `contrato/` (`openapi.yaml` 0.3.0 y `ejemplos/`) y se valida con `scripts/validar_contrato.py`. La cartilla (`/arboles/{codigo}`) entrega también `origen`, `identificacion`, `observaciones` y las UTM guardadas (`utm_este_m`, `utm_norte_m`, con `DECIMALES_UTM`).
 - Cartilla y resumen entregan el `uid` del árbol (UUID estable, no cambia aunque cambie el `codigo`; el `id` numérico no sale por la API) y la marca de árbol destacado (`destacado`, `motivo_destacado`), con hasta `TOPE_DESTACADOS_POR_SECTOR` por sector validado en `Arbol.clean()`. Las rutas siguen por `codigo`.
 - La arquitectura del back está escrita en `docs/ARQUITECTURA.md` (capas, árbol y quién llama a quién). Los agentes la leen antes de empezar y la QA bloquea un archivo fuera de su capa.
+- Panel de administración temporal (BE-009, admin de Django en `ADMIN_RUTA`): papelera con restauración (un árbol nunca se borra por error; la API solo ve los vigentes), historial con versiones (`django-simple-history`), roles Administrador y Editor (grupos creados por migración), destacados con el tope y el mapa centrado en el campus. No cambia el contrato.
 - Hito M0 (disciplina) en curso.
 
 ## Último ticket
-- BE-005 — cargar y borrar los árboles simulados (`cargar_demo`) (EN REVISIÓN, Issue #19). Resumen en `docs/tickets/BE-005.md`.
-- Antes: BE-008 — contrato 0.3.0: `uid` del árbol y árboles destacados (mergeado, #18).
+- BE-009 — panel de administración temporal: papelera, historial, roles y destacados (EN REVISIÓN, Issue #21). Resumen en `docs/tickets/BE-009.md`.
+- Antes: BE-005 — cargar y borrar los árboles simulados (`cargar_demo`) (mergeado, #20) y BE-008 — contrato 0.3.0: `uid` del árbol y árboles destacados (mergeado, #18).
 
 ## Siguiente ticket
 - BE-010 (producción en Render), en espera hasta que se decida el despliegue.
@@ -33,6 +34,11 @@ Viene de la § 8 que tenía `docs/ARQUITECTURA.md` hasta DOC-004; cada fila se c
 | Admin | ✅ en `ADMIN_RUTA` desde `.env` (`config/urls.py`) | BE-004 |
 | 2 constantes de `importar_sectores.py` | ✅ en `config/constantes.py` | BE-004 |
 | `*.xlsx` en `.gitignore` | ✅ | DOC-002 |
+
+## Pendiente para M2 (seguridad del panel)
+- Bloqueo de la cuenta tras varios intentos fallidos de login, segundo factor (2FA) y login por API con JWT y refresh: el panel de la v1 solo tiene el login y el CSRF de Django, las contraseñas validadas y las cookies seguras del `.env`.
+- El tope de destacados por sector es «comprobar y luego guardar», sin bloqueo: dos Editores a la vez pueden pasarse del tope. Resolverlo (bloqueo de la fila del sector o restricción en la BD) queda para M2.
+- `apps/censo/servicios/importar_planilla.py` tiene 316 líneas: conviene partirlo en otro ticket.
 
 ## Pendiente fuera de este repo
 - Protección de `main` (PR obligatorio con aprobación de Code Owner, status checks y solo squash).

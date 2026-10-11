@@ -96,3 +96,82 @@ PATRON_CODIGO_DEMO = rf"^S\d{{2}}-{LETRA_CODIGO_DEMO}\d{{3}}$"
 
 CLAVES_EXTRA_DEMO = frozenset({"lat", "lon", "foto_url", "foto_miniatura_url"})
 """Claves del archivo de árboles simulados que no son campos del modelo (nombres del contrato)."""
+
+NOMBRE_ROL_ADMINISTRADOR = "Administrador"
+"""Grupo del panel con todo sobre árboles y sectores, la papelera completa y la marca demo."""
+
+NOMBRE_ROL_EDITOR = "Editor"
+"""Grupo del panel que crea y edita árboles, los manda a la papelera y los restaura."""
+
+PERMISO_CAMBIAR_DEMO = "cambiar_demo"
+"""Permiso propio de Arbol: solo quien lo tiene cambia la marca `demo`."""
+
+PERMISOS_POR_ROL = {
+    NOMBRE_ROL_ADMINISTRADOR: (
+        "add_arbol",
+        "change_arbol",
+        "delete_arbol",
+        "view_arbol",
+        PERMISO_CAMBIAR_DEMO,
+        "add_sector",
+        "change_sector",
+        "view_sector",
+        "view_arbolenpapelera",
+        "change_arbolenpapelera",
+        "delete_arbolenpapelera",
+    ),
+    NOMBRE_ROL_EDITOR: (
+        "add_arbol",
+        "change_arbol",
+        "delete_arbol",
+        "view_arbol",
+        "view_sector",
+        "view_arbolenpapelera",
+        "change_arbolenpapelera",
+    ),
+}
+"""Permisos de cada rol. `delete_arbol` solo manda a la papelera; borrar en definitiva es
+`delete_arbolenpapelera`. Los sectores nunca se borran desde el panel."""
+
+TITULO_ADMIN = "Censo arbóreo UPeU Lima — administración"
+"""Encabezado, título del sitio y título del índice del panel de administración."""
+
+MAPA_ADMIN_LON = -76.8399
+"""Longitud (grados WGS 84) del centro del campus: centro de la caja de los 5 sectores."""
+
+MAPA_ADMIN_LAT = -11.9902
+"""Latitud (grados WGS 84) del centro del campus."""
+
+MAPA_ADMIN_ZOOM = 16
+"""Zoom inicial del mapa del panel: se ve el campus entero."""
+
+CAMPOS_FUERA_DE_LA_REVERSION = (
+    "demo",
+    "eliminado_en",
+    "eliminado_por",
+    "motivo_eliminacion",
+    "uid",
+    "fila_origen",
+)
+"""Campos que volver a una versión nunca cambia: se quedan como están hoy. La marca demo se cambia
+solo en el formulario de edición, y la papelera solo con sus acciones."""
+
+CAMPO_MOTIVO_ELIMINACION = "motivo_eliminacion"
+"""Nombre del campo donde el panel recibe el motivo para mandar árboles a la papelera."""
+
+MENSAJE_MOTIVO_OBLIGATORIO = "Indica el motivo para mandar el árbol a la papelera."
+"""Aviso cuando falta el motivo al eliminar."""
+
+MENSAJE_CODIGO_EN_PAPELERA = "El código {codigo} está en la papelera; puede restaurarse."
+"""Error al repetir el código de un árbol que está en la papelera."""
+
+MENSAJE_RESTAURADO_SIN_DESTACADO = (
+    "El árbol {codigo} volvió sin la marca de destacado: su sector ya tiene {tope} destacados."
+)
+"""Aviso cuando se restaura un destacado en un sector que ya está lleno."""
+
+AVISO_ARBOL_DE_EJEMPLO = "Dato de ejemplo: este árbol es simulado y no es del censo."
+"""Aviso visible en el panel para los árboles con `demo`."""
+
+AYUDA_CO2_ADMIN = "Lo calcula el stakeholder; aquí solo se registra el resultado."
+"""Ayuda del bloque de CO₂ del formulario del árbol."""

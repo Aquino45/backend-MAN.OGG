@@ -1,11 +1,13 @@
 """Lecturas del censo: las consultas que alimentan el mapa y la cartilla de cada árbol.
 
+Solo ven los árboles vigentes (`Arbol.objects`): lo que está en la papelera no sale en la API.
+
 Aquí no se sabe de HTTP ni se escribe en la BD. Las coordenadas se guardan en UTM y se
 entregan en WGS 84 (`SRID_MAPA`), transformadas por PostGIS; el redondeo lo hace el serializer.
 """
 
 from django.contrib.gis.db.models.functions import Transform
-from django.db.models import Count
+from django.db.models import Count, Q
 
 from apps.censo.models import Arbol, Sector
 from config.constantes import SRID_MAPA
@@ -14,10 +16,12 @@ from config.constantes import SRID_MAPA
 def sectores_con_total():
     """Los sectores del campus por `id`, con su total de árboles y su polígono para el mapa.
 
-    Cuenta todo lo que hay en la BD (también los árboles sin datos) y lo hace en una sola consulta.
+    Cuenta los árboles vigentes (también los que no tienen datos) y lo hace en una sola consulta.
+    Los de la papelera no cuentan: el conteo por la relación inversa no pasa por `Arbol.objects`,
+    así que el filtro va aquí.
     """
     return Sector.objects.annotate(
-        total_arboles=Count("arboles"),
+        total_arboles=Count("arboles", filter=Q(arboles__eliminado_en__isnull=True)),
         geom_mapa=Transform("geom", SRID_MAPA),
     ).order_by("id")
 

@@ -46,6 +46,13 @@ MSYS_NO_PATHCONV=1 docker compose run --rm -v /ruta/local/arb2-corregido.xlsx:/t
 
 Los dos importadores se pueden repetir sin duplicar. La planilla de la brigada **no entra al repo**: se monta desde fuera, de solo lectura. Detalle y licencias en [datos/README.md](datos/README.md). Contorno del campus © colaboradores de OpenStreetMap, ODbL.
 
+## Panel de administración
+Mientras llega el panel propio (M2), el censo se administra en `/<ADMIN_RUTA>`. Un superusuario crea a cada persona desde «Usuarios», marca «Es staff» y la pone en un grupo:
+- **Administrador:** todo sobre árboles y sectores (con su geometría), la papelera completa y la marca de ejemplo.
+- **Editor:** crea y edita árboles, los ubica en el mapa, los manda a la papelera y los restaura; no elimina en definitiva, no edita sectores ni cambia la marca de ejemplo.
+
+Nada se borra por error: «Eliminar» pide el motivo y manda el árbol a la **Papelera**, de donde se restaura (o, solo el Administrador, se elimina en definitiva). Cada cambio queda en el historial del registro, con quién, cuándo y qué cambió, y se puede volver a una versión anterior. No hay registro público.
+
 ## Documentación
 - [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md): capas del back y quién llama a quién.
 - [docs/requerimientos.md](docs/requerimientos.md): qué pide el stakeholder.

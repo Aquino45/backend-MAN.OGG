@@ -5,6 +5,7 @@ apoyan en los sectores reales de `conftest.py`; nunca se usa el archivo de datos
 """
 
 import json
+from datetime import UTC, datetime
 from decimal import Decimal
 from io import StringIO
 
@@ -243,6 +244,37 @@ def test_borrar_demo_sin_simulados_devuelve_cero(sectores):
 
     assert borrar_demo() == 0
     assert Arbol.objects.count() == 1
+
+
+def test_borrar_demo_borra_tambien_los_simulados_de_la_papelera_pero_no_los_reales(
+    sectores, tmp_path
+):
+    cargar_demo(escribir(tmp_path, [registro(2, 1), registro(3, 1)]))
+    Arbol.objects.filter(codigo=codigo_demo(2, 1)).update(eliminado_en=datetime.now(tz=UTC))
+    real_en_papelera = crear_real("S02-A001", eliminado_en=datetime.now(tz=UTC))
+
+    borrados = borrar_demo()
+
+    assert borrados == 2
+    assert list(Arbol.todos.values_list("codigo", flat=True)) == [real_en_papelera.codigo]
+
+
+def test_cargar_demo_rechaza_un_simulado_que_esta_en_la_papelera(sectores, tmp_path):
+    ruta = escribir(tmp_path, [registro(2, 1)])
+    cargar_demo(ruta)
+    Arbol.objects.filter(codigo=codigo_demo(2, 1)).update(eliminado_en=datetime.now(tz=UTC))
+
+    with pytest.raises(ValueError, match="está en la papelera; puede restaurarse"):
+        cargar_demo(ruta)
+
+    assert Arbol.todos.count() == 1
+
+
+def test_cargar_demo_no_pisa_un_real_de_la_papelera(sectores, tmp_path):
+    crear_real(codigo_demo(2, 1), eliminado_en=datetime.now(tz=UTC))
+
+    with pytest.raises(ValueError, match="ya pertenece a un árbol real"):
+        cargar_demo(escribir(tmp_path, [registro(2, 1)]))
 
 
 # --- rechazos: el archivo entero se descarta -----------------------------------------------
