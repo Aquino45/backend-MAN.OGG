@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Censo arbóreo UPeU Lima — API
-  version: 0.3.0
+  version: 0.4.0
   description: |
     Contrato entre el back y el front (solo lectura, v1 del lunes 12/10/2026).
 
@@ -89,7 +89,7 @@ paths:
           schema: { $ref: '#/components/schemas/CodigoArbol' }
       responses:
         '200':
-          description: La cartilla con los 19 campos de la visión, más su contexto de campo y su trazabilidad.
+          description: La cartilla con los 19 campos de la visión, más su contexto de campo, su trazabilidad y sus cápsulas de ayuda.
           content:
             application/json:
               schema: { $ref: '#/components/schemas/Arbol' }
@@ -230,7 +230,7 @@ components:
           items: { $ref: '#/components/schemas/ArbolResumenFeature' }
     Arbol:
       type: object
-      description: La cartilla del árbol. Los 19 campos de la visión del stakeholder, más su contexto de campo y su trazabilidad. Los textos de estado son los del catálogo de la planilla de la brigada.
+      description: La cartilla del árbol. Los 19 campos de la visión del stakeholder, más su contexto de campo, su trazabilidad y sus cápsulas de ayuda. Los textos de estado son los del catálogo de la planilla de la brigada.
       required:
         - codigo
         - uid
@@ -263,6 +263,8 @@ components:
         - demo
         - destacado
         - motivo_destacado
+        - capsulas
+        - ficha_especie
       properties:
         codigo: { $ref: '#/components/schemas/CodigoArbol' }
         uid: { type: string, format: uuid, readOnly: true, description: 'Identificador estable del árbol: no cambia aunque cambie su código' }
@@ -295,3 +297,32 @@ components:
         demo: { type: boolean }
         destacado: { type: boolean, description: 'Árbol destacado del sector, elegido por la administración del censo (con un tope por sector)' }
         motivo_destacado: { type: [string, 'null'], description: 'Por qué se destaca; `null` si no es destacado' }
+        capsulas:
+          type: array
+          description: 'Ayudas en lenguaje simple, una por cada campo que tiene ayuda activa (son las mismas para todo árbol). Se muestran junto a cada dato de la cartilla.'
+          items: { $ref: '#/components/schemas/Capsula' }
+        ficha_especie:
+          description: 'Ficha de la especie del árbol. Solo sale si está publicada; si no hay ficha publicada, es `null`.'
+          oneOf:
+            - { $ref: '#/components/schemas/FichaEspecie' }
+            - { type: 'null' }
+    Capsula:
+      type: object
+      description: Ayuda en lenguaje simple sobre un dato de la cartilla.
+      required: [campo, titulo, que_es, en_este_arbol]
+      properties:
+        campo: { type: string, minLength: 1, description: 'Clave de la ayuda. No siempre es una propiedad de `Arbol` (por ejemplo `ubicacion` o `tipo_individuo`).' }
+        titulo: { type: string, minLength: 1, description: Nombre del dato tal como se muestra al público. }
+        que_es: { type: string, minLength: 1, description: Qué significa ese dato, en lenguaje simple. }
+        en_este_arbol: { type: [string, 'null'], description: 'Explicación del valor que tiene ESTE árbol en ese campo, si ese valor está en el catálogo; `null` si no está.' }
+    FichaEspecie:
+      type: object
+      description: Qué aporta la especie del árbol, en lenguaje simple. Siempre cita su fuente.
+      required: [nombre_cientifico, nombre_comun, beneficios, dato_curioso, cuidados, fuente]
+      properties:
+        nombre_cientifico: { type: string, minLength: 1, description: En cursiva en la UI. }
+        nombre_comun: { type: string, minLength: 1 }
+        beneficios: { type: array, items: { type: string }, description: Lo que aporta la especie, uno por elemento. }
+        dato_curioso: { type: [string, 'null'] }
+        cuidados: { type: [string, 'null'] }
+        fuente: { type: string, minLength: 1, description: De dónde sale el texto de la ficha. Nunca vacío. }

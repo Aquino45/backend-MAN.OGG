@@ -1,6 +1,7 @@
 """Tests del contrato `contrato/openapi.yaml` y de sus ejemplos (sin base de datos)."""
 
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -84,7 +85,7 @@ def test_todo_external_value_esta_en_la_lista_de_ejemplos(contrato):
 
 
 def test_la_version_del_contrato_es_la_vigente(contrato):
-    assert contrato["info"]["version"] == "0.3.0"
+    assert contrato["info"]["version"] == "0.4.0"
 
 
 @pytest.mark.parametrize("nombre_schema", ["Arbol", "ArbolResumen"])
@@ -119,3 +120,53 @@ def test_la_descripcion_del_destacado_no_escribe_el_tope(contrato, nombre_schema
     ]
 
     assert not any(caracter.isdigit() for texto in descripciones for caracter in texto)
+
+
+def test_la_cartilla_exige_las_capsulas_y_la_ficha_pero_no_el_resumen(contrato):
+    esquemas = contrato["components"]["schemas"]
+
+    assert {"capsulas", "ficha_especie"} <= set(esquemas["Arbol"]["required"])
+    assert not {"capsulas", "ficha_especie"} & set(esquemas["ArbolResumen"]["properties"])
+
+
+def test_la_capsula_exige_campo_titulo_y_que_es_y_admite_en_este_arbol_nulo(contrato):
+    capsula = contrato["components"]["schemas"]["Capsula"]
+
+    assert set(capsula["required"]) == {"campo", "titulo", "que_es", "en_este_arbol"}
+    assert capsula["properties"]["en_este_arbol"]["type"] == ["string", "null"]
+    assert contrato["components"]["schemas"]["Arbol"]["properties"]["capsulas"]["type"] == "array"
+
+
+def test_la_ficha_de_especie_exige_sus_claves_y_la_fuente_no_vacia(contrato):
+    ficha = contrato["components"]["schemas"]["FichaEspecie"]
+    propiedades = ficha["properties"]
+
+    assert set(ficha["required"]) == {
+        "nombre_cientifico",
+        "nombre_comun",
+        "beneficios",
+        "dato_curioso",
+        "cuidados",
+        "fuente",
+    }
+    assert propiedades["beneficios"]["type"] == "array"
+    assert propiedades["beneficios"]["items"]["type"] == "string"
+    assert propiedades["dato_curioso"]["type"] == ["string", "null"]
+    assert propiedades["cuidados"]["type"] == ["string", "null"]
+    assert propiedades["fuente"]["minLength"] == 1
+
+
+def test_la_ficha_de_la_cartilla_puede_ser_nula(contrato):
+    opciones = contrato["components"]["schemas"]["Arbol"]["properties"]["ficha_especie"]["oneOf"]
+
+    assert {"type": "null"} in opciones
+    assert {"$ref": "#/components/schemas/FichaEspecie"} in opciones
+
+
+@pytest.mark.parametrize("archivo", ["arbol-real.json", "arbol-demo.json"])
+def test_las_capsulas_de_un_ejemplo_no_repiten_campo(archivo):
+    ruta = validar_contrato.CARPETA_EJEMPLOS / archivo
+    campos = [capsula["campo"] for capsula in json.loads(ruta.read_text("utf-8"))["capsulas"]]
+
+    assert campos
+    assert len(campos) == len(set(campos))

@@ -29,5 +29,128 @@
  "fecha_registro": "2026-10-07",
  "demo": true,
  "destacado": true,
- "motivo_destacado": "Dato de ejemplo: ejemplar de mayor copa del sector"
+ "motivo_destacado": "Dato de ejemplo: ejemplar de mayor copa del sector",
+ "capsulas": [
+  {
+   "campo": "codigo",
+   "titulo": "Código",
+   "que_es": "Es el nombre único del árbol en el censo. La primera parte dice el sector (S02 = sector 2) y la segunda, su número dentro del sector.",
+   "en_este_arbol": null
+  },
+  {
+   "campo": "tipo_individuo",
+   "titulo": "Tipo",
+   "que_es": "Dice si es un árbol ya formado (de 1,30 m o más) o uno joven que todavía no llega a esa altura.",
+   "en_este_arbol": null
+  },
+  {
+   "campo": "identificacion",
+   "titulo": "Identificación",
+   "que_es": "Dice si ya se sabe con seguridad qué especie es o si todavía hay que confirmarlo.",
+   "en_este_arbol": "La especie ya está confirmada."
+  },
+  {
+   "campo": "origen",
+   "titulo": "Origen",
+   "que_es": "Dice si la especie es propia de esta zona (nativa) o fue traída de otro lugar (introducida).",
+   "en_este_arbol": "Es una especie propia de esta zona: está adaptada al clima y ayuda a la fauna local."
+  },
+  {
+   "campo": "condicion_conservacion",
+   "titulo": "Conservación",
+   "que_es": "Dice si la especie está en riesgo, protegida o es exclusiva de la región, según lo que se sabe de ella.",
+   "en_este_arbol": "Todavía falta confirmar su situación de conservación."
+  },
+  {
+   "campo": "altura_total_m",
+   "titulo": "Altura total",
+   "que_es": "Lo que mide el árbol desde el suelo hasta su punto más alto, en metros.",
+   "en_este_arbol": null
+  },
+  {
+   "campo": "dap_cm",
+   "titulo": "DAP",
+   "que_es": "Es el grosor del tronco: su diámetro medido a 1,30 m del suelo, más o menos a la altura del pecho de una persona. Un tronco más grueso suele indicar un árbol más viejo y con más madera.",
+   "en_este_arbol": null
+  },
+  {
+   "campo": "copa_ns_m",
+   "titulo": "Copa norte–sur",
+   "que_es": "Cuánto se extiende la copa (la parte con hojas) de norte a sur, medido en el suelo. Sirve para saber cuánta sombra da.",
+   "en_este_arbol": null
+  },
+  {
+   "campo": "copa_eo_m",
+   "titulo": "Copa este–oeste",
+   "que_es": "Cuánto se extiende la copa de este a oeste, medido en el suelo. Junto con la medida norte–sur, da una idea del tamaño de su sombra.",
+   "en_este_arbol": null
+  },
+  {
+   "campo": "estado_general",
+   "titulo": "Estado general",
+   "que_es": "La salud del árbol vista en conjunto: qué tan vigoroso se ve y si tiene daños visibles.",
+   "en_este_arbol": "El árbol tiene algunos problemas visibles; conviene vigilarlo."
+  },
+  {
+   "campo": "estado_copa",
+   "titulo": "Estado de la copa",
+   "que_es": "Cómo están las ramas y hojas: si la copa está llena o si tiene ramas secas o se está perdiendo.",
+   "en_este_arbol": "La copa tiene algunas ramas secas o partes con pocas hojas."
+  },
+  {
+   "campo": "tronco_danos",
+   "titulo": "Tronco",
+   "que_es": "Daños que se ven en el tronco, como heridas, huecos, grietas, hongos o plagas.",
+   "en_este_arbol": "Al árbol le cortaron muchas ramas de golpe; eso lo debilita."
+  },
+  {
+   "campo": "raices_base",
+   "titulo": "Raíces y base",
+   "que_es": "Cómo está la base del árbol: si las raíces están expuestas, si el suelo está muy apretado o si una vereda o construcción las daña.",
+   "en_este_arbol": "Se ven raíces fuera del suelo; pueden dañarse con el paso de personas o vehículos."
+  },
+  {
+   "campo": "interferencia_entorno",
+   "titulo": "Entorno",
+   "que_es": "Cosas cercanas que chocan con el árbol o lo limitan, como cables, edificios, veredas o postes de luz.",
+   "en_este_arbol": "Sus ramas están cerca de cables; puede necesitar poda cuidadosa."
+  },
+  {
+   "campo": "co2_almacenado_kg",
+   "titulo": "CO₂ almacenado",
+   "que_es": "Cuánto dióxido de carbono (el gas que calienta el planeta) ha sacado el árbol del aire y guarda en su madera durante su vida. No se mide en campo: se calcula después con su tamaño y su especie.",
+   "en_este_arbol": null
+  },
+  {
+   "campo": "co2_captura_anual_kg",
+   "titulo": "CO₂ capturado al año",
+   "que_es": "Cuánto dióxido de carbono saca el árbol del aire en un año. Es un cálculo estimado, no una medición directa.",
+   "en_este_arbol": null
+  },
+  {
+   "campo": "ubicacion",
+   "titulo": "Ubicación",
+   "que_es": "El punto exacto del árbol en el campus, tomado con GPS. Sirve para volver a encontrarlo y seguirlo en el tiempo.",
+   "en_este_arbol": null
+  },
+  {
+   "campo": "demo",
+   "titulo": "Dato de ejemplo",
+   "que_es": "Este árbol todavía no viene del censo de campo: sus datos son de ejemplo para mostrar cómo funcionará el sistema. Se reemplazará cuando la brigada registre ese sector.",
+   "en_este_arbol": null
+  }
+ ],
+ "ficha_especie": {
+  "nombre_cientifico": "Prosopis pallida",
+  "nombre_comun": "Huarango",
+  "beneficios": [
+   "Es un árbol nativo de la costa peruana, adaptado a vivir con muy poca agua.",
+   "Mejora el suelo: sus raíces fijan nitrógeno, un nutriente que aprovechan otras plantas.",
+   "Da sombra y refugio a aves e insectos en zonas secas.",
+   "Sus vainas son alimento: de ellas se hace la algarrobina."
+  ],
+  "dato_curioso": "Sus raíces pueden bajar muchos metros para alcanzar el agua del subsuelo.",
+  "cuidados": "Necesita poco riego; conviene no compactar el suelo alrededor de su base.",
+  "fuente": "Actualidad Ambiental, «Conoce al algarrobo: el árbol emblemático de la costa norte peruana» (https://www.actualidadambiental.pe/conoce-al-algarrobo-el-arbol-emblematico-de-la-costa-norte-peruana/); INIA, Manual técnico para la propagación y conservación de especies de algarrobo (Prosopis spp.)."
+ }
 }
