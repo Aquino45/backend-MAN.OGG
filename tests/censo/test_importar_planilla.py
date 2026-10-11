@@ -12,13 +12,19 @@ from django.core.management import call_command
 from django.core.management.base import CommandError
 from openpyxl import Workbook
 
-from apps.censo.models import Arbol
+from apps.censo.models import Arbol, ValorCatalogo
 from apps.censo.servicios.importar_planilla import importar_planilla
-from config.constantes import HOJA_PLANILLA, SRID_UTM_CENSO
+from config.constantes import (
+    ESTADO_REGISTRO_EN_REVISION,
+    ESTADO_REGISTRO_PUBLICADO,
+    HOJA_PLANILLA,
+    SRID_UTM_CENSO,
+)
 from tests.censo.conftest import (
     MEDIDAS_FILA_COMPLETA,
     NOMBRE_ARCHIVO,
     TEXTOS_FILA_COMPLETA,
+    arbol_de_ejemplo,
     crear_planilla,
     fila,
 )
@@ -340,3 +346,152 @@ def test_cada_arbol_importado_tiene_su_propio_uid(ruta_planilla, sectores):
 
     uids = list(Arbol.objects.values_list("uid", flat=True))
     assert len(uids) == len(set(uids)) == 2
+
+
+# --- calidad del registro (BE-012) ------------------------------------------------------------
+
+
+def fila_completa(punto, **extra):
+    este, norte = punto
+    datos = {**TEXTOS_FILA_COMPLETA, **MEDIDAS_FILA_COMPLETA, "utm_este_m": este}
+    return fila(**{**datos, "utm_norte_m": norte, **extra})
+
+
+def test_una_fila_completa_entra_publicada_y_una_vacia_entra_en_revision(
+    ruta_planilla, punto_dentro
+):
+    crear_planilla(ruta_planilla, [fila_completa(punto_dentro), fila(nombre_comun="Palma")])
+
+    reporte = importar_planilla(ruta_planilla)
+
+    assert Arbol.objects.get(codigo="S01-A001").estado_registro == ESTADO_REGISTRO_PUBLICADO
+    en_revision = Arbol.objects.get(codigo="S01-A002")
+    assert en_revision.estado_registro == ESTADO_REGISTRO_EN_REVISION
+    assert "Falta el dato «Ubicación»" in en_revision.motivos_revision
+    assert reporte.publicados == 1
+    assert [r.codigo for r in reporte.en_revision] == ["S01-A002"]
+    assert "Falta el dato «Ubicación»" in reporte.en_revision[0].motivos
+
+
+def test_nada_se_descarta_por_calidad_aunque_el_registro_este_muy_mal(ruta_planilla, sectores):
+    crear_planilla(ruta_planilla, [fila(), fila(dap_cm="muerto")])
+
+    reporte = importar_planilla(ruta_planilla)
+
+    assert Arbol.objects.count() == 2
+    assert (reporte.creados, len(reporte.en_revision), reporte.publicados) == (2, 2, 0)
+
+
+def test_un_dap_con_texto_explica_el_motivo_con_el_texto(ruta_planilla, punto_dentro):
+    crear_planilla(ruta_planilla, [fila_completa(punto_dentro, dap_cm="muerto")])
+
+    reporte = importar_planilla(ruta_planilla)
+
+    assert reporte.en_revision[0].motivos == ["DAP no es un número: «muerto»"]
+    assert Arbol.objects.get(codigo="S01-A001").dap_cm is None
+
+
+def test_un_codigo_repetido_en_el_archivo_no_se_incorpora_y_se_lista(ruta_planilla, punto_dentro):
+    crear_planilla(
+        ruta_planilla,
+        [fila_completa(punto_dentro, codigo="S01-A001"), fila(codigo="S01-A001", nombre_comun="X")],
+    )
+
+    reporte = importar_planilla(ruta_planilla)
+
+    assert Arbol.objects.count() == 1
+    assert Arbol.objects.get().nombre_comun == "Molle"
+    assert [d.codigo for d in reporte.duplicados] == ["S01-A001"]
+    assert "repetido" in reporte.duplicados[0].motivo
+
+
+def test_misma_ubicacion_y_misma_especie_es_un_duplicado(ruta_planilla, punto_dentro):
+    crear_planilla(ruta_planilla, [fila_completa(punto_dentro), fila_completa(punto_dentro)])
+
+    reporte = importar_planilla(ruta_planilla)
+
+    assert list(Arbol.objects.values_list("codigo", flat=True)) == ["S01-A001"]
+    assert [d.codigo for d in reporte.duplicados] == ["S01-A002"]
+    assert "S01-A001" in reporte.duplicados[0].motivo
+
+
+def test_misma_ubicacion_con_otra_especie_no_es_duplicado(ruta_planilla, punto_dentro):
+    otra = fila_completa(punto_dentro, nombre_cientifico="Otra especie")
+    crear_planilla(ruta_planilla, [fila_completa(punto_dentro), otra])
+
+    reporte = importar_planilla(ruta_planilla)
+
+    assert Arbol.objects.count() == 2
+    assert reporte.duplicados == []
+
+
+def test_una_fila_incompleta_no_pisa_a_un_arbol_de_ejemplo(ruta_planilla, sectores):
+    ejemplo = arbol_de_ejemplo("S01-A001", nombre_comun="Del ejemplo")
+    crear_planilla(ruta_planilla, [fila(codigo="S01-A001", nombre_comun="Incompleto")])
+
+    reporte = importar_planilla(ruta_planilla)
+
+    ejemplo.refresh_from_db()
+    assert (ejemplo.demo, ejemplo.nombre_comun) == (True, "Del ejemplo")
+    assert ejemplo.estado_registro == ESTADO_REGISTRO_PUBLICADO
+    assert reporte.ejemplo_sin_cambios == ["S01-A001"]
+    assert (reporte.creados, reporte.actualizados, reporte.publicados) == (0, 0, 0)
+
+
+def test_una_fila_completa_reemplaza_al_ejemplo_y_el_reporte_lo_dice(ruta_planilla, punto_dentro):
+    ejemplo = arbol_de_ejemplo("S01-A001", nombre_comun="Del ejemplo")
+    crear_planilla(ruta_planilla, [fila_completa(punto_dentro, codigo="S01-A001")])
+
+    reporte = importar_planilla(ruta_planilla)
+
+    real = Arbol.objects.get(pk=ejemplo.pk)
+    assert (real.demo, real.nombre_comun, real.brigada) == (False, "Molle", "Brigada A")
+    assert real.estado_registro == ESTADO_REGISTRO_PUBLICADO
+    assert real.uid == ejemplo.uid
+    assert reporte.ejemplo_reemplazados == ["S01-A001"]
+    assert (reporte.actualizados, reporte.publicados) == (1, 1)
+
+
+def test_el_valor_fuera_del_catalogo_manda_a_revision(ruta_planilla, punto_dentro):
+    ValorCatalogo.objects.create(campo="estado_general", valor="Regular", explicacion="x")
+    crear_planilla(ruta_planilla, [fila_completa(punto_dentro, estado_general="Bueno")])
+
+    reporte = importar_planilla(ruta_planilla)
+
+    assert reporte.en_revision[0].motivos == ["Valor fuera del catálogo en Estado general: «Bueno»"]
+
+
+def test_el_reporte_avisa_si_falta_cargar_el_catalogo(ruta_planilla, punto_dentro):
+    crear_planilla(ruta_planilla, [fila_completa(punto_dentro)])
+
+    reporte = importar_planilla(ruta_planilla)
+
+    assert reporte.catalogo_sin_cargar.startswith("Catálogo sin cargar en: ")
+
+
+def test_seco_da_el_mismo_reporte_de_calidad_y_no_escribe(ruta_planilla, punto_dentro):
+    crear_planilla(
+        ruta_planilla, [fila_completa(punto_dentro), fila(), fila_completa(punto_dentro)]
+    )
+
+    seco = importar_planilla(ruta_planilla, seco=True)
+    assert Arbol.todos.count() == 0
+    real = importar_planilla(ruta_planilla)
+
+    assert seco.publicados == real.publicados == 1
+    assert [r.codigo for r in seco.en_revision] == [r.codigo for r in real.en_revision]
+    assert [d.codigo for d in seco.duplicados] == [d.codigo for d in real.duplicados]
+
+
+def test_el_comando_imprime_publicados_en_revision_y_duplicados(ruta_planilla, punto_dentro):
+    crear_planilla(
+        ruta_planilla, [fila_completa(punto_dentro), fila(), fila_completa(punto_dentro)]
+    )
+    salida = StringIO()
+
+    call_command("importar_planilla", str(ruta_planilla), stdout=salida)
+
+    texto = salida.getvalue()
+    assert "1 publicados, 1 en revisión, 1 duplicados no incorporados, 0 de ejemplo" in texto
+    assert "En revisión S01-A002: Falta el dato" in texto
+    assert "Duplicado S01-A003" in texto

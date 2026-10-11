@@ -33,6 +33,7 @@ from config.constantes import (
     PERMISOS_CAPSULAS_POR_ROL,
     PERMISOS_POR_ROL,
 )
+from tests.censo.conftest import arbol_de_ejemplo
 
 RUTA_CAPSULAS = Path(__file__).resolve().parents[2] / "datos" / "capsulas" / "capsulas-v0.json"
 MIGRACION_DE_CAPSULAS = "apps.censo.migrations.0006_permisos_de_capsulas"
@@ -208,8 +209,8 @@ def test_la_ficha_tambien_se_busca_por_alias(nuevo_arbol):
         assert buscar_ficha(arbol, fichas)["nombre_cientifico"] == "Prosopis pallida"
 
 
-def test_una_ficha_sin_publicar_no_sale(nuevo_arbol):
-    arbol = nuevo_arbol(nombre_cientifico="Schinus molle")
+def test_una_ficha_sin_publicar_no_sale(sectores):
+    arbol = arbol_de_ejemplo(nombre_cientifico="Schinus molle")
     crear_ficha(publicada=False)
 
     assert buscar_ficha(arbol, FichaEspecie.objects.filter(publicada=True)) is None
@@ -228,9 +229,9 @@ def test_sin_nombre_cientifico_o_sin_ficha_no_hay_ficha(nuevo_arbol):
 
 
 def test_la_cartilla_trae_capsulas_y_ficha_con_tres_consultas_extra(
-    nuevo_arbol, django_assert_max_num_queries
+    sectores, django_assert_max_num_queries
 ):
-    nuevo_arbol(estado_general="Bueno", nombre_cientifico="Schinus molle")
+    arbol_de_ejemplo(estado_general="Bueno", nombre_cientifico="Schinus molle")
     crear_ayuda()
     crear_valor()
     crear_ficha()
@@ -242,8 +243,8 @@ def test_la_cartilla_trae_capsulas_y_ficha_con_tres_consultas_extra(
     assert cartilla.ficha_especie["nombre_comun"] == "Molle"
 
 
-def test_la_cartilla_sin_ayudas_ni_fichas_trae_lista_vacia_y_null(nuevo_arbol):
-    nuevo_arbol()
+def test_la_cartilla_sin_ayudas_ni_fichas_trae_lista_vacia_y_null(sectores):
+    arbol_de_ejemplo()
 
     cartilla = arbol_por_codigo("S01-A001")
 
@@ -251,8 +252,8 @@ def test_la_cartilla_sin_ayudas_ni_fichas_trae_lista_vacia_y_null(nuevo_arbol):
     assert cartilla.ficha_especie is None
 
 
-def test_la_cartilla_no_muestra_ayudas_inactivas_ni_valores_inactivos(nuevo_arbol):
-    nuevo_arbol(estado_general="Bueno")
+def test_la_cartilla_no_muestra_ayudas_inactivas_ni_valores_inactivos(sectores):
+    arbol_de_ejemplo(estado_general="Bueno")
     crear_ayuda(activo=False)
     crear_ayuda("estado_copa", titulo="Copa")
     crear_valor(activo=False)

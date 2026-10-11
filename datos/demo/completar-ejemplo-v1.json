@@ -1,0 +1,805 @@
+[
+  {
+    "codigo": "S02-D001",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D002",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D003",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D004",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D005",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D006",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D007",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D008",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D009",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D010",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D011",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D012",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D013",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D014",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D015",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D016",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D017",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D018",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S02-D019",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D001",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D002",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D003",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D004",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D005",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D006",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D007",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D008",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D009",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D010",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D011",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D012",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D013",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D014",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D015",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D016",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D017",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D018",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D019",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S03-D020",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D001",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D002",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D003",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D004",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D005",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D006",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D007",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D008",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D009",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D010",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D011",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D012",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D013",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D014",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D015",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D016",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D017",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D018",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S04-D019",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D001",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D002",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D003",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D004",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D005",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D006",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D007",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D008",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D009",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D010",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D011",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D012",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D013",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D014",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  },
+  {
+    "codigo": "S05-D015",
+    "marcar_ejemplo": true,
+    "campos": {
+      "tipo_individuo": "Árbol ≥1.30 m (medir DAP)"
+    },
+    "campos_simulados": [
+      "tipo_individuo"
+    ],
+    "nota_fuente": "Tipo de individuo simulado (todos los árboles simulados tienen DAP)."
+  }
+]

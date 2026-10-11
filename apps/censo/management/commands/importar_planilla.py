@@ -28,6 +28,26 @@ def lineas_del_reporte(reporte):
         f"  {a.codigo} (sector {a.sector}): a {a.distancia_m:.2f} m de su polígono"
         for a in reporte.fuera_de_sector
     ]
+    lineas += _lineas_de_calidad(reporte)
+    return lineas
+
+
+def _lineas_de_calidad(reporte):
+    """Cuántos salen en la web, cuáles quedan en revisión (con motivos) y qué no se incorporó."""
+    lineas = [
+        f"{reporte.publicados} publicados, {len(reporte.en_revision)} en revisión, "
+        f"{len(reporte.duplicados)} duplicados no incorporados, "
+        f"{len(reporte.ejemplo_sin_cambios)} de ejemplo sin cambios"
+    ]
+    for registro in reporte.en_revision:
+        lineas.append(f"  En revisión {registro.codigo}: " + "; ".join(registro.motivos))
+    lineas += [f"  Duplicado {d.codigo}: {d.motivo}" for d in reporte.duplicados]
+    lineas += [f"  De ejemplo sin cambios: {codigo}" for codigo in reporte.ejemplo_sin_cambios]
+    if reporte.ejemplo_reemplazados:
+        lineas.append("Reemplazados por datos de la planilla (eran de ejemplo):")
+        lineas += [f"  {codigo}" for codigo in reporte.ejemplo_reemplazados]
+    if reporte.catalogo_sin_cargar:
+        lineas.append(reporte.catalogo_sin_cargar)
     return lineas
 
 

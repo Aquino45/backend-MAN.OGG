@@ -20,6 +20,8 @@ from apps.censo.servicios.cargar_demo import ReporteDemo, borrar_demo, cargar_de
 from apps.censo.servicios.importar_planilla import ArbolFueraDeSector
 from config.constantes import (
     DECIMALES_UTM,
+    ESTADO_REGISTRO_EN_REVISION,
+    ESTADO_REGISTRO_PUBLICADO,
     LETRA_CODIGO_DEMO,
     SRID_MAPA,
     SRID_UTM_CENSO,
@@ -284,6 +286,28 @@ def _con(campo, valor):
     return lambda: [registro(2, 2), registro(2, 1, **{campo: valor})]
 
 
+def test_un_destacado_sin_motivo_se_carga_con_el_motivo_en_null(sectores, tmp_path):
+    ruta = escribir(tmp_path, [destacado(2, 1, motivo_destacado=None)])
+
+    cargar_demo(ruta)
+
+    arbol = Arbol.objects.get(codigo="S02-D001")
+    assert (arbol.destacado, arbol.motivo_destacado) == (True, None)
+
+
+def test_un_simulado_completo_queda_publicado_y_uno_incompleto_en_revision(sectores, tmp_path):
+    completo = registro(2, 1, tipo_individuo="Árbol ≥1.30 m (medir DAP)")
+    incompleto = registro(2, 2)  # sin tipo_individuo
+    ruta = escribir(tmp_path, [completo, incompleto])
+
+    cargar_demo(ruta)
+
+    assert Arbol.objects.get(codigo="S02-D001").estado_registro == ESTADO_REGISTRO_PUBLICADO
+    en_revision = Arbol.objects.get(codigo="S02-D002")
+    assert en_revision.estado_registro == ESTADO_REGISTRO_EN_REVISION
+    assert "Tipo de individuo" in en_revision.motivos_revision
+
+
 CASOS_DE_RECHAZO = {
     "demo_falso": (_con("demo", False), "demo"),
     "demo_texto": (_con("demo", "true"), "demo"),
@@ -296,8 +320,6 @@ CASOS_DE_RECHAZO = {
     "foto_url": (_con("foto_url", "https://ejemplo.pe/foto.jpg"), "foto"),
     "foto_miniatura_url": (_con("foto_miniatura_url", "https://ejemplo.pe/mini.jpg"), "foto"),
     "sector_inexistente": (_con("sector", 99), "sector"),
-    "destacado_sin_motivo": (lambda: [destacado(2, 1, motivo_destacado=None)], "motivo"),
-    "destacado_motivo_vacio": (lambda: [destacado(2, 1, motivo_destacado="  ")], "motivo"),
     "tope_superado": (
         lambda: [
             destacado(2, orden)

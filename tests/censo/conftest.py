@@ -5,6 +5,8 @@ fórmula COUNTIF sin valor guardado y listas de catálogo en las validaciones de
 Nunca se usa el archivo real.
 """
 
+from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
@@ -15,6 +17,7 @@ from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
 from apps.censo.models import Arbol, Sector
+from apps.censo.servicios.calidad_registro import aplicar
 from apps.censo.servicios.importar_sectores import importar_sectores
 from config.constantes import (
     COLUMNAS_PLANILLA,
@@ -133,6 +136,61 @@ def nuevo_arbol(sectores):
         return Arbol.objects.create(codigo=codigo, sector_id=sector_id, **datos)
 
     return crear
+
+
+VALORES_COMPLETOS = {
+    "fecha_registro": date(2026, 10, 1),
+    "brigada": "Brigada A",
+    "tipo_individuo": "Árbol ≥1.30 m (medir DAP)",
+    "nombre_comun": "Molle",
+    "nombre_cientifico": "Schinus molle",
+    "identificacion": "Identificada",
+    "origen": "Nativa",
+    "condicion_conservacion": "No evaluada",
+    "altura_total_m": Decimal("8.5"),
+    "dap_cm": Decimal("35.25"),
+    "copa_ns_m": Decimal("4.5"),
+    "copa_eo_m": Decimal("5"),
+    "co2_almacenado_kg": Decimal("120.5"),
+    "co2_captura_anual_kg": Decimal("10.25"),
+    "estado_general": "Bueno",
+    "estado_copa": "Buena",
+    "tronco_danos": "Sin daño aparente",
+    "raices_base": "Sin daño aparente",
+    "interferencia_entorno": "Ninguna",
+}
+"""Un árbol completo y consistente (valores del catálogo de las cápsulas), sin ubicación."""
+
+
+def valores_de_arbol_completo():
+    """Copia de los valores de un árbol completo, lista para cambiar."""
+    return dict(VALORES_COMPLETOS)
+
+
+def arbol_evaluado(codigo="S01-A001", sector_id=1, demo=False, **extra):
+    """Árbol de prueba completo y pasado por la regla de calidad: sale en la API.
+
+    Por defecto es de campo (`demo=False`, con brigada); para uno de ejemplo, `demo=True` y
+    `brigada=None`. Su punto está dentro de su sector. Con `extra` se cambia cualquier campo
+    (y la regla vuelve a decidir el estado). Siempre lleva `fuente`.
+    """
+    datos = valores_de_arbol_completo()
+    datos.update(
+        ubicacion=Sector.objects.get(id=sector_id).geom.point_on_surface,
+        fuente=FUENTE_PANEL,
+        demo=demo,
+    )
+    datos.update(extra)
+    arbol = Arbol(codigo=codigo, sector_id=sector_id, **datos)
+    aplicar(arbol)
+    arbol.save()
+    return arbol
+
+
+def arbol_de_ejemplo(codigo="S01-A001", sector_id=1, **extra):
+    """Como `arbol_evaluado`, pero de ejemplo (`demo=True`, sin brigada)."""
+    extra.setdefault("brigada", None)
+    return arbol_evaluado(codigo, sector_id, demo=True, **extra)
 
 
 def usuario_con_rol(nombre_usuario, nombre_rol):

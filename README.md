@@ -44,7 +44,7 @@ docker compose run --rm api python manage.py importar_sectores datos/sectores/se
 MSYS_NO_PATHCONV=1 docker compose run --rm -v /ruta/local/arb2-corregido.xlsx:/tmp/arb2-corregido.xlsx:ro   api python manage.py importar_planilla /tmp/arb2-corregido.xlsx --seco   # quita --seco para escribir
 ```
 
-Los dos importadores se pueden repetir sin duplicar. La planilla de la brigada **no entra al repo**: se monta desde fuera, de solo lectura. Detalle y licencias en [datos/README.md](datos/README.md). Contorno del campus © colaboradores de OpenStreetMap, ODbL.
+Cada árbol entra «publicado» o «en revisión» según la regla de calidad (ver abajo); el importador lista publicados, en revisión con sus motivos, duplicados no incorporados y ejemplos sin cambios. Los dos importadores se pueden repetir sin duplicar. La planilla de la brigada **no entra al repo**: se monta desde fuera, de solo lectura. Detalle y licencias en [datos/README.md](datos/README.md). Contorno del campus © colaboradores de OpenStreetMap, ODbL.
 
 ## Panel de administración
 Mientras llega el panel propio (M2), el censo se administra en `/<ADMIN_RUTA>`. Un superusuario crea a cada persona desde «Usuarios», marca «Es staff» y la pone en un grupo:
@@ -52,6 +52,10 @@ Mientras llega el panel propio (M2), el censo se administra en `/<ADMIN_RUTA>`. 
 - **Editor:** crea y edita árboles, los ubica en el mapa, los manda a la papelera y los restaura; no elimina en definitiva, no edita sectores ni cambia la marca de ejemplo.
 
 Nada se borra por error: «Eliminar» pide el motivo y manda el árbol a la **Papelera**, de donde se restaura (o, solo el Administrador, se elimina en definitiva). Cada cambio queda en el historial del registro, con quién, cuándo y qué cambió, y se puede volver a una versión anterior. No hay registro público.
+
+**Calidad del registro:** un árbol vacío o inconsistente queda «en revisión»: no sale en la web, pero sí en el panel con sus motivos. El filtro «Estado del registro» de la lista de árboles los separa, la columna «Motivos de revisión» y el bloque de solo lectura del formulario dicen qué falta, y el índice avisa «N registros en revisión» con un enlace al filtro. El estado no se edita: lo recalcula la regla al guardar. Comandos (en Git Bash, con los contenedores arriba):
+- `docker compose run --rm api python manage.py recalcular_calidad`: aplica la regla a todos los árboles (se corre tras `migrate` y cuando cambia el catálogo; se puede repetir).
+- `docker compose run --rm api python manage.py completar_ejemplo datos/demo/completar-ejemplo-v1.json`: llena el `tipo_individuo` de los 73 árboles simulados sin pisar nada (se puede repetir).
 
 **Cápsulas de ayuda (el «?» de la cartilla):** Administrador y Editor agregan, editan y ven, desde el panel, tres tablas; solo el Administrador borra.
 - **Ayudas de los datos:** qué es cada dato, en lenguaje simple; se pueden desactivar.

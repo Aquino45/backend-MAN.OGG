@@ -12,7 +12,7 @@ from apps.censo.models import Arbol, ArbolEnPapelera
 from apps.censo.servicios.importar_planilla import importar_planilla
 from apps.censo.servicios.papelera import eliminar_definitivamente, mover_a_papelera, restaurar
 from config.constantes import TOPE_DESTACADOS_POR_SECTOR
-from tests.censo.conftest import crear_planilla, fila
+from tests.censo.conftest import arbol_de_ejemplo, crear_planilla, fila
 
 MOTIVO = "Se registró dos veces por error"
 MOTIVO_DESTACADO = "Ejemplar de mayor copa del sector"
@@ -59,10 +59,10 @@ def test_el_motivo_es_obligatorio(nuevo_arbol, usuario, motivo):
 
 
 def test_un_arbol_en_la_papelera_no_sale_en_la_lista_ni_en_la_cartilla(
-    nuevo_arbol, cliente_api, usuario
+    sectores, cliente_api, usuario
 ):
-    nuevo_arbol("S01-A001")
-    nuevo_arbol("S01-A002")
+    arbol_de_ejemplo("S01-A001")
+    arbol_de_ejemplo("S01-A002")
     mover_a_papelera(Arbol.objects.get(codigo="S01-A002"), usuario, MOTIVO)
 
     lista = cliente_api.get(reverse("arboles-de-sector", kwargs={"sector_id": 1})).json()
@@ -154,7 +154,7 @@ def test_importar_planilla_rechaza_la_fila_de_un_arbol_en_la_papelera(
 
 
 def test_importar_planilla_sigue_actualizando_a_los_vigentes(nuevo_arbol, ruta_planilla):
-    nuevo_arbol("S01-A001", nombre_comun="Molle")
+    nuevo_arbol("S01-A001", nombre_comun="Molle", demo=False)
     crear_planilla(ruta_planilla, [fila(codigo="S01-A001", nombre_comun="Palma")])
 
     reporte = importar_planilla(ruta_planilla)

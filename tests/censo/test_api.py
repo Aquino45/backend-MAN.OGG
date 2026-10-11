@@ -10,9 +10,11 @@ from django.core.cache import cache
 from django.urls import reverse
 
 from apps.censo.models import Arbol, FichaEspecie
+from apps.censo.servicios.calidad_registro import aplicar
 from apps.censo.servicios.capsulas import cargar_capsulas
 from apps.core.seguridad import LimiteAnonimo
 from config.constantes import DECIMALES_COORDENADAS, DECIMALES_UTM, SRID_UTM_CENSO
+from tests.censo.conftest import arbol_evaluado
 
 RUTA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "validar_contrato.py"
 FUENTE_PRUEBA = "Prueba de la API del censo"
@@ -66,22 +68,24 @@ def cumple_schema(contrato):
 
 
 def crear_arbol(codigo, sector_id=1, ubicacion_utm=None, **extra):
-    """Árbol de prueba: siempre con fuente y `demo=True`."""
-    ubicacion = Point(*ubicacion_utm, srid=SRID_UTM_CENSO) if ubicacion_utm else None
-    return Arbol.objects.create(
-        codigo=codigo,
-        sector_id=sector_id,
-        ubicacion=ubicacion,
-        fuente=FUENTE_PRUEBA,
-        demo=True,
-        **extra,
-    )
+    """Árbol de prueba completo y publicado: `demo=True`, sin brigada y con fuente."""
+    if ubicacion_utm:
+        extra["ubicacion"] = Point(*ubicacion_utm, srid=SRID_UTM_CENSO)
+    extra.setdefault("brigada", None)
+    extra.setdefault("fuente", FUENTE_PRUEBA)
+    return arbol_evaluado(codigo, sector_id, demo=True, **extra)
 
 
 @pytest.fixture
 def arboles_del_sector_1(punto_dentro):
-    """Tres árboles del S1 fuera de orden: uno completo, uno sin coordenadas y uno «muerto»."""
-    crear_arbol("S01-A003", dap_cm=None)  # «muerto»: sin DAP, especie ni coordenadas
+    """Tres árboles publicados del S1 fuera de orden y uno en revisión (que no debe salir)."""
+    crear_arbol(
+        "S01-A003",
+        observaciones=None,
+        fecha_registro=None,
+        condicion_conservacion=None,
+        foto_archivo=None,
+    )  # solo con los opcionales vacíos: se publica
     crear_arbol(
         "S01-A001",
         ubicacion_utm=punto_dentro,
@@ -96,7 +100,8 @@ def arboles_del_sector_1(punto_dentro):
         brigada="Brigada A",
         foto_archivo="IMG_0001.jpg",
     )
-    crear_arbol("S01-A002", nombre_comun="Palma real")
+    crear_arbol("S01-A002", nombre_comun="Palma real", nombre_cientifico="Roystonea regia")
+    crear_arbol("S01-A009", dap_cm=None, nombre_comun=None)  # «muerto»: queda en revisión
 
 
 def url_sectores():
@@ -167,15 +172,34 @@ def test_arboles_de_sector_ordenados_por_codigo(cliente_api, arboles_del_sector_
     assert [feature["id"] for feature in features] == ["S01-A001", "S01-A002", "S01-A003"]
 
 
-def test_arbol_sin_coordenadas_sale_en_la_lista_con_geometry_null(
-    cliente_api, arboles_del_sector_1
-):
+def test_arbol_en_revision_no_sale_en_la_lista(cliente_api, arboles_del_sector_1):
     features = cliente_api.get(url_arboles_de_sector(1)).json()["features"]
-    geometrias = {feature["id"]: feature["geometry"] for feature in features}
 
-    assert geometrias["S01-A001"]["type"] == "Point"
-    assert geometrias["S01-A002"] is None
-    assert geometrias["S01-A003"] is None
+    assert "S01-A009" not in [feature["id"] for feature in features]
+    assert all(feature["geometry"]["type"] == "Point" for feature in features)
+
+
+def test_arbol_en_revision_da_404_en_la_cartilla(cliente_api, arboles_del_sector_1):
+    respuesta = cliente_api.get(url_arbol("S01-A009"))
+
+    assert respuesta.status_code == 404
+    assert respuesta.json() == {"detail": "No encontrado."}
+
+
+def test_arbol_en_revision_no_cuenta_en_el_total_del_sector(cliente_api, arboles_del_sector_1):
+    features = cliente_api.get(url_sectores()).json()["features"]
+    totales = {feature["id"]: feature["properties"]["total_arboles"] for feature in features}
+
+    assert totales[1] == 3
+
+
+def test_al_corregir_un_arbol_en_revision_empieza_a_salir(cliente_api, arboles_del_sector_1):
+    arbol = Arbol.objects.get(codigo="S01-A009")
+    arbol.nombre_comun, arbol.dap_cm = "Molle", 20
+    aplicar(arbol)
+    arbol.save()
+
+    assert cliente_api.get(url_arbol("S01-A009")).status_code == 200
 
 
 def test_arboles_de_sector_sin_arboles_da_features_vacio(cliente_api, sectores, cumple_schema):
@@ -235,7 +259,7 @@ def test_la_cartilla_cumple_el_contrato_con_capsulas_y_ficha_reales(
     por_campo = {c["campo"]: c["en_este_arbol"] for c in cartilla["capsulas"]}
     assert por_campo["estado_general"] == explicacion_del_catalogo("estado_general", "Bueno")
     assert por_campo["origen"] == explicacion_del_catalogo("origen", "Nativa")
-    assert por_campo["estado_copa"] is None  # este árbol no tiene estado de copa
+    assert por_campo["estado_copa"] == explicacion_del_catalogo("estado_copa", "Buena")
     assert cartilla["ficha_especie"]["nombre_cientifico"] == "Schinus molle"
     assert cartilla["ficha_especie"]["fuente"]
     assert sin_ficha["ficha_especie"] is None
@@ -320,25 +344,25 @@ def test_arbol_entrega_contexto_de_campo_y_utm_guardadas(
     assert cartilla["utm_norte_m"] == pytest.approx(norte_guardado, abs=tolerancia_metros)
 
 
-def test_arbol_sin_ubicacion_ni_contexto_trae_las_claves_nuevas_en_null(
+def test_arbol_con_los_opcionales_vacios_trae_las_claves_en_null(
     cliente_api, arboles_del_sector_1, cumple_schema
 ):
     cartilla = cliente_api.get(url_arbol("S01-A003")).json()
 
     cumple_schema(cartilla, "Arbol")
-    for campo in ("identificacion", "origen", "observaciones", *CAMPOS_UTM):
+    for campo in ("observaciones", "fecha_registro", "condicion_conservacion", "foto_url"):
         assert campo in cartilla
         assert cartilla[campo] is None
+    for campo in CAMPOS_UTM:
+        assert cartilla[campo] is not None
 
 
-def test_arbol_sin_dato_sale_en_null_y_no_se_inventa(cliente_api, arboles_del_sector_1):
+def test_arbol_sin_dato_opcional_sale_en_null_y_no_se_inventa(cliente_api, arboles_del_sector_1):
     cartilla = cliente_api.get(url_arbol("S01-A003")).json()
 
-    assert cartilla["lat"] is None
-    assert cartilla["lon"] is None
-    assert cartilla["dap_cm"] is None
-    assert cartilla["nombre_comun"] is None
     assert cartilla["fecha_registro"] is None
+    assert cartilla["observaciones"] is None
+    assert cartilla["condicion_conservacion"] is None
 
 
 def test_arbol_inexistente_da_404_con_detail(cliente_api, sectores):
