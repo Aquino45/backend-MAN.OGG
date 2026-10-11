@@ -13,6 +13,7 @@ FUENTE_PRUEBA = "Prueba de selectores"
 LONGITUD_CAMPUS = -76.8
 LATITUD_CAMPUS = -12.0
 TOLERANCIA_GRADOS = 0.2
+CONSULTAS_DE_LA_CARTILLA = 1 + 3  # el árbol, más ayudas, valores y fichas
 
 
 def crear_arbol(codigo, sector_id=1, ubicacion=None, **extra):
@@ -135,7 +136,7 @@ def test_la_lista_y_la_cartilla_traen_uid_y_destacado_sin_consultas_extra(
     crear_arbol("S01-A002")
     with django_assert_num_queries(2):
         arboles = list(arboles_de_sector(1))
-    with django_assert_num_queries(1):
+    with django_assert_num_queries(CONSULTAS_DE_LA_CARTILLA):
         cartilla = arbol_por_codigo("S01-A001")
 
     with django_assert_num_queries(0):

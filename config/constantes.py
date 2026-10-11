@@ -175,3 +175,88 @@ AVISO_ARBOL_DE_EJEMPLO = "Dato de ejemplo: este árbol es simulado y no es del c
 
 AYUDA_CO2_ADMIN = "Lo calcula el stakeholder; aquí solo se registra el resultado."
 """Ayuda del bloque de CO₂ del formulario del árbol."""
+
+CAMPOS_CON_AYUDA = (
+    "codigo",
+    "tipo_individuo",
+    "identificacion",
+    "origen",
+    "condicion_conservacion",
+    "altura_total_m",
+    "dap_cm",
+    "copa_ns_m",
+    "copa_eo_m",
+    "estado_general",
+    "estado_copa",
+    "tronco_danos",
+    "raices_base",
+    "interferencia_entorno",
+    "co2_almacenado_kg",
+    "co2_captura_anual_kg",
+    "ubicacion",
+    "demo",
+)
+"""Datos de la cartilla que pueden llevar una ayuda «?». No todos son campos de `Arbol` tal cual
+(`ubicacion` agrupa las coordenadas)."""
+
+CAMPOS_CATALOGADOS = (
+    "tipo_individuo",
+    "identificacion",
+    "origen",
+    "condicion_conservacion",
+    "estado_general",
+    "estado_copa",
+    "tronco_danos",
+    "raices_base",
+    "interferencia_entorno",
+)
+"""Campos de `Arbol` con listas desplegables en la planilla: sus valores tienen catálogo."""
+
+_PERMISOS_DE_CAPSULAS = ("ayudacampo", "valorcatalogo", "fichaespecie")
+
+PERMISOS_CAPSULAS_POR_ROL = {
+    NOMBRE_ROL_ADMINISTRADOR: tuple(
+        f"{accion}_{modelo}"
+        for modelo in _PERMISOS_DE_CAPSULAS
+        for accion in ("add", "change", "delete", "view")
+    ),
+    NOMBRE_ROL_EDITOR: tuple(
+        f"{accion}_{modelo}"
+        for modelo in _PERMISOS_DE_CAPSULAS
+        for accion in ("add", "change", "view")
+    ),
+}
+"""Permisos de las ayudas, el catálogo y las fichas de especie. Ambos roles agregan, editan y ven
+(publicar una ficha es editarla); solo el Administrador borra."""
+
+SEPARADOR_DE_LINEAS = "\n"
+"""Los alias y los beneficios de una ficha se guardan uno por línea."""
+
+CLAVES_AYUDA_CAMPO = frozenset({"campo", "titulo", "que_es"})
+"""Claves de una ayuda en el archivo de cápsulas."""
+
+CLAVES_VALOR_CATALOGO = frozenset({"campo", "valor", "orden", "explicacion"})
+"""Claves de un valor del catálogo en el archivo de cápsulas."""
+
+CLAVES_FICHA_ESPECIE = frozenset(
+    {
+        "nombre_cientifico",
+        "nombre_comun",
+        "alias",
+        "beneficios",
+        "dato_curioso",
+        "cuidados",
+        "fuente",
+        "publicada",
+    }
+)
+"""Claves de una ficha de especie en el archivo de cápsulas."""
+
+TITULO_VALORES_FUERA_DEL_CATALOGO = "Valores fuera del catálogo"
+"""Título de la vista del panel con los valores de los árboles que no están en el catálogo."""
+
+AYUDA_VALORES_FUERA_DEL_CATALOGO = (
+    "Valores que usan los árboles vigentes y todavía no están en el catálogo. La comparación es "
+    "exacta: «bueno» y «Bueno» aparecen por separado. Esta vista solo avisa; no cambia árboles."
+)
+"""Texto de apoyo de la vista de valores fuera del catálogo."""

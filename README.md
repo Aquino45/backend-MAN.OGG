@@ -53,6 +53,13 @@ Mientras llega el panel propio (M2), el censo se administra en `/<ADMIN_RUTA>`. 
 
 Nada se borra por error: «Eliminar» pide el motivo y manda el árbol a la **Papelera**, de donde se restaura (o, solo el Administrador, se elimina en definitiva). Cada cambio queda en el historial del registro, con quién, cuándo y qué cambió, y se puede volver a una versión anterior. No hay registro público.
 
+**Cápsulas de ayuda (el «?» de la cartilla):** Administrador y Editor agregan, editan y ven, desde el panel, tres tablas; solo el Administrador borra.
+- **Ayudas de los datos:** qué es cada dato, en lenguaje simple; se pueden desactivar.
+- **Catálogo de valores:** qué significa cada estado de las listas de la planilla. Cada fila muestra cuántos árboles vigentes tienen exactamente ese valor y se filtra por campo.
+- **Fichas de especie:** qué aporta la especie; la fuente es obligatoria y solo salen en la API las **publicadas** (publicar es editar la ficha).
+- **Valores fuera del catálogo** (botón en el catálogo): los valores que usan los árboles y el catálogo no tiene, con su campo, cuántos árboles los usan y un enlace para agregarlos. Compara exacto (se ve «bueno» frente a «Bueno») y solo avisa: nunca cambia ni rechaza árboles.
+- **Carga inicial:** `docker compose run --rm api python manage.py cargar_capsulas datos/capsulas/capsulas-v0.json [--actualizar]`. Sin `--actualizar` solo crea lo que falta y no pisa lo editado en el panel; con él sobrescribe los textos (conserva si una ficha está publicada y si una ayuda está activa). Valida el archivo entero antes de guardar.
+
 ## Documentación
 - [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md): capas del back y quién llama a quién.
 - [docs/requerimientos.md](docs/requerimientos.md): qué pide el stakeholder.

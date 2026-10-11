@@ -1,6 +1,6 @@
 # ESTADO — backend-MAN.OGG
 
-Actualizado: 11/10/2026 (ticket BE-011, PR 1).
+Actualizado: 11/10/2026 (ticket BE-011, PR 2).
 
 ## Dónde estamos
 - El repo levanta con `docker compose up -d --build`: BD PostgreSQL 16 + PostGIS 3.4 (`db`) y API Django 5.2 + DRF + GeoDjango (`api`).
@@ -13,10 +13,11 @@ Actualizado: 11/10/2026 (ticket BE-011, PR 1).
 - Cartilla y resumen entregan el `uid` del árbol (UUID estable, no cambia aunque cambie el `codigo`; el `id` numérico no sale por la API) y la marca de árbol destacado (`destacado`, `motivo_destacado`), con hasta `TOPE_DESTACADOS_POR_SECTOR` por sector validado en `Arbol.clean()`. Las rutas siguen por `codigo`.
 - La arquitectura del back está escrita en `docs/ARQUITECTURA.md` (capas, árbol y quién llama a quién). Los agentes la leen antes de empezar y la QA bloquea un archivo fuera de su capa.
 - Panel de administración temporal (BE-009, admin de Django en `ADMIN_RUTA`): papelera con restauración (un árbol nunca se borra por error; la API solo ve los vigentes), historial con versiones (`django-simple-history`), roles Administrador y Editor (grupos creados por migración), destacados con el tope y el mapa centrado en el campus. No cambia el contrato.
+- Cápsulas de ayuda (BE-011, PR 2, en revisión): modelos `AyudaCampo`, `ValorCatalogo` y `FichaEspecie` con historial, migraciones `0005` (esquema) y `0006` (permisos de los roles; solo el Administrador borra), servicio `servicios/capsulas.py`, comando `cargar_capsulas <ruta> [--actualizar]` con `datos/capsulas/capsulas-v0.json`, la cartilla entrega `capsulas` y `ficha_especie` (3 consultas extra) y el panel suma el catálogo con conteo de árboles vigentes y la vista «Valores fuera del catálogo» (`admin_capsulas.py`). Las fichas cargadas entran sin publicar. Aún no se cargó en ninguna BD real.
 - Hito M0 (disciplina) en curso.
 
 ## Último ticket
-- BE-011 — cápsulas de ayuda en la cartilla, PR 1: solo el contrato 0.4.0 (EN CURSO, Issue #23). Ficha en `docs/tickets/BE-011.md`.
+- BE-011 — cápsulas de ayuda en la cartilla: PR 1 (contrato 0.4.0) y PR 2 (implementación, EN REVISIÓN; Issue #23). Ficha en `docs/tickets/BE-011.md`.
 - Antes: BE-009 — panel de administración temporal (mergeado, #22; Issue #21), BE-005 (mergeado, #20) y BE-008 (mergeado, #18).
 
 ## Siguiente ticket

@@ -1,0 +1,30 @@
+{% extends "admin/base_site.html" %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Inicio</a> &rsaquo;
+  <a href="{% url 'admin:censo_valorcatalogo_changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo;
+  {{ title }}
+</div>
+{% endblock %}
+{% block content %}
+<p class="help">{{ ayuda }}</p>
+{% if filas %}
+<table>
+  <thead>
+    <tr><th>Campo</th><th>Valor</th><th>Árboles vigentes</th><th></th></tr>
+  </thead>
+  <tbody>
+    {% for fila in filas %}
+    <tr>
+      <td>{{ fila.campo }}</td>
+      <td>{{ fila.valor }}</td>
+      <td>{{ fila.total_arboles }}</td>
+      <td>{% if puede_agregar %}<a href="{{ fila.enlace_de_alta }}">Agregar al catálogo</a>{% endif %}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>Todos los valores de los árboles están en el catálogo.</p>
+{% endif %}
+{% endblock %}

@@ -1,6 +1,7 @@
 """Tests de las 3 rutas del censo con APIClient: forma del contrato, 404, solo lectura y límite."""
 
 import importlib.util
+import json
 from pathlib import Path
 
 import pytest
@@ -8,7 +9,8 @@ from django.contrib.gis.geos import Point
 from django.core.cache import cache
 from django.urls import reverse
 
-from apps.censo.models import Arbol
+from apps.censo.models import Arbol, FichaEspecie
+from apps.censo.servicios.capsulas import cargar_capsulas
 from apps.core.seguridad import LimiteAnonimo
 from config.constantes import DECIMALES_COORDENADAS, DECIMALES_UTM, SRID_UTM_CENSO
 
@@ -25,6 +27,8 @@ ORIGEN_COMPLETO = "Nativa"
 OBSERVACIONES_COMPLETAS = "Junto a la banca"
 TASA_BAJA = "2/min"
 MOTIVO_DESTACADO = "Ejemplar de mayor copa del sector"
+RUTA_CAPSULAS = Path(__file__).resolve().parents[2] / "datos" / "capsulas" / "capsulas-v0.json"
+TOTAL_DE_AYUDAS_DEL_ARCHIVO = 18
 
 
 def _cargar_script():
@@ -207,6 +211,34 @@ def test_resumen_no_expone_campos_fuera_del_contrato(cliente_api, arboles_del_se
 
 
 # --- GET /arboles/{codigo} -------------------------------------------------------------------
+
+
+def explicacion_del_catalogo(campo, valor):
+    """La explicación tal como está en el archivo de cápsulas (la fuente de la carga)."""
+    valores = json.loads(RUTA_CAPSULAS.read_text(encoding="utf-8"))["valores"]
+    return next(v["explicacion"] for v in valores if (v["campo"], v["valor"]) == (campo, valor))
+
+
+def test_la_cartilla_cumple_el_contrato_con_capsulas_y_ficha_reales(
+    cliente_api, arboles_del_sector_1, cumple_schema
+):
+    cargar_capsulas(RUTA_CAPSULAS)
+    FichaEspecie.objects.filter(nombre_cientifico="Schinus molle").update(publicada=True)
+
+    cartilla = cliente_api.get(url_arbol("S01-A001")).json()
+    sin_ficha = cliente_api.get(url_arbol("S01-A002")).json()
+
+    cumple_schema(cartilla, "Arbol")
+    cumple_schema(sin_ficha, "Arbol")
+    assert len(cartilla) == LLAVES_DE_ARBOL_EN_EL_CONTRATO
+    assert len(cartilla["capsulas"]) == TOTAL_DE_AYUDAS_DEL_ARCHIVO
+    por_campo = {c["campo"]: c["en_este_arbol"] for c in cartilla["capsulas"]}
+    assert por_campo["estado_general"] == explicacion_del_catalogo("estado_general", "Bueno")
+    assert por_campo["origen"] == explicacion_del_catalogo("origen", "Nativa")
+    assert por_campo["estado_copa"] is None  # este árbol no tiene estado de copa
+    assert cartilla["ficha_especie"]["nombre_cientifico"] == "Schinus molle"
+    assert cartilla["ficha_especie"]["fuente"]
+    assert sin_ficha["ficha_especie"] is None
 
 
 def test_arbol_200_con_la_forma_del_contrato(cliente_api, arboles_del_sector_1, cumple_schema):

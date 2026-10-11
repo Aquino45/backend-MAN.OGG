@@ -14,6 +14,7 @@ from django.urls import reverse
 from django.utils.html import format_html
 from simple_history.admin import SimpleHistoryAdmin
 
+from apps.censo import admin_capsulas  # noqa: F401  (registra las cápsulas en el panel)
 from apps.censo.models import Arbol, ArbolEnPapelera, Sector
 from apps.censo.servicios import papelera
 from config.constantes import (

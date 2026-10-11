@@ -5,19 +5,21 @@ import importlib
 import pytest
 from django.apps import apps as registro_de_apps
 from django.contrib import admin
-from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Group, Permission, User
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.gis.db.models.functions import Transform
 from django.core.exceptions import ValidationError
+from django.test import Client
 from django.urls import reverse
 
-from apps.censo.models import Arbol, Sector
+from apps.censo.models import Arbol, AyudaCampo, FichaEspecie, Sector, ValorCatalogo
 from apps.censo.servicios.papelera import mover_a_papelera
 from config import constantes
 from config.constantes import (
     CAMPO_MOTIVO_ELIMINACION,
     NOMBRE_ROL_ADMINISTRADOR,
     NOMBRE_ROL_EDITOR,
+    PERMISOS_CAPSULAS_POR_ROL,
     PERMISOS_POR_ROL,
     SRID_MAPA,
     TITULO_ADMIN,
@@ -125,8 +127,12 @@ def test_el_administrador_tiene_todo_y_el_editor_no(usuario_administrador, usuar
     administrador = codigos_de_permisos(usuario_administrador)
     editor = codigos_de_permisos(usuario_editor)
 
-    assert administrador == set(PERMISOS_POR_ROL[NOMBRE_ROL_ADMINISTRADOR])
-    assert editor == set(PERMISOS_POR_ROL[NOMBRE_ROL_EDITOR])
+    assert administrador == set(PERMISOS_POR_ROL[NOMBRE_ROL_ADMINISTRADOR]) | set(
+        PERMISOS_CAPSULAS_POR_ROL[NOMBRE_ROL_ADMINISTRADOR]
+    )
+    assert editor == set(PERMISOS_POR_ROL[NOMBRE_ROL_EDITOR]) | set(
+        PERMISOS_CAPSULAS_POR_ROL[NOMBRE_ROL_EDITOR]
+    )
     assert {"change_sector", "cambiar_demo", "delete_arbolenpapelera"} <= administrador
     assert not {"change_sector", "add_sector", "cambiar_demo", "delete_arbolenpapelera"} & editor
     assert {"add_arbol", "change_arbol", "delete_arbol", "change_arbolenpapelera"} <= editor
@@ -366,3 +372,168 @@ def test_el_boton_eliminar_con_un_arbol_invalido_avisa_sin_error_ni_exito(
     avisos = mensajes(respuesta)
     assert any("S01-A002" in aviso for aviso in avisos)
     assert not any("puede restaurarse" in aviso for aviso in avisos)
+
+
+# --- cápsulas: ayudas, catálogo, fichas y valores fuera del catálogo --------------------------
+
+TABLAS_DE_CAPSULAS = ["ayudacampo", "valorcatalogo", "fichaespecie"]
+FUENTE_FICHA = "Fuente de prueba de la ficha"
+
+
+def datos_de_ficha(**extra):
+    datos = {
+        "nombre_cientifico": "Schinus molle",
+        "nombre_comun": "Molle",
+        "alias": "Pimiento",
+        "beneficios": "Da sombra",
+        "dato_curioso": "",
+        "cuidados": "",
+        "fuente": FUENTE_FICHA,
+    }
+    datos.update(extra)
+    return datos
+
+
+@pytest.fixture
+def capsulas_creadas(db):
+    ayuda = AyudaCampo.objects.create(campo="codigo", titulo="Código", que_es="El nombre único.")
+    valor = ValorCatalogo.objects.create(
+        campo="estado_general", valor="Bueno", explicacion="Está sano."
+    )
+    ficha = FichaEspecie.objects.create(
+        nombre_cientifico="Schinus molle", nombre_comun="Molle", beneficios="Sombra",
+        fuente=FUENTE_FICHA,
+    )  # fmt: skip
+    return {"ayudacampo": ayuda, "valorcatalogo": valor, "fichaespecie": ficha}
+
+
+@pytest.mark.parametrize("rol", ROLES)
+@pytest.mark.parametrize("tabla", TABLAS_DE_CAPSULAS)
+def test_las_paginas_de_capsulas_responden_200_a_cada_rol(rol, tabla, capsulas_creadas, request):
+    cliente = request.getfixturevalue(rol)
+    objeto = capsulas_creadas[tabla]
+
+    for nombre, args in (("changelist", []), ("add", []), ("change", [objeto.pk])):
+        assert cliente.get(reverse(f"admin:censo_{tabla}_{nombre}", args=args)).status_code == 200
+    assert cliente.get(reverse(f"admin:censo_{tabla}_history", args=[objeto.pk])).status_code == 200
+
+
+@pytest.mark.parametrize("tabla", TABLAS_DE_CAPSULAS)
+def test_el_editor_no_borra_las_capsulas_y_el_administrador_si(
+    tabla, capsulas_creadas, cliente_editor, cliente_administrador
+):
+    url = reverse(f"admin:censo_{tabla}_delete", args=[capsulas_creadas[tabla].pk])
+    modelo = type(capsulas_creadas[tabla])
+
+    assert cliente_editor.post(url, {"post": "yes"}).status_code == 403
+    assert modelo.objects.count() == 1
+    cliente_administrador.post(url, {"post": "yes"})
+    assert modelo.objects.count() == 0
+
+
+def test_el_editor_publica_una_ficha_con_el_permiso_de_cambio(capsulas_creadas, cliente_editor):
+    ficha = capsulas_creadas["fichaespecie"]
+
+    respuesta = cliente_editor.post(
+        reverse("admin:censo_fichaespecie_change", args=[ficha.pk]),
+        datos_de_ficha(publicada="on"),
+    )
+
+    assert respuesta.status_code == 302
+    ficha.refresh_from_db()
+    assert ficha.publicada is True
+    assert (ficha.dato_curioso, ficha.cuidados) == (None, None)
+
+
+def test_una_ficha_sin_fuente_no_se_guarda(cliente_editor, db):
+    respuesta = cliente_editor.post(
+        reverse("admin:censo_fichaespecie_add"), datos_de_ficha(fuente="")
+    )
+
+    assert respuesta.status_code == 200
+    assert "fuente" in respuesta.context["adminform"].form.errors
+    assert FichaEspecie.objects.count() == 0
+
+
+def test_save_model_valida_con_full_clean(db, cliente_administrador, usuario_administrador):
+    sitio = admin.site._registry[AyudaCampo]
+    ayuda = AyudaCampo(campo="inventado", titulo="X", que_es="Y")
+
+    with pytest.raises(ValidationError):
+        sitio.save_model(None, ayuda, None, False)
+    assert AyudaCampo.objects.count() == 0
+
+
+def test_un_campo_repetido_o_fuera_de_las_constantes_no_se_guarda(capsulas_creadas, cliente_editor):
+    url = reverse("admin:censo_ayudacampo_add")
+    base = {"titulo": "T", "que_es": "Q", "orden": 0, "activo": "on"}
+
+    repetido = cliente_editor.post(url, {**base, "campo": "codigo"})
+    inventado = cliente_editor.post(url, {**base, "campo": "inventado"})
+
+    assert "campo" in repetido.context["adminform"].form.errors
+    assert "campo" in inventado.context["adminform"].form.errors
+    assert AyudaCampo.objects.count() == 1
+
+
+def test_el_catalogo_cuenta_los_arboles_vigentes_por_valor_y_filtra_por_campo(
+    nuevo_arbol, cliente_editor, capsulas_creadas
+):
+    nuevo_arbol("S01-A001", estado_general="Bueno")
+    nuevo_arbol("S01-A002", estado_general="Bueno", estado_copa="Completa")
+    nuevo_arbol("S01-A003", estado_general="Bueno")
+    mover_a_papelera(nuevo_arbol("S01-A004", estado_general="Bueno"), User.objects.create(), MOTIVO)
+    ValorCatalogo.objects.create(campo="estado_copa", valor="Completa", explicacion="Llena.")
+    url = reverse("admin:censo_valorcatalogo_changelist")
+
+    todos = cliente_editor.get(url)
+    solo_copa = cliente_editor.get(url, {"campo": "estado_copa"})
+
+    assert '<td class="field-arboles_vigentes">3</td>' in todos.content.decode()
+    assert '<td class="field-arboles_vigentes">1</td>' in todos.content.decode()
+    assert [v.campo for v in solo_copa.context["cl"].result_list] == ["estado_copa"]
+
+
+def poblar_valores_fuera_del_catalogo(nuevo_arbol):
+    nuevo_arbol("S01-A001", estado_general="Bueno")
+    nuevo_arbol("S01-A002", estado_general="bueno")
+    nuevo_arbol("S01-A003", estado_general="bueno", origen="Nativa & más")
+    nuevo_arbol("S01-A004", estado_general="", origen=None)
+    ValorCatalogo.objects.create(campo="estado_general", valor="Bueno", explicacion="Sano.")
+
+
+@pytest.mark.parametrize("rol", ROLES)
+def test_la_vista_de_valores_fuera_del_catalogo_cuenta_bien(rol, nuevo_arbol, request):
+    poblar_valores_fuera_del_catalogo(nuevo_arbol)
+    cliente = request.getfixturevalue(rol)
+
+    respuesta = cliente.get(reverse("admin:censo_valorcatalogo_fuera"))
+
+    assert respuesta.status_code == 200
+    filas = respuesta.context["filas"]
+    assert [(f["campo"], f["valor"], f["total_arboles"]) for f in filas] == [
+        ("estado_general", "bueno", 2),
+        ("origen", "Nativa & más", 1),
+    ]
+    enlace = filas[0]["enlace_de_alta"]
+    assert enlace.startswith(reverse("admin:censo_valorcatalogo_add"))
+    assert "campo=estado_general" in enlace
+    assert "valor=bueno" in enlace
+    assert "valor=Nativa+%26+m%C3%A1s" in filas[1]["enlace_de_alta"]
+
+
+def test_el_enlace_de_alta_abre_el_formulario_con_campo_y_valor(nuevo_arbol, cliente_editor):
+    poblar_valores_fuera_del_catalogo(nuevo_arbol)
+    fila = cliente_editor.get(reverse("admin:censo_valorcatalogo_fuera")).context["filas"][0]
+
+    formulario = cliente_editor.get(fila["enlace_de_alta"]).context["adminform"].form
+
+    assert formulario.initial == {"campo": "estado_general", "valor": "bueno"}
+
+
+def test_la_vista_de_fuera_del_catalogo_exige_el_permiso_de_ver(nuevo_arbol, db):
+    sin_permisos = User.objects.create_user("sin-permisos", password="x", is_staff=True)
+    url = reverse("admin:censo_valorcatalogo_fuera")
+
+    assert cliente_de(sin_permisos).get(url).status_code == 403
+    assert Client().get(url).status_code == 302
