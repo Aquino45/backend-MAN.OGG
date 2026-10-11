@@ -87,3 +87,12 @@ FILA_ENCABEZADOS_PLANILLA = 1
 
 TOPE_DESTACADOS_POR_SECTOR = 5
 """Árboles destacados por sector que la administración del censo puede marcar."""
+
+LETRA_CODIGO_DEMO = "D"
+"""Letra del código de los árboles simulados (S02-D001); los reales usan otra letra, p. ej. A."""
+
+PATRON_CODIGO_DEMO = rf"^S\d{{2}}-{LETRA_CODIGO_DEMO}\d{{3}}$"
+"""Forma del código de un árbol simulado. Es un caso del PATRON_CODIGO_ARBOL."""
+
+CLAVES_EXTRA_DEMO = frozenset({"lat", "lon", "foto_url", "foto_miniatura_url"})
+"""Claves del archivo de árboles simulados que no son campos del modelo (nombres del contrato)."""

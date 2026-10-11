@@ -24,3 +24,4 @@ rocas sedimentarias. Libres: caliza, arenisca, lutita, travertino, conglomerado,
 | 09/10/2026 | DOC-003 | galena | ORQ-CA | gabro |
 | 09/10/2026 | DOC-004 | malaquita | ORQ-CA | gabro |
 | 10/10/2026 | BE-008 | yeso | ORQ-CA | traquita |
+| 11/10/2026 | BE-005 | dolomita | ORQ-CA | traquita |
