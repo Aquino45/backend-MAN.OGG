@@ -1,7 +1,9 @@
 # ruff: noqa: DJ001
 # DJ001 desactivado a propósito: el contrato distingue null («Sin dato») de texto vacío,
 # así que los textos opcionales usan null=True y nunca guardan "".
-"""Modelos del censo: Sector y Arbol. Los nombres de campo son los del contrato v0."""
+"""Modelos del censo: Sector, Arbol y los textos de ayuda de la cartilla (cápsulas).
+
+Los nombres de campo son los del contrato."""
 
 from uuid import uuid4
 
@@ -13,6 +15,8 @@ from django.db.models import Q
 from simple_history.models import HistoricalRecords
 
 from config.constantes import (
+    CAMPOS_CATALOGADOS,
+    CAMPOS_CON_AYUDA,
     MENSAJE_CODIGO_EN_PAPELERA,
     PATRON_CODIGO_ARBOL,
     PERMISO_CAMBIAR_DEMO,
@@ -204,3 +208,89 @@ class ArbolEnPapelera(Arbol):
         proxy = True
         verbose_name = "árbol en la papelera"
         verbose_name_plural = "papelera de árboles"
+
+
+def _opciones(campos):
+    """Opciones de un campo de texto limitado a una lista de nombres de las constantes."""
+    return [(campo, campo) for campo in campos]
+
+
+class AyudaCampo(models.Model):
+    """Qué es un dato de la cartilla, en lenguaje simple: el texto del «?» de ese dato."""
+
+    campo = models.CharField(
+        max_length=LARGO_TEXTO, unique=True, choices=_opciones(CAMPOS_CON_AYUDA)
+    )
+    titulo = models.CharField(max_length=LARGO_TEXTO)
+    que_es = models.TextField()
+    orden = models.PositiveSmallIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["orden", "campo"]
+        verbose_name = "ayuda de un dato"
+        verbose_name_plural = "ayudas de los datos"
+
+    def __str__(self):
+        return f"{self.titulo} ({self.campo})"
+
+
+class ValorCatalogo(models.Model):
+    """Un valor de las listas desplegables de la planilla y lo que significa para un árbol.
+
+    `valor` se guarda tal como viene de la planilla; al armar la cartilla se compara normalizado.
+    """
+
+    campo = models.CharField(max_length=LARGO_TEXTO, choices=_opciones(CAMPOS_CATALOGADOS))
+    valor = models.CharField(max_length=LARGO_TEXTO)
+    explicacion = models.TextField()
+    orden = models.PositiveSmallIntegerField(default=0)
+    activo = models.BooleanField(default=True)
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["campo", "orden", "valor"]
+        verbose_name = "valor del catálogo"
+        verbose_name_plural = "valores del catálogo"
+        constraints = [
+            models.UniqueConstraint(fields=["campo", "valor"], name="valorcatalogo_campo_valor")
+        ]
+
+    def __str__(self):
+        return f"{self.campo}: {self.valor}"
+
+
+class FichaEspecie(models.Model):
+    """Qué aporta una especie, en lenguaje simple. Siempre cita su fuente y sale solo publicada.
+
+    `alias` son otros nombres con que llega la especie en la planilla, y `beneficios`, un texto
+    con un beneficio por línea. `dato_curioso` y `cuidados` son opcionales: null, nunca "".
+    """
+
+    nombre_cientifico = models.CharField(max_length=LARGO_TEXTO, unique=True)
+    nombre_comun = models.CharField(max_length=LARGO_TEXTO)
+    alias = models.TextField(blank=True, help_text="Otros nombres de la especie, uno por línea.")
+    beneficios = models.TextField(help_text="Un beneficio por línea.")
+    dato_curioso = models.TextField(null=True, blank=True)
+    cuidados = models.TextField(null=True, blank=True)
+    fuente = models.TextField(help_text="De dónde sale el texto de la ficha. No puede ir vacía.")
+    publicada = models.BooleanField(default=False)
+    history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["nombre_cientifico"]
+        verbose_name = "ficha de especie"
+        verbose_name_plural = "fichas de especie"
+        constraints = [
+            models.CheckConstraint(condition=~Q(fuente=""), name="ficha_especie_fuente_no_vacia")
+        ]
+
+    def clean(self):
+        """Los textos opcionales vacíos se guardan como null («Sin dato»)."""
+        super().clean()
+        self.dato_curioso = (self.dato_curioso or "").strip() or None
+        self.cuidados = (self.cuidados or "").strip() or None
+
+    def __str__(self):
+        return f"{self.nombre_cientifico} ({self.nombre_comun})"

@@ -153,12 +153,12 @@ class ArbolSerializer(serializers.Serializer):
     ficha_especie = serializers.SerializerMethodField()
 
     def get_capsulas(self, arbol):
-        """Las ayudas del «?» de cada dato. Mientras no haya ayudas activas, la lista va vacía."""
-        return []
+        """Las ayudas del «?» de cada dato, ya armadas por el selector (vacía sin ayudas)."""
+        return arbol.capsulas
 
     def get_ficha_especie(self, arbol):
-        """La ficha de la especie. Mientras no haya fichas publicadas, viene en null."""
-        return None
+        """La ficha de la especie, ya armada por el selector (null sin ficha publicada)."""
+        return arbol.ficha_especie
 
     def get_lat(self, arbol):
         ubicacion = arbol.ubicacion_mapa

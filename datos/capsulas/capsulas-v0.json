@@ -1,0 +1,111 @@
+{
+  "version": "0.1",
+  "estado": "borrador para validar con el stakeholder",
+  "fuente": "Explicaciones redactadas en lenguaje simple a partir de la planilla oficial de la brigada (arb2-corregido.xlsx: listas desplegables de Registro_Campo y hoja Que_Medir). Las fichas de especie citan su propia fuente y entran sin publicar.",
+  "ayuda_campos": [
+    {"campo": "codigo", "titulo": "Código", "que_es": "Es el nombre único del árbol en el censo. La primera parte dice el sector (S02 = sector 2) y la segunda, su número dentro del sector."},
+    {"campo": "tipo_individuo", "titulo": "Tipo", "que_es": "Dice si es un árbol ya formado (de 1,30 m o más) o uno joven que todavía no llega a esa altura."},
+    {"campo": "identificacion", "titulo": "Identificación", "que_es": "Dice si ya se sabe con seguridad qué especie es o si todavía hay que confirmarlo."},
+    {"campo": "origen", "titulo": "Origen", "que_es": "Dice si la especie es propia de esta zona (nativa) o fue traída de otro lugar (introducida)."},
+    {"campo": "condicion_conservacion", "titulo": "Conservación", "que_es": "Dice si la especie está en riesgo, protegida o es exclusiva de la región, según lo que se sabe de ella."},
+    {"campo": "altura_total_m", "titulo": "Altura total", "que_es": "Lo que mide el árbol desde el suelo hasta su punto más alto, en metros."},
+    {"campo": "dap_cm", "titulo": "DAP", "que_es": "Es el grosor del tronco: su diámetro medido a 1,30 m del suelo, más o menos a la altura del pecho de una persona. Un tronco más grueso suele indicar un árbol más viejo y con más madera."},
+    {"campo": "copa_ns_m", "titulo": "Copa norte–sur", "que_es": "Cuánto se extiende la copa (la parte con hojas) de norte a sur, medido en el suelo. Sirve para saber cuánta sombra da."},
+    {"campo": "copa_eo_m", "titulo": "Copa este–oeste", "que_es": "Cuánto se extiende la copa de este a oeste, medido en el suelo. Junto con la medida norte–sur, da una idea del tamaño de su sombra."},
+    {"campo": "estado_general", "titulo": "Estado general", "que_es": "La salud del árbol vista en conjunto: qué tan vigoroso se ve y si tiene daños visibles."},
+    {"campo": "estado_copa", "titulo": "Estado de la copa", "que_es": "Cómo están las ramas y hojas: si la copa está llena o si tiene ramas secas o se está perdiendo."},
+    {"campo": "tronco_danos", "titulo": "Tronco", "que_es": "Daños que se ven en el tronco, como heridas, huecos, grietas, hongos o plagas."},
+    {"campo": "raices_base", "titulo": "Raíces y base", "que_es": "Cómo está la base del árbol: si las raíces están expuestas, si el suelo está muy apretado o si una vereda o construcción las daña."},
+    {"campo": "interferencia_entorno", "titulo": "Entorno", "que_es": "Cosas cercanas que chocan con el árbol o lo limitan, como cables, edificios, veredas o postes de luz."},
+    {"campo": "co2_almacenado_kg", "titulo": "CO₂ almacenado", "que_es": "Cuánto dióxido de carbono (el gas que calienta el planeta) ha sacado el árbol del aire y guarda en su madera durante su vida. No se mide en campo: se calcula después con su tamaño y su especie."},
+    {"campo": "co2_captura_anual_kg", "titulo": "CO₂ capturado al año", "que_es": "Cuánto dióxido de carbono saca el árbol del aire en un año. Es un cálculo estimado, no una medición directa."},
+    {"campo": "ubicacion", "titulo": "Ubicación", "que_es": "El punto exacto del árbol en el campus, tomado con GPS. Sirve para volver a encontrarlo y seguirlo en el tiempo."},
+    {"campo": "demo", "titulo": "Dato de ejemplo", "que_es": "Este árbol todavía no viene del censo de campo: sus datos son de ejemplo para mostrar cómo funcionará el sistema. Se reemplazará cuando la brigada registre ese sector."}
+  ],
+  "valores": [
+    {"campo": "tipo_individuo", "valor": "Árbol ≥1.30 m (medir DAP)", "orden": 1, "explicacion": "Es un árbol ya formado: mide 1,30 m o más, así que se le mide el grosor del tronco."},
+    {"campo": "tipo_individuo", "valor": "Juvenil <1.30 m (sin DAP)", "orden": 2, "explicacion": "Es un árbol joven, todavía de menos de 1,30 m. Por eso no se le mide el tronco a la altura del pecho."},
+    {"campo": "identificacion", "valor": "Identificada", "orden": 1, "explicacion": "La especie ya está confirmada."},
+    {"campo": "identificacion", "valor": "Por verificar", "orden": 2, "explicacion": "Todavía falta confirmar la especie; el nombre puede cambiar."},
+    {"campo": "origen", "valor": "Nativa", "orden": 1, "explicacion": "Es una especie propia de esta zona: está adaptada al clima y ayuda a la fauna local."},
+    {"campo": "origen", "valor": "Introducida / exótica", "orden": 2, "explicacion": "Es una especie traída de otro lugar, por lo general para adornar o dar sombra."},
+    {"campo": "origen", "valor": "Por verificar", "orden": 3, "explicacion": "Todavía no se ha confirmado de dónde es la especie."},
+    {"campo": "condicion_conservacion", "valor": "No evaluada", "orden": 1, "explicacion": "Todavía no se revisó si la especie está en riesgo."},
+    {"campo": "condicion_conservacion", "valor": "No amenazada", "orden": 2, "explicacion": "La especie no está en riesgo de desaparecer."},
+    {"campo": "condicion_conservacion", "valor": "Amenazada", "orden": 3, "explicacion": "La especie está en riesgo de desaparecer: cuidar este árbol ayuda a conservarla."},
+    {"campo": "condicion_conservacion", "valor": "Endémica", "orden": 4, "explicacion": "La especie solo crece de forma natural en esta región del mundo."},
+    {"campo": "condicion_conservacion", "valor": "Protegida", "orden": 5, "explicacion": "La especie tiene protección legal: no se puede talar ni dañar libremente."},
+    {"campo": "condicion_conservacion", "valor": "Por verificar", "orden": 6, "explicacion": "Todavía falta confirmar su situación de conservación."},
+    {"campo": "estado_general", "valor": "Bueno", "orden": 1, "explicacion": "El árbol se ve sano y vigoroso, sin daños importantes."},
+    {"campo": "estado_general", "valor": "Regular", "orden": 2, "explicacion": "El árbol tiene algunos problemas visibles; conviene vigilarlo."},
+    {"campo": "estado_general", "valor": "Malo", "orden": 3, "explicacion": "El árbol tiene daños serios o se ve débil; necesita atención."},
+    {"campo": "estado_copa", "valor": "Buena", "orden": 1, "explicacion": "La copa está llena y sana."},
+    {"campo": "estado_copa", "valor": "Regular", "orden": 2, "explicacion": "La copa tiene algunas ramas secas o partes con pocas hojas."},
+    {"campo": "estado_copa", "valor": "Mala", "orden": 3, "explicacion": "La copa está muy deteriorada: muchas ramas secas o gran pérdida de hojas."},
+    {"campo": "estado_copa", "valor": "No aplica (juvenil)", "orden": 4, "explicacion": "Es un árbol joven: su copa todavía no se evalúa."},
+    {"campo": "tronco_danos", "valor": "Sin daño aparente", "orden": 1, "explicacion": "No se ven daños en el tronco."},
+    {"campo": "tronco_danos", "valor": "Heridas", "orden": 2, "explicacion": "El tronco tiene cortes o raspones que pueden dejar entrar enfermedades."},
+    {"campo": "tronco_danos", "valor": "Cavidades", "orden": 3, "explicacion": "El tronco tiene huecos; pueden debilitarlo si son grandes."},
+    {"campo": "tronco_danos", "valor": "Grietas", "orden": 4, "explicacion": "El tronco tiene rajaduras; conviene vigilar que no crezcan."},
+    {"campo": "tronco_danos", "valor": "Pudrición / hongos", "orden": 5, "explicacion": "Hay madera podrida u hongos: es una señal de enfermedad que debe revisar un especialista."},
+    {"campo": "tronco_danos", "valor": "Plagas", "orden": 6, "explicacion": "Hay insectos u otros organismos que dañan el árbol."},
+    {"campo": "tronco_danos", "valor": "Poda severa", "orden": 7, "explicacion": "Al árbol le cortaron muchas ramas de golpe; eso lo debilita."},
+    {"campo": "tronco_danos", "valor": "Otro", "orden": 8, "explicacion": "Tiene otro tipo de daño; el detalle está en las observaciones."},
+    {"campo": "raices_base", "valor": "Sin daño aparente", "orden": 1, "explicacion": "La base y las raíces se ven bien."},
+    {"campo": "raices_base", "valor": "Raíces expuestas", "orden": 2, "explicacion": "Se ven raíces fuera del suelo; pueden dañarse con el paso de personas o vehículos."},
+    {"campo": "raices_base", "valor": "Compactación", "orden": 3, "explicacion": "El suelo alrededor está muy apretado, lo que dificulta que entren el agua y el aire a las raíces."},
+    {"campo": "raices_base", "valor": "Daño por vereda / infraestructura", "orden": 4, "explicacion": "Una vereda o construcción está dañando o apretando las raíces."},
+    {"campo": "raices_base", "valor": "Otro", "orden": 5, "explicacion": "Tiene otro problema en la base; el detalle está en las observaciones."},
+    {"campo": "interferencia_entorno", "valor": "Ninguna", "orden": 1, "explicacion": "Nada a su alrededor lo limita."},
+    {"campo": "interferencia_entorno", "valor": "Cableado", "orden": 2, "explicacion": "Sus ramas están cerca de cables; puede necesitar poda cuidadosa."},
+    {"campo": "interferencia_entorno", "valor": "Edificación", "orden": 3, "explicacion": "Está muy cerca de un edificio, que limita su crecimiento."},
+    {"campo": "interferencia_entorno", "valor": "Vereda / pista", "orden": 4, "explicacion": "Está junto a una vereda o pista, que puede afectar sus raíces."},
+    {"campo": "interferencia_entorno", "valor": "Luminaria", "orden": 5, "explicacion": "Está junto a un poste de luz; sus ramas pueden taparlo."},
+    {"campo": "interferencia_entorno", "valor": "Otro", "orden": 6, "explicacion": "Tiene otra interferencia; el detalle está en las observaciones."}
+  ],
+  "fichas_especie": [
+    {
+      "nombre_cientifico": "Prosopis pallida",
+      "nombre_comun": "Huarango",
+      "alias": ["Prosopis Pallida", "Algarrobo"],
+      "beneficios": [
+        "Es un árbol nativo de la costa peruana, adaptado a vivir con muy poca agua.",
+        "Mejora el suelo: sus raíces fijan nitrógeno, un nutriente que aprovechan otras plantas.",
+        "Da sombra y refugio a aves e insectos en zonas secas.",
+        "Sus vainas son alimento: de ellas se hace la algarrobina."
+      ],
+      "dato_curioso": "Sus raíces pueden bajar muchos metros para alcanzar el agua del subsuelo.",
+      "cuidados": "Necesita poco riego; conviene no compactar el suelo alrededor de su base.",
+      "fuente": "Actualidad Ambiental, «Conoce al algarrobo: el árbol emblemático de la costa norte peruana» (https://www.actualidadambiental.pe/conoce-al-algarrobo-el-arbol-emblematico-de-la-costa-norte-peruana/); INIA, Manual técnico para la propagación y conservación de especies de algarrobo (Prosopis spp.).",
+      "publicada": false
+    },
+    {
+      "nombre_cientifico": "Schinus molle",
+      "nombre_comun": "Molle",
+      "alias": ["Schinus", "Molle serrano", "Pimiento"],
+      "beneficios": [
+        "Es un árbol nativo de los Andes peruanos, muy resistente a la sequía.",
+        "Sus hojas y frutos son aromáticos; se han usado tradicionalmente como repelente de insectos.",
+        "Da buena sombra y ayuda a proteger el suelo de la erosión."
+      ],
+      "dato_curioso": "Sus frutos rosados se conocen como «pimienta rosada» y era un árbol muy apreciado en la época de los incas.",
+      "cuidados": "Tolera suelos pobres y poca agua; no conviene plantarlo pegado a tuberías por sus raíces.",
+      "fuente": "La República (08/09/2024), «El árbol originario de América Latina considerado sagrado por los incas» (https://larepublica.pe/mundo/2024/09/08/el-arbol-originario-de-america-latina-considerado-como-sagrado-por-los-incas-que-puede-ahuyentar-mosquitos-272136); Ayuntamiento de Zaragoza, ficha «Falso pimentero» (https://www.zaragoza.es/sede/servicio/especie/70).",
+      "publicada": false
+    },
+    {
+      "nombre_cientifico": "Roystonea regia",
+      "nombre_comun": "Palma real",
+      "alias": ["Roystonea"],
+      "beneficios": [
+        "Es una palmera traída del Caribe (es el árbol nacional de Cuba), muy usada para adornar avenidas y parques.",
+        "Su gran altura y su tronco liso la hacen un punto de referencia en el paisaje del campus.",
+        "Sus frutos alimentan a algunas aves."
+      ],
+      "dato_curioso": "Puede superar los 20 metros de altura y su tronco liso parece una columna de cemento.",
+      "cuidados": "Las hojas viejas caen solas y son pesadas: conviene retirarlas a tiempo en zonas de paso.",
+      "fuente": "Royal Botanic Gardens, Kew — Plants of the World Online, «Roystonea regia» (https://powo.science.kew.org/taxon/urn:lsid:ipni.org:names:222809-2/general-information); EcuRed, «Palma real» (https://www.ecured.cu/Palma_real).",
+      "publicada": false
+    }
+  ]
+}
