@@ -26,6 +26,7 @@ from config.constantes import (
     MOTIVO_FUERA_DE_CATALOGO,
     MOTIVO_FUERA_DE_RANGO,
     MOTIVO_FUERA_DEL_SECTOR,
+    MOTIVO_HISTORIAL_RECALCULO_CALIDAD,
     MOTIVO_NO_ES_NUMERO,
     RANGOS_MEDIDAS,
     SEPARADOR_DE_LINEAS,
@@ -145,7 +146,7 @@ def recalcular_calidad():
             else:
                 reporte.en_revision += 1
             if (arbol.estado_registro, arbol.motivos_revision) != antes:
-                arbol._change_reason = "Recálculo de la calidad del registro"
+                arbol._change_reason = MOTIVO_HISTORIAL_RECALCULO_CALIDAD
                 arbol.save(update_fields=CAMPOS_DEL_ESTADO)
                 reporte.cambiaron += 1
     return reporte

@@ -30,14 +30,12 @@ from config.constantes import (
     LARGO_MOTIVOS_EN_LISTA,
     MENSAJE_REGISTRO_EN_REVISION,
     MENSAJE_REGISTRO_PUBLICADO,
+    PARAMETRO_FILTRO_ESTADO_REGISTRO,
     PLANTILLA_INDICE_ADMIN,
     SEPARADOR_DE_LINEAS,
     TEXTO_ESTADO_SE_CALCULA_AL_GUARDAR,
     TEXTO_SIN_MOTIVOS,
 )
-
-PARAMETRO_FILTRO_ESTADO = "estado_registro"
-"""Parámetro de la URL del filtro «Estado del registro» (el índice enlaza a él)."""
 
 FIELDSET_ESTADO_REGISTRO = (
     ETIQUETA_BLOQUE_ESTADO_REGISTRO,
@@ -50,7 +48,7 @@ class FiltroEstadoRegistro(admin.SimpleListFilter):
     """Filtra la lista de árboles por publicado o en revisión."""
 
     title = ETIQUETA_FILTRO_ESTADO_REGISTRO
-    parameter_name = PARAMETRO_FILTRO_ESTADO
+    parameter_name = PARAMETRO_FILTRO_ESTADO_REGISTRO
 
     def lookups(self, request, model_admin):
         return ESTADOS_REGISTRO
@@ -110,7 +108,7 @@ def contexto_del_indice():
             else AVISO_INDICE_REGISTROS_EN_REVISION.format(total=total)
         )
     enlace = reverse("admin:censo_arbol_changelist")
-    filtro = f"{PARAMETRO_FILTRO_ESTADO}={ESTADO_REGISTRO_EN_REVISION}"
+    filtro = f"{PARAMETRO_FILTRO_ESTADO_REGISTRO}={ESTADO_REGISTRO_EN_REVISION}"
     return {
         "aviso_registros_en_revision": aviso_en_revision,
         "enlace_registros_en_revision": f"{enlace}?{filtro}",

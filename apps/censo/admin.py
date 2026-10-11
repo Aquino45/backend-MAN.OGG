@@ -27,6 +27,7 @@ from config.constantes import (
     AYUDA_CO2_ADMIN,
     CAMPO_MOTIVO_ELIMINACION,
     CAMPOS_FUERA_DE_LA_REVERSION,
+    DESCRIPCION_DESTACADO_ADMIN,
     MAPA_ADMIN_LAT,
     MAPA_ADMIN_LON,
     MAPA_ADMIN_ZOOM,
@@ -149,10 +150,7 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
             "Destacado",
             {
                 "fields": ("destacado", "motivo_destacado"),
-                "description": (
-                    f"Cada sector admite hasta {TOPE_DESTACADOS_POR_SECTOR} destacados. "
-                    "El motivo es opcional."
-                ),
+                "description": DESCRIPCION_DESTACADO_ADMIN.format(tope=TOPE_DESTACADOS_POR_SECTOR),
             },
         ),
         (

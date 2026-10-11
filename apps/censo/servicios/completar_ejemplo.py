@@ -23,6 +23,7 @@ from config.constantes import (
     CLAVES_COMPLETAR_EJEMPLO,
     ESTADO_REGISTRO_PUBLICADO,
     FORMATO_FUENTE_EJEMPLO,
+    MOTIVO_HISTORIAL_COMPLETAR_EJEMPLO,
     PATRON_CODIGO_ARBOL,
     SEPARADOR_FUENTE,
 )
@@ -37,9 +38,6 @@ CAMPOS_DECIMALES = frozenset(
     campo.name for campo in Arbol._meta.concrete_fields if isinstance(campo, models.DecimalField)
 )
 """Campos numéricos del modelo: llegan como número JSON y se guardan como Decimal."""
-
-MOTIVO_DEL_CAMBIO = "Completar datos de ejemplo"
-"""Motivo que queda en el historial de cada árbol completado."""
 
 
 @dataclass
@@ -228,5 +226,5 @@ def _guardar(arbol):
         arbol.full_clean()
     except ValidationError as error:
         raise ValueError(f"{arbol.codigo}: " + "; ".join(error.messages)) from error
-    arbol._change_reason = MOTIVO_DEL_CAMBIO
+    arbol._change_reason = MOTIVO_HISTORIAL_COMPLETAR_EJEMPLO
     arbol.save()

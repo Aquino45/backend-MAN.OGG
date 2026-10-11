@@ -412,3 +412,15 @@ LARGO_MOTIVOS_EN_LISTA = 90
 TEXTO_ESTADO_SE_CALCULA_AL_GUARDAR = "Se calcula al guardar el árbol."
 PLANTILLA_INDICE_ADMIN = "admin/censo/index.html"
 """Textos y plantilla del panel para los motivos de revisión (largo máximo en la lista)."""
+
+MOTIVO_HISTORIAL_RECALCULO_CALIDAD = "Recálculo de la calidad del registro"
+"""Motivo que queda en el historial cuando `recalcular_calidad` cambia el estado de un árbol."""
+
+MOTIVO_HISTORIAL_COMPLETAR_EJEMPLO = "Completar datos de ejemplo"
+"""Motivo que queda en el historial de cada árbol completado por `completar_ejemplo`."""
+
+PARAMETRO_FILTRO_ESTADO_REGISTRO = "estado_registro"
+"""Parámetro de la URL del filtro «Estado del registro» del panel (el índice enlaza a él)."""
+
+DESCRIPCION_DESTACADO_ADMIN = "Cada sector admite hasta {tope} destacados. El motivo es opcional."
+"""Texto del panel sobre el tope de destacados por sector y el motivo opcional."""
