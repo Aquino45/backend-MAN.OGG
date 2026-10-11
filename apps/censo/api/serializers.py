@@ -149,6 +149,16 @@ class ArbolSerializer(serializers.Serializer):
     demo = serializers.BooleanField()
     destacado = serializers.BooleanField()
     motivo_destacado = _TextoOpcional()
+    capsulas = serializers.SerializerMethodField()
+    ficha_especie = serializers.SerializerMethodField()
+
+    def get_capsulas(self, arbol):
+        """Las ayudas del «?» de cada dato. Mientras no haya ayudas activas, la lista va vacía."""
+        return []
+
+    def get_ficha_especie(self, arbol):
+        """La ficha de la especie. Mientras no haya fichas publicadas, viene en null."""
+        return None
 
     def get_lat(self, arbol):
         ubicacion = arbol.ubicacion_mapa

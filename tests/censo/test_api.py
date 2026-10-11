@@ -18,7 +18,7 @@ SECTOR_INEXISTENTE = 99
 CODIGO_INEXISTENTE = "S01-Z999"
 CODIGOS_MAL_FORMADOS = ["S01-A0010", "abc"]
 METODOS_DE_ESCRITURA = ["post", "put", "patch", "delete"]
-LLAVES_DE_ARBOL_EN_EL_CONTRATO = 31
+LLAVES_DE_ARBOL_EN_EL_CONTRATO = 33
 CAMPOS_UTM = ("utm_este_m", "utm_norte_m")
 IDENTIFICACION_COMPLETA = "Identificada"
 ORIGEN_COMPLETO = "Nativa"
@@ -216,6 +216,8 @@ def test_arbol_200_con_la_forma_del_contrato(cliente_api, arboles_del_sector_1, 
     assert respuesta.status_code == 200
     cumple_schema(cartilla, "Arbol")
     assert len(cartilla) == LLAVES_DE_ARBOL_EN_EL_CONTRATO
+    assert cartilla["capsulas"] == []
+    assert cartilla["ficha_especie"] is None
     assert cartilla["sector"] == 1
     assert cartilla["dap_cm"] == 35.25
     assert cartilla["altura_total_m"] == 8.5
