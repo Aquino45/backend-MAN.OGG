@@ -78,12 +78,15 @@ class SectorColeccionSerializer(_ColeccionSerializer):
 
 class ArbolResumenPropiedadesSerializer(serializers.Serializer):
     codigo = serializers.CharField()
+    uid = serializers.UUIDField()
     sector = serializers.IntegerField(source="sector_id")
     nombre_comun = serializers.CharField(allow_null=True)
     nombre_cientifico = serializers.CharField(allow_null=True)
     estado_general = serializers.CharField(allow_null=True)
     foto_miniatura_url = serializers.SerializerMethodField()
     demo = serializers.BooleanField()
+    destacado = serializers.BooleanField()
+    motivo_destacado = _TextoOpcional()
 
     def get_foto_miniatura_url(self, arbol):
         """Aún no hay fotos del árbol: la URL viene en null."""
@@ -111,9 +114,12 @@ class ArbolSerializer(serializers.Serializer):
 
     Además de las medidas y los estados, trae el contexto de campo (origen, identificación y
     observaciones) y la ubicación UTM tal como se guardó, sin recalcularla desde `lat` y `lon`.
+    También dice si el árbol está destacado en su sector y por qué (`motivo_destacado`, `null`
+    si no lo está), y trae el `uid` que lo identifica aunque cambie su código.
     """
 
     codigo = serializers.CharField()
+    uid = serializers.UUIDField()
     sector = serializers.IntegerField(source="sector_id")
     nombre_comun = serializers.CharField(allow_null=True)
     nombre_cientifico = serializers.CharField(allow_null=True)
@@ -141,6 +147,8 @@ class ArbolSerializer(serializers.Serializer):
     fuente = serializers.CharField()
     fecha_registro = serializers.DateField(allow_null=True)
     demo = serializers.BooleanField()
+    destacado = serializers.BooleanField()
+    motivo_destacado = _TextoOpcional()
 
     def get_lat(self, arbol):
         ubicacion = arbol.ubicacion_mapa

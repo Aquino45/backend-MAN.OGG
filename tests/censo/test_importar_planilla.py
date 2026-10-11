@@ -314,3 +314,29 @@ def test_el_comando_convierte_el_error_en_command_error(ruta_planilla, sectores)
 
     with pytest.raises(CommandError, match="Sector"):
         call_command("importar_planilla", str(ruta_planilla))
+
+
+def test_reimportar_conserva_el_uid_y_no_toca_la_marca_de_destacado(ruta_planilla, sectores):
+    motivo = "Ejemplar de mayor copa del sector"
+    crear_planilla(ruta_planilla, [fila(nombre_comun="Molle")])
+    importar_planilla(ruta_planilla)
+    Arbol.objects.filter(codigo="S01-A001").update(destacado=True, motivo_destacado=motivo)
+    uid_original = Arbol.objects.get(codigo="S01-A001").uid
+    crear_planilla(ruta_planilla, [fila(nombre_comun="Molle corregido")])
+
+    reporte = importar_planilla(ruta_planilla)
+
+    arbol = Arbol.objects.get(codigo="S01-A001")
+    assert (reporte.creados, reporte.actualizados) == (0, 1)
+    assert arbol.nombre_comun == "Molle corregido"
+    assert arbol.uid == uid_original
+    assert (arbol.destacado, arbol.motivo_destacado) == (True, motivo)
+
+
+def test_cada_arbol_importado_tiene_su_propio_uid(ruta_planilla, sectores):
+    crear_planilla(ruta_planilla, [fila(), fila()])
+
+    importar_planilla(ruta_planilla)
+
+    uids = list(Arbol.objects.values_list("uid", flat=True))
+    assert len(uids) == len(set(uids)) == 2

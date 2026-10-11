@@ -8,6 +8,7 @@ import importlib.util
 from datetime import date
 from decimal import Decimal
 from pathlib import Path
+from uuid import UUID
 
 import pytest
 from django.contrib.gis.geos import Point
@@ -39,6 +40,8 @@ CLAVES_NUEVAS_DE_LA_CARTILLA = (*CAMPOS_DE_CONTEXTO, *CAMPOS_UTM)
 IDENTIFICACION_COMPLETA = "Identificada"
 ORIGEN_COMPLETO = "Nativa"
 OBSERVACIONES_COMPLETAS = "Junto a la banca"
+MOTIVO_DESTACADO = "Ejemplar de mayor copa del sector"
+CLAVES_DE_DESTACADO = ("uid", "destacado", "motivo_destacado")
 FUERA_DEL_CONTRATO = ("brigada", "foto_archivo", "ubicacion")
 MEDIDAS_COMPLETAS = {
     "altura_total_m": Decimal("8.500"),
@@ -302,6 +305,68 @@ def test_lista_de_sector_sin_arboles_es_coleccion_vacia(contrato, sectores):
 
     validar(contrato, "ArbolResumenColeccion", datos)
     assert datos == {"type": "FeatureCollection", "features": []}
+
+
+def test_cartilla_trae_uid_y_destacado_siempre(contrato, arbol_completo, arbol_muerto):
+    for codigo in (CODIGO_COMPLETO, CODIGO_MUERTO):
+        datos = cartilla(codigo)
+
+        validar(contrato, "Arbol", datos)
+        assert set(CLAVES_DE_DESTACADO) <= set(datos)
+        assert isinstance(datos["uid"], str)
+        assert str(UUID(datos["uid"])) == datos["uid"]
+        assert (datos["destacado"], datos["motivo_destacado"]) == (False, None)
+
+
+def test_cartilla_de_un_destacado_entrega_su_motivo(contrato, arbol_completo):
+    Arbol.objects.filter(codigo=CODIGO_COMPLETO).update(
+        destacado=True, motivo_destacado=MOTIVO_DESTACADO
+    )
+
+    datos = cartilla(CODIGO_COMPLETO)
+
+    validar(contrato, "Arbol", datos)
+    assert (datos["destacado"], datos["motivo_destacado"]) == (True, MOTIVO_DESTACADO)
+    assert datos["uid"] == str(Arbol.objects.get(codigo=CODIGO_COMPLETO).uid)
+
+
+def test_motivo_vacio_sale_como_null_en_la_cartilla_y_en_el_resumen(contrato, arbol_completo):
+    Arbol.objects.filter(codigo=CODIGO_COMPLETO).update(motivo_destacado="")
+
+    propiedades = lista_del_sector()["features"][0]["properties"]
+    datos = cartilla(CODIGO_COMPLETO)
+
+    validar(contrato, "Arbol", datos)
+    assert datos["motivo_destacado"] is None
+    assert propiedades["motivo_destacado"] is None
+
+
+def test_resumen_trae_uid_y_destacado_siempre(contrato, arbol_completo, arbol_muerto):
+    Arbol.objects.filter(codigo=CODIGO_MUERTO).update(
+        destacado=True, motivo_destacado=MOTIVO_DESTACADO
+    )
+
+    datos = lista_del_sector()
+    propiedades = {f["id"]: f["properties"] for f in datos["features"]}
+
+    validar(contrato, "ArbolResumenColeccion", datos)
+    for codigo, esperado in (
+        (CODIGO_COMPLETO, (False, None)),
+        (CODIGO_MUERTO, (True, MOTIVO_DESTACADO)),
+    ):
+        assert set(CLAVES_DE_DESTACADO) <= set(propiedades[codigo])
+        assert (
+            propiedades[codigo]["destacado"],
+            propiedades[codigo]["motivo_destacado"],
+        ) == esperado
+        assert str(UUID(propiedades[codigo]["uid"])) == propiedades[codigo]["uid"]
+    assert propiedades[CODIGO_COMPLETO]["uid"] != propiedades[CODIGO_MUERTO]["uid"]
+
+
+def test_resumen_va_en_el_orden_del_contrato(contrato, arbol_completo):
+    orden_del_contrato = list(contrato["components"]["schemas"]["ArbolResumen"]["properties"])
+
+    assert list(lista_del_sector()["features"][0]["properties"]) == orden_del_contrato
 
 
 def sectores_serializados():
