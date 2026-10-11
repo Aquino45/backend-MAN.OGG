@@ -1,0 +1,15 @@
+{% extends "admin/index.html" %}
+{% comment %}Índice del panel con el aviso de calidad: registros en revisión y catálogo sin cargar.{% endcomment %}
+{% block content %}
+{% if aviso_registros_en_revision or aviso_catalogo_sin_cargar %}
+<ul class="messagelist">
+  {% if aviso_registros_en_revision %}
+  <li class="warning"><a href="{{ enlace_registros_en_revision }}">{{ aviso_registros_en_revision }}</a></li>
+  {% endif %}
+  {% if aviso_catalogo_sin_cargar %}
+  <li class="warning">{{ aviso_catalogo_sin_cargar }}</li>
+  {% endif %}
+</ul>
+{% endif %}
+{{ block.super }}
+{% endblock %}

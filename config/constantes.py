@@ -406,3 +406,9 @@ MENSAJE_REGISTRO_EN_REVISION = (
 AVISO_INDICE_UN_REGISTRO_EN_REVISION = "1 registro en revisión"
 AVISO_INDICE_REGISTROS_EN_REVISION = "{total} registros en revisión"
 """Aviso del índice del panel con el número de registros en revisión."""
+
+ETIQUETA_COLUMNA_MOTIVOS_REVISION = "Motivos de revisión"
+LARGO_MOTIVOS_EN_LISTA = 90
+TEXTO_ESTADO_SE_CALCULA_AL_GUARDAR = "Se calcula al guardar el árbol."
+PLANTILLA_INDICE_ADMIN = "admin/censo/index.html"
+"""Textos y plantilla del panel para los motivos de revisión (largo máximo en la lista)."""

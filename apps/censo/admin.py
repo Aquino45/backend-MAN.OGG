@@ -15,6 +15,11 @@ from django.utils.html import format_html
 from simple_history.admin import SimpleHistoryAdmin
 
 from apps.censo import admin_capsulas  # noqa: F401  (registra las cápsulas en el panel)
+from apps.censo.admin_calidad import (
+    FIELDSET_ESTADO_REGISTRO,
+    CalidadDelRegistroAdmin,
+    FiltroEstadoRegistro,
+)
 from apps.censo.models import Arbol, ArbolEnPapelera, Sector
 from apps.censo.servicios import papelera
 from config.constantes import (
@@ -71,14 +76,24 @@ class SectorAdmin(MapaDelCampus, SimpleHistoryAdmin):
 
 
 @admin.register(Arbol)
-class ArbolAdmin(MapaDelCampus, SimpleHistoryAdmin):
+class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
     """Árboles vigentes. «Eliminar» manda a la papelera: nunca borra la fila."""
 
-    list_display = ("codigo", "sector", "nombre_comun", "estado_general", "destacado", "demo")
-    list_filter = ("sector", "estado_general", "destacado", "demo")
+    list_display = (
+        "codigo",
+        "sector",
+        "nombre_comun",
+        "estado_general",
+        "estado_del_registro",
+        "motivos_de_revision",
+        "destacado",
+        "demo",
+    )
+    list_filter = (FiltroEstadoRegistro, "sector", "estado_general", "destacado", "demo")
     search_fields = ("codigo", "nombre_comun", "nombre_cientifico")
     readonly_fields = (
         "tipo_de_dato",
+        "bloque_estado_registro",
         "uid",
         "fila_origen",
         "creado_en",
@@ -90,6 +105,7 @@ class ArbolAdmin(MapaDelCampus, SimpleHistoryAdmin):
     action_form = FormularioDeAcciones
     actions = ["mandar_a_la_papelera"]
     fieldsets = (
+        FIELDSET_ESTADO_REGISTRO,
         (
             "Identificación",
             {
@@ -134,8 +150,8 @@ class ArbolAdmin(MapaDelCampus, SimpleHistoryAdmin):
             {
                 "fields": ("destacado", "motivo_destacado"),
                 "description": (
-                    f"Cada sector admite hasta {TOPE_DESTACADOS_POR_SECTOR} destacados, "
-                    "y cada uno necesita un motivo."
+                    f"Cada sector admite hasta {TOPE_DESTACADOS_POR_SECTOR} destacados. "
+                    "El motivo es opcional."
                 ),
             },
         ),

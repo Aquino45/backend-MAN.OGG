@@ -17,6 +17,8 @@ from apps.censo.servicios.papelera import mover_a_papelera
 from config import constantes
 from config.constantes import (
     CAMPO_MOTIVO_ELIMINACION,
+    ESTADO_REGISTRO_EN_REVISION,
+    ESTADO_REGISTRO_PUBLICADO,
     NOMBRE_ROL_ADMINISTRADOR,
     NOMBRE_ROL_EDITOR,
     PERMISOS_CAPSULAS_POR_ROL,
@@ -25,7 +27,7 @@ from config.constantes import (
     TITULO_ADMIN,
     TOPE_DESTACADOS_POR_SECTOR,
 )
-from tests.censo.conftest import FUENTE_PANEL, cliente_de, usuario_con_rol
+from tests.censo.conftest import FUENTE_PANEL, arbol_evaluado, cliente_de, usuario_con_rol
 
 MOTIVO = "Se registró dos veces por error"
 MOTIVO_DESTACADO = "Ejemplar de mayor copa del sector"
@@ -537,3 +539,173 @@ def test_la_vista_de_fuera_del_catalogo_exige_el_permiso_de_ver(nuevo_arbol, db)
 
     assert cliente_de(sin_permisos).get(url).status_code == 403
     assert Client().get(url).status_code == 302
+
+
+# --- calidad del registro: filtro, columna, bloque, guardado e índice --------------------------
+
+CAMPOS_DEL_FORMULARIO_COMPLETO = {
+    "tipo_individuo": "Árbol ≥1.30 m (medir DAP)",
+    "nombre_comun": "Molle",
+    "nombre_cientifico": "Schinus molle",
+    "identificacion": "Identificada",
+    "origen": "Nativa",
+    "altura_total_m": "8.5",
+    "dap_cm": "35.25",
+    "copa_ns_m": "4.5",
+    "copa_eo_m": "5",
+    "estado_general": "Bueno",
+    "estado_copa": "Buena",
+    "tronco_danos": "Sin daño aparente",
+    "raices_base": "Sin daño aparente",
+    "interferencia_entorno": "Ninguna",
+    "co2_almacenado_kg": "120.5",
+    "co2_captura_anual_kg": "10.25",
+    "brigada": "Brigada A",
+}
+SRID_DEL_MAPA_DEL_PANEL = 3857
+SIN_UBICACION = "Falta el dato «Ubicación»"
+
+
+def url_de_arboles(**parametros):
+    base = reverse("admin:censo_arbol_changelist")
+    consulta = "&".join(f"{clave}={valor}" for clave, valor in parametros.items())
+    return f"{base}?{consulta}" if consulta else base
+
+
+@pytest.fixture
+def uno_publicado_y_uno_en_revision(sectores):
+    publicado = arbol_evaluado("S01-A001")
+    en_revision = arbol_evaluado("S01-A002", nombre_comun=None)
+    return publicado, en_revision
+
+
+@pytest.mark.parametrize("rol", ROLES)
+def test_el_filtro_estado_del_registro_separa_publicados_y_en_revision(
+    rol, uno_publicado_y_uno_en_revision, request
+):
+    cliente = request.getfixturevalue(rol)
+
+    en_revision = cliente.get(url_de_arboles(estado_registro=ESTADO_REGISTRO_EN_REVISION))
+    publicados = cliente.get(url_de_arboles(estado_registro=ESTADO_REGISTRO_PUBLICADO))
+    todos = cliente.get(url_de_arboles())
+
+    codigos = lambda respuesta: {a.codigo for a in respuesta.context["cl"].result_list}  # noqa: E731
+    assert codigos(en_revision) == {"S01-A002"}
+    assert codigos(publicados) == {"S01-A001"}
+    assert codigos(todos) == {"S01-A001", "S01-A002"}
+    assert "Estado del registro" in todos.content.decode()
+
+
+def test_la_lista_muestra_el_estado_y_los_motivos(cliente_editor, uno_publicado_y_uno_en_revision):
+    contenido = cliente_editor.get(url_de_arboles()).content.decode()
+
+    assert "Motivos de revisión" in contenido
+    assert "Falta el dato «Nombre común»" in contenido
+    assert "En revisión" in contenido
+
+
+def test_el_formulario_muestra_los_motivos_en_solo_lectura(
+    cliente_editor, uno_publicado_y_uno_en_revision
+):
+    _, en_revision = uno_publicado_y_uno_en_revision
+
+    respuesta = cliente_editor.get(reverse("admin:censo_arbol_change", args=[en_revision.pk]))
+
+    contenido = respuesta.content.decode()
+    assert "<li>Falta el dato «Nombre común»</li>" in contenido
+    assert 'name="estado_registro"' not in contenido
+    assert 'name="motivos_revision"' not in contenido
+
+
+def test_el_alta_incompleta_queda_en_revision_y_el_aviso_dice_que_le_falta(
+    sectores, cliente_editor, cliente_api
+):
+    datos = datos_de_alta(**CAMPOS_DEL_FORMULARIO_COMPLETO)
+
+    respuesta = cliente_editor.post(reverse("admin:censo_arbol_add"), datos, follow=True)
+
+    arbol = Arbol.objects.get(codigo="S01-A010")
+    assert arbol.estado_registro == ESTADO_REGISTRO_EN_REVISION
+    assert arbol.motivos_revision == SIN_UBICACION
+    assert any("quedó en revisión" in m and SIN_UBICACION in m for m in mensajes(respuesta))
+    assert cliente_api.get(reverse("arbol", kwargs={"codigo": "S01-A010"})).status_code == 404
+
+
+def test_guardar_un_arbol_publicado_con_un_dato_vacio_lo_manda_a_revision(
+    sectores, cliente_editor, cliente_api
+):
+    arbol = arbol_evaluado("S01-A001")
+    assert arbol.estado_registro == ESTADO_REGISTRO_PUBLICADO
+    datos = datos_de_alta(codigo="S01-A001", **CAMPOS_DEL_FORMULARIO_COMPLETO)
+    datos["nombre_comun"] = ""
+
+    cliente_editor.post(reverse("admin:censo_arbol_change", args=[arbol.pk]), datos)
+
+    arbol.refresh_from_db()
+    assert arbol.estado_registro == ESTADO_REGISTRO_EN_REVISION
+    assert "Falta el dato «Nombre común»" in arbol.motivos_revision
+    assert cliente_api.get(reverse("arbol", kwargs={"codigo": "S01-A001"})).status_code == 404
+
+
+def test_corregir_un_arbol_en_revision_en_el_panel_lo_publica_y_lo_avisa(
+    sectores, cliente_editor, cliente_api
+):
+    arbol = arbol_evaluado("S01-A001", nombre_comun=None)
+    ubicacion = arbol.ubicacion.transform(SRID_DEL_MAPA_DEL_PANEL, clone=True).wkt
+    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **CAMPOS_DEL_FORMULARIO_COMPLETO)
+    datos["demo"] = ""
+
+    respuesta = cliente_editor.post(
+        reverse("admin:censo_arbol_change", args=[arbol.pk]), datos, follow=True
+    )
+
+    arbol.refresh_from_db()
+    assert (arbol.estado_registro, arbol.motivos_revision) == (ESTADO_REGISTRO_PUBLICADO, "")
+    assert any("S01-A001 quedó publicado" in m for m in mensajes(respuesta))
+    assert cliente_api.get(reverse("arbol", kwargs={"codigo": "S01-A001"})).status_code == 200
+
+
+def test_el_estado_no_se_edita_a_mano_desde_el_formulario(
+    cliente_editor, uno_publicado_y_uno_en_revision
+):
+    _, en_revision = uno_publicado_y_uno_en_revision
+    datos = datos_de_alta(
+        codigo="S01-A002", estado_registro=ESTADO_REGISTRO_PUBLICADO, motivos_revision=""
+    )
+
+    cliente_editor.post(reverse("admin:censo_arbol_change", args=[en_revision.pk]), datos)
+
+    en_revision.refresh_from_db()
+    assert en_revision.estado_registro == ESTADO_REGISTRO_EN_REVISION
+
+
+def test_el_indice_avisa_cuantos_registros_estan_en_revision_con_enlace(
+    cliente_administrador, uno_publicado_y_uno_en_revision
+):
+    contenido = cliente_administrador.get(reverse("admin:index")).content.decode()
+
+    assert "1 registro en revisión" in contenido
+    assert url_de_arboles(estado_registro=ESTADO_REGISTRO_EN_REVISION) in contenido
+
+
+def test_el_indice_cuenta_en_plural_y_no_avisa_si_no_hay_ninguno(cliente_administrador, sectores):
+    assert "en revisión" not in cliente_administrador.get(reverse("admin:index")).content.decode()
+    arbol_evaluado("S01-A001", nombre_comun=None)
+    arbol_evaluado("S01-A002", nombre_comun=None)
+
+    contenido = cliente_administrador.get(reverse("admin:index")).content.decode()
+
+    assert "2 registros en revisión" in contenido
+
+
+def test_el_indice_avisa_si_falta_cargar_el_catalogo(cliente_administrador, sectores):
+    contenido = cliente_administrador.get(reverse("admin:index")).content.decode()
+    assert "Catálogo sin cargar en: " in contenido
+
+    for campo in constantes.CAMPOS_CATALOGADOS:
+        ValorCatalogo.objects.create(campo=campo, valor="Algo", explicacion="x")
+
+    assert (
+        "Catálogo sin cargar"
+        not in cliente_administrador.get(reverse("admin:index")).content.decode()
+    )
