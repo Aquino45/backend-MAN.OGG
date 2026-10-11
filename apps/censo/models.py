@@ -17,6 +17,8 @@ from simple_history.models import HistoricalRecords
 from config.constantes import (
     CAMPOS_CATALOGADOS,
     CAMPOS_CON_AYUDA,
+    ESTADO_REGISTRO_EN_REVISION,
+    ESTADOS_REGISTRO,
     MENSAJE_CODIGO_EN_PAPELERA,
     PATRON_CODIGO_ARBOL,
     PERMISO_CAMBIAR_DEMO,
@@ -88,6 +90,9 @@ class Arbol(models.Model):
     `motivo_eliminacion`) y puede restaurarse. `objects` trae solo los vigentes; `todos`, también
     los de la papelera. Cada cambio queda en `history`.
 
+    `estado_registro` y `motivos_revision` los pone la regla de calidad (nunca se editan a mano):
+    un árbol nuevo nace «en revisión» y solo sale en la API cuando la regla lo publica.
+
     El `uid` identifica al árbol para siempre, aunque su `codigo` se corrija. La administración
     del censo puede destacar árboles de un sector, con un motivo y hasta un tope por sector.
     """
@@ -127,6 +132,13 @@ class Arbol(models.Model):
     demo = models.BooleanField(default=False)
     destacado = models.BooleanField(default=False)
     motivo_destacado = models.TextField(null=True, blank=True)
+    estado_registro = models.CharField(
+        max_length=LARGO_TEXTO,
+        choices=ESTADOS_REGISTRO,
+        default=ESTADO_REGISTRO_EN_REVISION,
+        editable=False,
+    )
+    motivos_revision = models.TextField(blank=True, default="", editable=False)
     creado_en = models.DateTimeField(auto_now_add=True)
     actualizado_en = models.DateTimeField(auto_now=True)
     eliminado_en = models.DateTimeField(null=True, blank=True)
@@ -148,28 +160,19 @@ class Arbol(models.Model):
         permissions = [(PERMISO_CAMBIAR_DEMO, "Puede cambiar la marca demo de un árbol")]
         constraints = [
             models.CheckConstraint(condition=~Q(fuente=""), name="arbol_fuente_no_vacia"),
-            models.CheckConstraint(
-                condition=Q(destacado=False)
-                | (Q(motivo_destacado__isnull=False) & ~Q(motivo_destacado="")),
-                name="arbol_destacado_con_motivo",
-            ),
         ]
 
     def clean(self):
-        """El código no choca con la papelera; un destacado lleva motivo y cabe en el tope.
+        """El código no choca con la papelera y un destacado cabe en el tope.
 
-        Un árbol que está en la papelera no cuenta para el tope de su sector.
+        El motivo de un destacado es opcional: vacío se guarda como null. Un árbol que está en la
+        papelera no cuenta para el tope de su sector.
         """
         super().clean()
         self._validar_codigo_fuera_de_la_papelera()
-        if not self.destacado:
-            self.motivo_destacado = None
-            return
-        if not (self.motivo_destacado or "").strip():
-            raise ValidationError(
-                {"motivo_destacado": "Un árbol destacado necesita un motivo que lo explique."}
-            )
-        if self.eliminado_en is not None:
+        motivo = (self.motivo_destacado or "").strip() or None
+        self.motivo_destacado = motivo if self.destacado else None
+        if not self.destacado or self.eliminado_en is not None:
             return
         otros_destacados = Arbol.objects.filter(sector_id=self.sector_id, destacado=True).exclude(
             pk=self.pk

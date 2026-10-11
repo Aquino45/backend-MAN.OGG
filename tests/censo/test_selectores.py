@@ -5,27 +5,26 @@ from datetime import UTC, datetime
 import pytest
 from django.contrib.gis.geos import Point
 
-from apps.censo.models import Arbol, Sector
-from apps.censo.selectores import arbol_por_codigo, arboles_de_sector, sectores_con_total
-from config.constantes import SRID_MAPA, SRID_UTM_CENSO
+from apps.censo.models import Sector
+from apps.censo.selectores import (
+    arbol_por_codigo,
+    arboles_de_sector,
+    publicados,
+    sectores_con_total,
+)
+from config.constantes import ESTADO_REGISTRO_EN_REVISION, SRID_MAPA, SRID_UTM_CENSO
+from tests.censo.conftest import arbol_evaluado
 
-FUENTE_PRUEBA = "Prueba de selectores"
 LONGITUD_CAMPUS = -76.8
 LATITUD_CAMPUS = -12.0
 TOLERANCIA_GRADOS = 0.2
 CONSULTAS_DE_LA_CARTILLA = 1 + 3  # el árbol, más ayudas, valores y fichas
 
 
-def crear_arbol(codigo, sector_id=1, ubicacion=None, **extra):
-    """Árbol de prueba: siempre con fuente y `demo=True`."""
-    return Arbol.objects.create(
-        codigo=codigo,
-        sector_id=sector_id,
-        ubicacion=ubicacion,
-        fuente=FUENTE_PRUEBA,
-        demo=True,
-        **extra,
-    )
+def crear_arbol(codigo, sector_id=1, **extra):
+    """Árbol de prueba completo y publicado (`demo=True`, sin brigada); con `extra` se cambia."""
+    extra.setdefault("brigada", None)
+    return arbol_evaluado(codigo, sector_id, demo=True, **extra)
 
 
 def punto_utm(coordenadas):
@@ -38,13 +37,13 @@ def test_sectores_ordenados_por_id(sectores):
     assert len(ids) == Sector.objects.count()
 
 
-def test_total_arboles_cuenta_los_del_sector_y_los_muertos(sectores, punto_dentro):
+def test_total_arboles_cuenta_solo_los_publicados_de_cada_sector(sectores, punto_dentro):
     crear_arbol("S01-A001", ubicacion=punto_utm(punto_dentro), dap_cm=30)
     crear_arbol("S01-A002")
-    crear_arbol("S01-A003", dap_cm=None, nombre_comun=None)  # «muerto»: sin dato, se cuenta
+    crear_arbol("S01-A003", dap_cm=None, nombre_comun=None)  # «muerto»: en revisión, no cuenta
     crear_arbol("S02-A001", sector_id=2)
     totales = {sector.id: sector.total_arboles for sector in sectores_con_total()}
-    assert totales[1] == 3
+    assert totales[1] == 2
     assert totales[2] == 1
     assert totales[3] == 0
 
@@ -95,19 +94,21 @@ def test_ubicacion_mapa_cae_dentro_del_sector_en_wgs84(sectores, punto_dentro):
     assert arbol.ubicacion_mapa.y == pytest.approx(LATITUD_CAMPUS, abs=TOLERANCIA_GRADOS)
 
 
-def test_arbol_sin_ubicacion_tiene_ubicacion_mapa_none(sectores):
+def test_un_arbol_en_revision_no_sale_en_la_lista_ni_en_la_cartilla(sectores):
     crear_arbol("S01-A001")
-    assert arboles_de_sector(1)[0].ubicacion_mapa is None
-    assert arbol_por_codigo("S01-A001").ubicacion_mapa is None
+    en_revision = crear_arbol("S01-A009", dap_cm=None, nombre_comun=None, nombre_cientifico=None)
+
+    assert en_revision.estado_registro == ESTADO_REGISTRO_EN_REVISION
+    assert arbol_por_codigo("S01-A009") is None
+    assert [a.codigo for a in arboles_de_sector(1)] == ["S01-A001"]
 
 
-def test_arbol_muerto_se_devuelve_tal_cual(sectores):
-    crear_arbol("S01-A009", dap_cm=None, nombre_comun=None, nombre_cientifico=None)
-    arbol = arbol_por_codigo("S01-A009")
-    assert arbol.dap_cm is None
-    assert arbol.nombre_comun is None
-    assert arbol.ubicacion is None
-    assert [a.codigo for a in arboles_de_sector(1)] == ["S01-A009"]
+def test_publicados_es_el_unico_punto_y_excluye_revision_y_papelera(sectores):
+    crear_arbol("S01-A001")
+    crear_arbol("S01-A002", nombre_comun=None)
+    crear_arbol("S01-A003", eliminado_en=datetime.now(tz=UTC), motivo_eliminacion="Duplicado")
+
+    assert [arbol.codigo for arbol in publicados()] == ["S01-A001"]
 
 
 def test_arbol_por_codigo_trae_ubicacion_mapa(sectores, punto_dentro):

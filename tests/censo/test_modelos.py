@@ -194,19 +194,15 @@ def test_el_uid_es_unico_y_no_se_edita():
 
 
 @pytest.mark.django_db
-def test_destacado_sin_motivo_no_valida(sector):
-    for motivo in (None, "", "   "):
-        with pytest.raises(ValidationError) as error:
-            _arbol(sector, destacado=True, motivo_destacado=motivo).full_clean()
+@pytest.mark.parametrize("motivo", [None, "", "   "])
+def test_destacado_sin_motivo_valida_y_el_motivo_queda_en_null(sector, motivo):
+    arbol = _arbol(sector, destacado=True, motivo_destacado=motivo)
 
-        assert "motivo_destacado" in error.value.message_dict, repr(motivo)
+    arbol.full_clean()
+    arbol.save()
+    arbol.refresh_from_db()
 
-
-@pytest.mark.django_db
-@pytest.mark.parametrize("motivo", [None, ""])
-def test_destacado_sin_motivo_se_rechaza_en_la_bd(sector, motivo):
-    with pytest.raises(IntegrityError), transaction.atomic():
-        _arbol(sector, destacado=True, motivo_destacado=motivo).save()
+    assert (arbol.destacado, arbol.motivo_destacado) == (True, None)
 
 
 @pytest.mark.django_db

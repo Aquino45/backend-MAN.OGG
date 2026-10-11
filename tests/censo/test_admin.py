@@ -193,14 +193,14 @@ def test_la_fuente_es_obligatoria_en_el_alta(sectores, cliente_editor):
 
 
 @pytest.mark.parametrize("motivo", ["", "    "])
-def test_un_destacado_solo_con_espacios_se_rechaza_en_el_panel(sectores, cliente_editor, motivo):
+def test_un_destacado_sin_motivo_se_guarda_con_el_motivo_en_null(sectores, cliente_editor, motivo):
     datos = datos_de_alta(destacado="on", motivo_destacado=motivo)
 
     respuesta = cliente_editor.post(reverse("admin:censo_arbol_add"), datos)
 
-    assert respuesta.status_code == 200
-    assert "motivo_destacado" in respuesta.context["adminform"].form.errors
-    assert not Arbol.todos.exists()
+    assert respuesta.status_code == 302
+    arbol = Arbol.todos.get()
+    assert (arbol.destacado, arbol.motivo_destacado) == (True, None)
 
 
 def test_el_tope_de_destacados_se_avisa_en_el_panel(nuevo_arbol, cliente_editor):
@@ -334,9 +334,9 @@ def test_la_papelera_no_permite_crear_arboles(cliente_administrador, sectores):
 
 
 def arbol_que_no_valida(nuevo_arbol, codigo):
-    """Destacado con motivo de solo espacios: la BD lo acepta, pero full_clean lo rechaza."""
-    arbol = nuevo_arbol(codigo, destacado=True, motivo_destacado=MOTIVO_DESTACADO)
-    Arbol.objects.filter(pk=arbol.pk).update(motivo_destacado="   ")
+    """Con el código mal formado: la BD lo acepta, pero full_clean lo rechaza."""
+    arbol = nuevo_arbol(codigo)
+    Arbol.objects.filter(pk=arbol.pk).update(codigo=f"{codigo}0")
     return arbol
 
 

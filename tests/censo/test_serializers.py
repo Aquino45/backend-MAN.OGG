@@ -20,7 +20,12 @@ from apps.censo.api.serializers import (
     SectorColeccionSerializer,
 )
 from apps.censo.models import Arbol, Sector
-from config.constantes import DECIMALES_COORDENADAS, DECIMALES_UTM, SRID_UTM_CENSO
+from config.constantes import (
+    DECIMALES_COORDENADAS,
+    DECIMALES_UTM,
+    ESTADO_REGISTRO_PUBLICADO,
+    SRID_UTM_CENSO,
+)
 
 RUTA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "validar_contrato.py"
 FUENTE_PRUEBA = "Prueba de serializers"
@@ -93,8 +98,13 @@ def es_numero(valor):
 
 
 def crear_arbol(codigo, ubicacion=None, **extra):
-    """Árbol de prueba: siempre con fuente y `demo=True`."""
+    """Árbol de prueba: siempre con fuente y `demo=True`, y ya publicado.
+
+    Estos tests miran la forma de la salida (con y sin datos), no la regla de calidad; por eso
+    el estado se fija a mano para que el selector lo entregue.
+    """
     extra.setdefault("fuente", FUENTE_PRUEBA)
+    extra.setdefault("estado_registro", ESTADO_REGISTRO_PUBLICADO)
     return Arbol.objects.create(codigo=codigo, sector_id=1, ubicacion=ubicacion, demo=True, **extra)
 
 
