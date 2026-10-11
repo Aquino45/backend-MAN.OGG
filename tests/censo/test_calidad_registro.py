@@ -2,9 +2,11 @@
 
 from datetime import UTC, datetime
 from decimal import Decimal
+from io import StringIO
 
 import pytest
 from django.contrib.gis.geos import Point, Polygon
+from django.core.management import call_command
 
 from apps.censo.models import Arbol, ValorCatalogo
 from apps.censo.servicios.calidad_registro import (
@@ -371,3 +373,17 @@ def test_no_es_duplicado_con_otra_especie_ni_con_su_propio_codigo(sectores):
         is None
     )
     assert buscar_duplicado_por_ubicacion("S01-A002", None, existente.nombre_cientifico) is None
+
+
+def test_el_comando_recalcular_calidad_imprime_el_reporte(sectores):
+    arbol_evaluado("S01-A001")
+    arbol_evaluado("S01-A002", nombre_comun=None)
+    salida = StringIO()
+
+    call_command("recalcular_calidad", stdout=salida)
+
+    texto = salida.getvalue()
+    assert "Árboles revisados: 2" in texto
+    assert "Publicados: 1" in texto
+    assert "En revisión: 1" in texto
+    assert "Catálogo sin cargar en: " in texto
