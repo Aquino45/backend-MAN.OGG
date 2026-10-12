@@ -1,0 +1,53 @@
+{% extends "admin/censo/carga/base.html" %}
+{% block content %}
+<h2>{{ textos.titulo_revision }}</h2>
+<p class="help">{{ textos.ayuda_revision }}</p>
+<form method="post">
+  {% csrf_token %}
+  <table>
+    <thead>
+      <tr>
+        <th>{{ textos.columna_codigo }}</th>
+        <th>{{ textos.columna_motivos }}</th>
+        <th>{{ textos.columna_campos }}</th>
+        <th>{{ textos.etiqueta_conservar }}</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for revisada in revisadas %}
+      <tr>
+        <td>{{ revisada.fila.codigo }}<br><small>fila {{ revisada.fila.numero_fila }}</small></td>
+        <td><ul>{% for motivo in revisada.motivos %}<li>{{ motivo }}</li>{% endfor %}</ul></td>
+        <td>
+          {% for campo in revisada.campos %}
+          <div class="carga-problema">
+            <label for="id_{{ campo.nombre }}">{{ campo.etiqueta }}</label>
+            {% if campo.tipo == 'lista' %}
+            <select name="{{ campo.nombre }}" id="id_{{ campo.nombre }}">
+              <option value=""{% if campo.valor == '' %} selected{% endif %}>{{ textos.texto_sin_dato }}</option>
+              {% if campo.fuera_de_la_lista %}<option value="{{ campo.valor }}" selected>{{ campo.valor }}</option>{% endif %}
+              {% for opcion in campo.opciones %}<option value="{{ opcion }}"{% if opcion == campo.valor %} selected{% endif %}>{{ opcion }}</option>{% endfor %}
+            </select>
+            {% elif campo.tipo == 'numero' %}
+            <input type="number" step="any" name="{{ campo.nombre }}" id="id_{{ campo.nombre }}" value="{{ campo.valor }}">
+            {% else %}
+            <input type="text" name="{{ campo.nombre }}" id="id_{{ campo.nombre }}" value="{{ campo.valor }}">
+            {% endif %}
+            {% if campo.en_planilla %}<small>{{ campo.en_planilla }}</small>{% endif %}
+          </div>
+          {% endfor %}
+        </td>
+        <td>
+          <input type="checkbox" name="{{ revisada.nombre_conservar }}" id="id_{{ revisada.nombre_conservar }}"{% if revisada.conservar %} checked{% endif %}>
+          <label for="id_{{ revisada.nombre_conservar }}" class="vCheckboxLabel">{{ textos.etiqueta_conservar }} {{ revisada.fila.codigo }}</label>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="carga-acciones">
+    <input type="submit" class="default" value="{{ textos.boton_guardar }}">
+    <a class="button" href="{% url 'admin:censo_lotecarga_resumen' lote.pk %}">{{ textos.boton_volver }}</a>
+  </p>
+</form>
+{% endblock %}

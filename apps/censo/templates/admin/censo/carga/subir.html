@@ -1,0 +1,32 @@
+{% extends "admin/censo/carga/base.html" %}
+{% block content %}
+<p class="help">{{ textos.ayuda_subir }}</p>
+<form method="post" enctype="multipart/form-data">
+  {% csrf_token %}
+  <p>
+    <label for="id_{{ campo_archivo }}">{{ textos.etiqueta_archivo }}</label>
+    <input type="file" name="{{ campo_archivo }}" id="id_{{ campo_archivo }}" accept="{{ extension }}" required>
+  </p>
+  <input type="submit" class="default" value="{{ textos.boton_subir }}">
+</form>
+<h2>{{ textos.titulo_cargas_anteriores }}</h2>
+{% if lotes %}
+<table>
+  <thead>
+    <tr><th>Fecha</th><th>Archivo</th><th>Estado</th><th>Filas</th></tr>
+  </thead>
+  <tbody>
+    {% for lote in lotes %}
+    <tr>
+      <td>{{ lote.fecha|date:"d/m/Y H:i" }}</td>
+      <td>{% if lote.estado == estado_validado %}<a href="{% url 'admin:censo_lotecarga_resumen' lote.pk %}">{{ lote.nombre_archivo }}</a>{% else %}{{ lote.nombre_archivo }}{% endif %}</td>
+      <td>{{ lote.get_estado_display }}</td>
+      <td>{{ lote.filas_leidas }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% else %}
+<p>{{ textos.texto_sin_cargas }}</p>
+{% endif %}
+{% endblock %}

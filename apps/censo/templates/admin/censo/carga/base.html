@@ -1,0 +1,16 @@
+{% extends "admin/base_site.html" %}
+{% comment %}Base de las pantallas de «Cargar planilla»: migas de pan y estilos del resaltado.{% endcomment %}
+{% block extrastyle %}{{ block.super }}
+<style>
+  .carga-alerta { border: 2px solid var(--error-fg); padding: 12px 16px; margin: 16px 0; }
+  .carga-problema { outline: 2px solid var(--error-fg); outline-offset: 2px; padding: 4px; margin: 6px 0; }
+  .carga-codigos { margin: 0 0 12px; }
+  .carga-acciones form { display: inline-block; margin-right: 8px; }
+</style>
+{% endblock %}
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Inicio</a> &rsaquo;
+  {% if request.resolver_match.url_name == 'censo_lotecarga_changelist' %}{{ title }}{% else %}<a href="{{ url_de_subida }}">{{ title }}</a>{% endif %}
+</div>
+{% endblock %}

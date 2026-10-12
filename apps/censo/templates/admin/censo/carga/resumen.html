@@ -1,0 +1,28 @@
+{% extends "admin/censo/carga/base.html" %}
+{% block content %}
+<h2>{{ textos.titulo_resumen }}</h2>
+<p><strong>{{ resumen }}</strong></p>
+{% if problemas %}
+<div class="carga-alerta" role="alert" aria-labelledby="carga-alerta-texto">
+  <p id="carga-alerta-texto">{{ alerta }}</p>
+  <p>
+    <a class="button default" href="{% url 'admin:censo_lotecarga_revisar' lote.pk %}">{{ textos.boton_si }}</a>
+    <a class="button" href="{% url 'admin:censo_lotecarga_no' lote.pk %}">{{ textos.boton_no }}</a>
+  </p>
+</div>
+{% else %}
+<p>{{ sin_problemas }}</p>
+<div class="carga-acciones">
+  <form method="post" action="{% url 'admin:censo_lotecarga_confirmar' lote.pk %}">
+    {% csrf_token %}
+    <input type="submit" class="default" value="{{ textos.boton_incorporar }}">
+  </form>
+</div>
+{% endif %}
+<div class="carga-acciones">
+  <form method="post" action="{% url 'admin:censo_lotecarga_cancelar' lote.pk %}">
+    {% csrf_token %}
+    <input type="submit" value="{{ textos.boton_cancelar }}">
+  </form>
+</div>
+{% endblock %}
