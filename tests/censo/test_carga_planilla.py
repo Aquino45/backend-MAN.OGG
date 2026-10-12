@@ -526,7 +526,9 @@ def test_con_si_un_vacio_sin_corregir_mantiene_el_dato_que_ya_habia_y_publica(
 
     arbol = Arbol.todos.get(codigo="S01-A001")
     assert arbol.altura_total_m == Decimal("2.85")
-    assert arbol.nombre_comun == "Molle"  # lo que la fila sí trae se actualiza
+    assert (
+        arbol.nombre_comun == TEXTOS_FILA_COMPLETA["nombre_comun"]
+    )  # lo que la fila trae se actualiza
     assert (arbol.estado_registro, arbol.motivos_revision) == (ESTADO_REGISTRO_PUBLICADO, "")
 
 
@@ -574,6 +576,8 @@ def test_la_planilla_de_tres_filas_danadas_con_no_deja_la_bd_identica(
     esperados = {a["codigo"]: a for a in antes}
     for codigo in ("S01-A005", "S01-A006", "S01-A008"):
         assert por_codigo[codigo] == esperados[codigo]
+    assert por_codigo["S01-A001"] != esperados["S01-A001"]  # la fila buena sí se actualiza
+    assert por_codigo["S01-A001"]["estado_registro"] == ESTADO_REGISTRO_PUBLICADO
     assert len(despues) == len(antes)
 
 
