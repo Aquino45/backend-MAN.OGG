@@ -25,6 +25,7 @@ from tests.censo.conftest import (
     NOMBRE_ARCHIVO,
     TEXTOS_FILA_COMPLETA,
     arbol_de_ejemplo,
+    arbol_evaluado,
     crear_planilla,
     fila,
 )
@@ -371,6 +372,23 @@ def test_una_fila_completa_entra_publicada_y_una_vacia_entra_en_revision(
     assert reporte.publicados == 1
     assert [r.codigo for r in reporte.en_revision] == ["S01-A002"]
     assert "Falta el dato «Ubicación»" in reporte.en_revision[0].motivos
+
+
+def test_un_vacio_entra_en_revision_por_la_consola_aunque_el_arbol_ya_existiera(
+    ruta_planilla, punto_dentro
+):
+    arbol_evaluado("S01-A001", altura_total_m=Decimal("2.85"))
+    crear_planilla(
+        ruta_planilla, [fila_completa(punto_dentro, codigo="S01-A001", altura_total_m=None)]
+    )
+
+    reporte = importar_planilla(ruta_planilla)
+
+    arbol = Arbol.objects.get(codigo="S01-A001")
+    assert arbol.estado_registro == ESTADO_REGISTRO_EN_REVISION
+    assert arbol.altura_total_m is None
+    assert "Falta el dato «Altura total»" in arbol.motivos_revision
+    assert [r.codigo for r in reporte.en_revision] == ["S01-A001"]
 
 
 def test_nada_se_descarta_por_calidad_aunque_el_registro_este_muy_mal(ruta_planilla, sectores):

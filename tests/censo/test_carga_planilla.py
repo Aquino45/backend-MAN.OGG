@@ -6,6 +6,7 @@ panel con el cliente de pruebas.
 
 import hashlib
 from datetime import timedelta
+from decimal import Decimal
 from io import BytesIO
 
 import pytest
@@ -122,7 +123,7 @@ def test_validar_no_guarda_ningun_arbol_y_el_resumen_cuenta_cada_clase(
 
     cuerpo = texto(respuesta)
     assert "1 listos · 1 con campos vacíos · 3 inconsistentes · 2 duplicados" in cuerpo
-    assert "Se detectaron 5 registros inconsistentes o duplicados. ¿Quieres revisarlos?" in cuerpo
+    assert "Se detectaron 6 registros inconsistentes o duplicados. ¿Quieres revisarlos?" in cuerpo
     assert list(Arbol.todos.values_list("codigo", flat=True)) == ["S01-A004"]
     assert Arbol.todos.get().nombre_comun == "Ya registrado"
 
@@ -221,11 +222,10 @@ def test_guardar_publica_lo_corregido_y_conservado_y_manda_a_revision_lo_que_sig
     respuesta = cliente_administrador.post(url("revisar", lote_mixto), datos, follow=True)
 
     cuerpo = texto(respuesta)
-    assert "3 publicados · 2 en revisión · 2 no incorporados · 0 de ejemplo sin cambios" in cuerpo
+    assert "3 publicados · 1 en revisión · 3 no incorporados · 0 de ejemplo sin cambios" in cuerpo
     estados = dict(Arbol.todos.values_list("codigo", "estado_registro"))
     assert estados == {
         "S01-A001": ESTADO_REGISTRO_PUBLICADO,
-        "S01-A002": ESTADO_REGISTRO_EN_REVISION,
         "S01-A003": ESTADO_REGISTRO_PUBLICADO,
         "S01-A004": ESTADO_REGISTRO_EN_REVISION,
         "S01-A005": ESTADO_REGISTRO_PUBLICADO,
@@ -336,7 +336,11 @@ def test_un_ejemplo_no_se_pisa_con_una_fila_incompleta_y_se_cuenta(
         [fila(codigo="S01-A001", nombre_comun="Incompleto"), fila_buena(punto, "S01-A002", 2)],
     )
 
-    respuesta = cliente_administrador.post(url("confirmar", lote), follow=True)
+    pk = fila_del_lote(lote, "S01-A001").pk
+
+    respuesta = cliente_administrador.post(
+        url("revisar", lote), {f"{PREFIJO_CONSERVAR_CARGA}{pk}": "on"}, follow=True
+    )
 
     assert "1 publicados · 0 en revisión · 0 no incorporados · 1 de ejemplo sin cambios" in texto(
         respuesta
@@ -375,12 +379,11 @@ def test_confirmar_sin_revisar_incorpora_solo_los_buenos_y_deja_lo_demas_como_es
 ):
     respuesta = cliente_administrador.post(url("confirmar", lote_mixto), follow=True)
 
-    assert "1 publicados · 1 en revisión · 5 no incorporados · 0 de ejemplo sin cambios" in texto(
+    assert "1 publicados · 0 en revisión · 6 no incorporados · 0 de ejemplo sin cambios" in texto(
         respuesta
     )
     assert sorted(Arbol.todos.values_list("codigo", flat=True)) == [
         "S01-A001",
-        "S01-A002",
         "S01-A004",
     ]
     previo = Arbol.todos.get(codigo="S01-A004")
@@ -425,6 +428,157 @@ def test_cancelar_no_guarda_nada_y_borra_las_filas(lote_mixto, cliente_administr
     assert lote_mixto.estado == ESTADO_LOTE_CANCELADO
     assert not lote_mixto.filas.exists()
     assert list(Arbol.todos.values_list("codigo", flat=True)) == ["S01-A004"]
+
+
+# --- vacíos: son un problema y una celda vacía no borra un dato que ya existe -----------------
+
+
+def foto_de_la_bd():
+    """Todos los árboles con todos sus valores, para comprobar que la BD quedó igual."""
+    return list(Arbol.todos.order_by("codigo").values())
+
+
+def fila_vacia_de_altura(punto, codigo, desplazamiento_m=0):
+    return fila_buena(punto, codigo, desplazamiento_m, altura_total_m=None)
+
+
+def test_la_alerta_cuenta_los_vacios_junto_a_inconsistentes_y_duplicados(
+    cliente_administrador, tmp_path, punto
+):
+    lote = cargar(
+        cliente_administrador,
+        tmp_path,
+        [
+            fila(codigo="S01-A001"),
+            fila_buena(punto, "S01-A002", 1, dap_cm="muerto"),
+            fila_buena(punto, "S01-A003", 2),
+            fila_buena(punto, "S01-A003", 3),
+        ],
+    )
+
+    cuerpo = texto(cliente_administrador.get(url("resumen", lote)))
+
+    assert "Se detectaron 4 registros inconsistentes o duplicados. ¿Quieres revisarlos?" in cuerpo
+
+
+def test_con_no_un_vacio_de_un_codigo_existente_no_cambia_nada(
+    cliente_administrador, tmp_path, punto
+):
+    arbol_evaluado("S01-A001", altura_total_m=Decimal("2.85"))
+    lote = cargar(cliente_administrador, tmp_path, [fila_vacia_de_altura(punto, "S01-A001")])
+    antes = foto_de_la_bd()
+
+    assert "S01-A001 no se actualiza; se mantiene lo que había" in texto(
+        cliente_administrador.get(url("no", lote))
+    )
+    cliente_administrador.post(url("confirmar", lote))
+
+    assert foto_de_la_bd() == antes
+    arbol = Arbol.todos.get(codigo="S01-A001")
+    assert (arbol.altura_total_m, arbol.estado_registro) == (
+        Decimal("2.85"),
+        ESTADO_REGISTRO_PUBLICADO,
+    )
+
+
+def test_con_no_un_vacio_de_un_codigo_nuevo_no_se_incorpora(cliente_administrador, tmp_path, punto):
+    lote = cargar(cliente_administrador, tmp_path, [fila_vacia_de_altura(punto, "S01-A001")])
+
+    cuerpo = texto(cliente_administrador.get(url("no", lote)))
+    cliente_administrador.post(url("confirmar", lote))
+
+    assert "El árbol S01-A001 no está en el registro y no se incorporará" in cuerpo
+    assert not Arbol.todos.filter(codigo="S01-A001").exists()
+
+
+def test_con_si_el_vacio_aparece_en_la_revision_y_corregido_se_publica(
+    cliente_administrador, tmp_path, punto
+):
+    lote = cargar(cliente_administrador, tmp_path, [fila_vacia_de_altura(punto, "S01-A001")])
+    pk = fila_del_lote(lote, "S01-A001").pk
+
+    cuerpo = texto(cliente_administrador.get(url("revisar", lote)))
+    assert f'name="{PREFIJO_CAMPO_CARGA}{pk}-altura_total_m"' in cuerpo
+    assert f'name="{PREFIJO_CONSERVAR_CARGA}{pk}"' in cuerpo
+    assert "checked" not in cuerpo
+
+    datos = {
+        f"{PREFIJO_CONSERVAR_CARGA}{pk}": "on",
+        f"{PREFIJO_CAMPO_CARGA}{pk}-altura_total_m": "6.2",
+    }
+    cliente_administrador.post(url("revisar", lote), datos)
+
+    arbol = Arbol.todos.get(codigo="S01-A001")
+    assert (arbol.altura_total_m, arbol.estado_registro) == (
+        Decimal("6.2"),
+        ESTADO_REGISTRO_PUBLICADO,
+    )
+
+
+def test_con_si_un_vacio_sin_corregir_mantiene_el_dato_que_ya_habia_y_publica(
+    cliente_administrador, tmp_path, punto
+):
+    arbol_evaluado("S01-A001", altura_total_m=Decimal("2.85"), nombre_comun="Ya registrado")
+    lote = cargar(cliente_administrador, tmp_path, [fila_vacia_de_altura(punto, "S01-A001")])
+    pk = fila_del_lote(lote, "S01-A001").pk
+
+    cliente_administrador.post(url("revisar", lote), {f"{PREFIJO_CONSERVAR_CARGA}{pk}": "on"})
+
+    arbol = Arbol.todos.get(codigo="S01-A001")
+    assert arbol.altura_total_m == Decimal("2.85")
+    assert (
+        arbol.nombre_comun == TEXTOS_FILA_COMPLETA["nombre_comun"]
+    )  # lo que la fila trae se actualiza
+    assert (arbol.estado_registro, arbol.motivos_revision) == (ESTADO_REGISTRO_PUBLICADO, "")
+
+
+def test_un_vacio_sin_corregir_sobre_un_dato_incompleto_queda_en_revision(
+    cliente_administrador, tmp_path, punto
+):
+    arbol_evaluado("S01-A001", altura_total_m=None)
+    lote = cargar(cliente_administrador, tmp_path, [fila_vacia_de_altura(punto, "S01-A001")])
+    pk = fila_del_lote(lote, "S01-A001").pk
+
+    cliente_administrador.post(url("revisar", lote), {f"{PREFIJO_CONSERVAR_CARGA}{pk}": "on"})
+
+    arbol = Arbol.todos.get(codigo="S01-A001")
+    assert arbol.estado_registro == ESTADO_REGISTRO_EN_REVISION
+    assert "Falta el dato «Altura total»" in arbol.motivos_revision
+
+
+def test_la_planilla_de_tres_filas_danadas_con_no_deja_la_bd_identica(
+    cliente_administrador, tmp_path, punto
+):
+    arbol_evaluado("S01-A001")
+    arbol_evaluado("S01-A005", altura_total_m=Decimal("2.85"))
+    arbol_evaluado("S01-A006")
+    arbol_evaluado("S01-A008")
+    lote = cargar(
+        cliente_administrador,
+        tmp_path,
+        [
+            fila_buena(punto, "S01-A001", 1),
+            fila_vacia_de_altura(punto, "S01-A005", 2),
+            fila_buena(punto, "S01-A006", 3, dap_cm="muerto"),
+            fila_buena(punto, "S01-A008", 4),
+            fila_buena(punto, "S01-A008", 5, dap_cm=69.3),
+        ],
+    )
+    antes = foto_de_la_bd()
+
+    cuerpo = texto(cliente_administrador.get(url("no", lote)))
+    cliente_administrador.post(url("confirmar", lote))
+
+    for codigo in ("S01-A005", "S01-A006", "S01-A008"):
+        assert f"{codigo} no se actualiza; se mantiene lo que había" in cuerpo
+    despues = foto_de_la_bd()
+    por_codigo = {a["codigo"]: a for a in despues}
+    esperados = {a["codigo"]: a for a in antes}
+    for codigo in ("S01-A005", "S01-A006", "S01-A008"):
+        assert por_codigo[codigo] == esperados[codigo]
+    assert por_codigo["S01-A001"] != esperados["S01-A001"]  # la fila buena sí se actualiza
+    assert por_codigo["S01-A001"]["estado_registro"] == ESTADO_REGISTRO_PUBLICADO
+    assert len(despues) == len(antes)
 
 
 # --- archivos que no sirven ------------------------------------------------------------

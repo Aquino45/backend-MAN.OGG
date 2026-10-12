@@ -127,7 +127,7 @@ class CargaPlanillaAdmin(admin.ModelAdmin):
         lote = self._lote_propio(request, lote_id)
         if lote.estado != ESTADO_LOTE_VALIDADO:
             return self._lote_cerrado(request)
-        problemas = lote.inconsistentes + lote.duplicados
+        problemas = lote.con_campos_vacios + lote.inconsistentes + lote.duplicados
         formato = FORMATO_ALERTA_UN_PROBLEMA if problemas == 1 else FORMATO_ALERTA_PROBLEMAS
         return self._pantalla(
             request,
