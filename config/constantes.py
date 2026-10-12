@@ -679,9 +679,7 @@ ve."""
 TEXTO_ORIGEN_SIN_DATO = "Sin dato"
 """Lo que el panel del árbol muestra de origen si su especie no tiene origen (o no hay especie)."""
 
-MENSAJE_ALIAS_REPETIDO = (
-    "El alias «{alias}» ya es un nombre o un alias de la especie {especie}."
-)
+MENSAJE_ALIAS_REPETIDO = "El alias «{alias}» ya es un nombre o un alias de la especie {especie}."
 MENSAJE_NOMBRE_CIENTIFICO_REPETIDO = (
     "El nombre científico «{nombre}» ya es un nombre o un alias de la especie {especie}."
 )
