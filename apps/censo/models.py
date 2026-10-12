@@ -37,6 +37,7 @@ from config.constantes import (
     ETIQUETA_CO2_SIMULADO,
     ETIQUETA_FECHA_UBICACION_EDITADA,
     ETIQUETA_UBICACION_EDITADA_EN_PANEL,
+    ETIQUETAS_DE_CAMPOS_CON_AYUDA,
     LARGO_TEXTO,
     MENSAJE_CODIGO_EN_PAPELERA,
     PATRON_CODIGO_ARBOL,
@@ -56,19 +57,23 @@ DECIMALES_MEDIDA = 3
 """Decimales de las medidas (altura, DAP, copas, CO₂)."""
 
 
-def _medida():
+def _medida(etiqueta):
     """Campo decimal opcional: null significa «Sin dato»."""
     return models.DecimalField(
-        max_digits=DIGITOS_MEDIDA, decimal_places=DECIMALES_MEDIDA, null=True, blank=True
+        max_digits=DIGITOS_MEDIDA,
+        decimal_places=DECIMALES_MEDIDA,
+        null=True,
+        blank=True,
+        verbose_name=etiqueta,
     )
 
 
-def _texto_opcional():
+def _texto_opcional(etiqueta):
     """Texto corto opcional: null significa «Sin dato»."""
-    return models.CharField(max_length=LARGO_TEXTO, null=True, blank=True)
+    return models.CharField(max_length=LARGO_TEXTO, null=True, blank=True, verbose_name=etiqueta)
 
 
-def _valor_del_catalogo(campo):
+def _valor_del_catalogo(campo, etiqueta):
     """Referencia opcional a un valor del catálogo de ese campo; null significa «Sin dato»."""
     return models.ForeignKey(
         "censo.ValorCatalogo",
@@ -77,22 +82,25 @@ def _valor_del_catalogo(campo):
         on_delete=models.PROTECT,
         related_name="+",
         limit_choices_to={"campo": campo},
+        verbose_name=etiqueta,
     )
 
 
 class Sector(models.Model):
     """Zona del campus. Su `id` viene del GeoJSON de sectores."""
 
-    id = models.PositiveSmallIntegerField(primary_key=True)
-    nombre = models.CharField(max_length=LARGO_TEXTO)
-    geom = models.PolygonField(srid=SRID_UTM_CENSO)
-    color = models.CharField(max_length=LARGO_TEXTO, null=True, blank=True)
-    provisional = models.BooleanField(default=False)
-    fuente = models.TextField()
+    id = models.PositiveSmallIntegerField(primary_key=True, verbose_name="número")
+    nombre = models.CharField(max_length=LARGO_TEXTO, verbose_name="nombre")
+    geom = models.PolygonField(srid=SRID_UTM_CENSO, verbose_name="fronteras del sector")
+    color = models.CharField(max_length=LARGO_TEXTO, null=True, blank=True, verbose_name="color")
+    provisional = models.BooleanField(default=False, verbose_name="límites provisionales")
+    fuente = models.TextField(verbose_name="fuente")
     history = HistoricalRecords()
 
     class Meta:
         ordering = ["id"]
+        verbose_name = "sector"
+        verbose_name_plural = "sectores"
 
     def __str__(self):
         return self.nombre
@@ -140,65 +148,94 @@ class Arbol(models.Model):
         max_length=LARGO_CODIGO,
         unique=True,
         validators=[RegexValidator(PATRON_CODIGO_ARBOL)],
+        verbose_name="código",
     )
-    uid = models.UUIDField(default=uuid4, unique=True, editable=False)
-    sector = models.ForeignKey(Sector, on_delete=models.PROTECT, related_name="arboles")
-    fecha_registro = models.DateField(null=True, blank=True)
+    uid = models.UUIDField(
+        default=uuid4, unique=True, editable=False, verbose_name="identificador único"
+    )
+    sector = models.ForeignKey(
+        Sector, on_delete=models.PROTECT, related_name="arboles", verbose_name="sector"
+    )
+    fecha_registro = models.DateField(null=True, blank=True, verbose_name="fecha de registro")
     especie = models.ForeignKey(
-        Especie, null=True, blank=True, on_delete=models.PROTECT, related_name="arboles"
+        Especie,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="arboles",
+        verbose_name="especie",
     )
     grupo = models.ForeignKey(
-        GrupoBrigada, null=True, blank=True, on_delete=models.PROTECT, related_name="arboles"
+        GrupoBrigada,
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="arboles",
+        verbose_name="grupo de la brigada",
     )
-    tipo_individuo = _valor_del_catalogo("tipo_individuo")
-    identificacion = _valor_del_catalogo("identificacion")
-    condicion_conservacion = _valor_del_catalogo("condicion_conservacion")
-    ubicacion = models.PointField(srid=SRID_UTM_CENSO, null=True, blank=True)
+    tipo_individuo = _valor_del_catalogo("tipo_individuo", "tipo de individuo")
+    identificacion = _valor_del_catalogo("identificacion", "identificación")
+    condicion_conservacion = _valor_del_catalogo(
+        "condicion_conservacion", "condición de conservación"
+    )
+    ubicacion = models.PointField(
+        srid=SRID_UTM_CENSO, null=True, blank=True, verbose_name="ubicación"
+    )
     ubicacion_editada_en_panel = models.BooleanField(
         default=False, verbose_name=ETIQUETA_UBICACION_EDITADA_EN_PANEL
     )
     fecha_ubicacion_editada = models.DateTimeField(
         null=True, blank=True, verbose_name=ETIQUETA_FECHA_UBICACION_EDITADA
     )
-    altura_total_m = _medida()
-    dap_cm = _medida()
-    copa_ns_m = _medida()
-    copa_eo_m = _medida()
-    co2_almacenado_kg = _medida()
-    co2_captura_anual_kg = _medida()
+    altura_total_m = _medida("altura total (m)")
+    dap_cm = _medida("DAP (cm)")
+    copa_ns_m = _medida("copa norte-sur (m)")
+    copa_eo_m = _medida("copa este-oeste (m)")
+    co2_almacenado_kg = _medida("CO₂ almacenado (kg)")
+    co2_captura_anual_kg = _medida("CO₂ capturado por año (kg)")
     co2_simulado = models.BooleanField(default=False, verbose_name=ETIQUETA_CO2_SIMULADO)
-    estado_general = _valor_del_catalogo("estado_general")
-    estado_copa = _valor_del_catalogo("estado_copa")
-    tronco_danos = _valor_del_catalogo("tronco_danos")
-    raices_base = _valor_del_catalogo("raices_base")
-    interferencia_entorno = _valor_del_catalogo("interferencia_entorno")
-    foto_archivo = _texto_opcional()
-    foto_detalle_archivo = _texto_opcional()
-    observaciones = models.TextField(null=True, blank=True)
-    valores_originales = models.JSONField(default=dict, blank=True)
-    fuente = models.TextField(validators=[MinLengthValidator(1)])
-    fila_origen = models.PositiveIntegerField(null=True, blank=True)
-    demo = models.BooleanField(default=False)
-    destacado = models.BooleanField(default=False)
-    motivo_destacado = models.TextField(null=True, blank=True)
+    estado_general = _valor_del_catalogo("estado_general", "estado general")
+    estado_copa = _valor_del_catalogo("estado_copa", "estado de la copa")
+    tronco_danos = _valor_del_catalogo("tronco_danos", "daños del tronco")
+    raices_base = _valor_del_catalogo("raices_base", "raíces y base")
+    interferencia_entorno = _valor_del_catalogo(
+        "interferencia_entorno", "interferencia del entorno"
+    )
+    foto_archivo = _texto_opcional("archivo de la foto")
+    foto_detalle_archivo = _texto_opcional("archivo de la foto de detalle")
+    observaciones = models.TextField(null=True, blank=True, verbose_name="observaciones")
+    valores_originales = models.JSONField(
+        default=dict, blank=True, verbose_name="valores originales de la planilla"
+    )
+    fuente = models.TextField(validators=[MinLengthValidator(1)], verbose_name="fuente")
+    fila_origen = models.PositiveIntegerField(null=True, blank=True, verbose_name="fila de origen")
+    demo = models.BooleanField(default=False, verbose_name="de ejemplo")
+    destacado = models.BooleanField(default=False, verbose_name="destacado")
+    motivo_destacado = models.TextField(null=True, blank=True, verbose_name="motivo del destacado")
     estado_registro = models.CharField(
         max_length=LARGO_TEXTO,
         choices=ESTADOS_REGISTRO,
         default=ESTADO_REGISTRO_EN_REVISION,
         editable=False,
+        verbose_name="estado del registro",
     )
-    motivos_revision = models.TextField(blank=True, default="", editable=False)
-    creado_en = models.DateTimeField(auto_now_add=True)
-    actualizado_en = models.DateTimeField(auto_now=True)
-    eliminado_en = models.DateTimeField(null=True, blank=True)
+    motivos_revision = models.TextField(
+        blank=True, default="", editable=False, verbose_name="motivos de la revisión"
+    )
+    creado_en = models.DateTimeField(auto_now_add=True, verbose_name="creado el")
+    actualizado_en = models.DateTimeField(auto_now=True, verbose_name="actualizado el")
+    eliminado_en = models.DateTimeField(null=True, blank=True, verbose_name="eliminado el")
     eliminado_por = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
         related_name="arboles_eliminados",
+        verbose_name="eliminado por",
     )
-    motivo_eliminacion = models.TextField(null=True, blank=True)
+    motivo_eliminacion = models.TextField(
+        null=True, blank=True, verbose_name="motivo de la eliminación"
+    )
 
     objects = ArbolesVigentes()  # primero: es el manager por defecto (admin, formularios, API)
     todos = models.Manager()
@@ -206,6 +243,8 @@ class Arbol(models.Model):
 
     class Meta:
         ordering = ["codigo"]
+        verbose_name = "árbol"
+        verbose_name_plural = "árboles"
         permissions = [(PERMISO_CAMBIAR_DEMO, "Puede cambiar la marca demo de un árbol")]
         constraints = [
             models.CheckConstraint(condition=~Q(fuente=""), name="arbol_fuente_no_vacia"),
@@ -269,19 +308,22 @@ class ArbolEnPapelera(Arbol):
 
 def _opciones(campos):
     """Opciones de un campo de texto limitado a una lista de nombres de las constantes."""
-    return [(campo, campo) for campo in campos]
+    return [(campo, ETIQUETAS_DE_CAMPOS_CON_AYUDA.get(campo, campo)) for campo in campos]
 
 
 class AyudaCampo(models.Model):
     """Qué es un dato de la cartilla, en lenguaje simple: el texto del «?» de ese dato."""
 
     campo = models.CharField(
-        max_length=LARGO_TEXTO, unique=True, choices=_opciones(CAMPOS_CON_AYUDA)
+        max_length=LARGO_TEXTO,
+        unique=True,
+        choices=_opciones(CAMPOS_CON_AYUDA),
+        verbose_name="dato",
     )
-    titulo = models.CharField(max_length=LARGO_TEXTO)
-    que_es = models.TextField()
-    orden = models.PositiveSmallIntegerField(default=0)
-    activo = models.BooleanField(default=True)
+    titulo = models.CharField(max_length=LARGO_TEXTO, verbose_name="título")
+    que_es = models.TextField(verbose_name="qué es")
+    orden = models.PositiveSmallIntegerField(default=0, verbose_name="orden")
+    activo = models.BooleanField(default=True, verbose_name="activa")
     history = HistoricalRecords()
 
     class Meta:
@@ -299,11 +341,16 @@ class ValorCatalogo(models.Model):
     `valor` se guarda tal como viene de la planilla; al armar la cartilla se compara normalizado.
     """
 
-    campo = models.CharField(max_length=LARGO_TEXTO, choices=_opciones(CAMPOS_CATALOGADOS))
-    valor = models.CharField(max_length=LARGO_TEXTO)
-    explicacion = models.TextField()
-    orden = models.PositiveSmallIntegerField(default=0)
-    activo = models.BooleanField(default=True)
+    campo = models.CharField(
+        max_length=LARGO_TEXTO, choices=_opciones(CAMPOS_CATALOGADOS), verbose_name="dato"
+    )
+    valor = models.CharField(max_length=LARGO_TEXTO, verbose_name="valor")
+    explicacion = models.TextField(
+        verbose_name="explicación",
+        help_text="Qué significa este valor para un árbol, en lenguaje simple.",
+    )
+    orden = models.PositiveSmallIntegerField(default=0, verbose_name="orden")
+    activo = models.BooleanField(default=True, verbose_name="activo")
     history = HistoricalRecords()
 
     class Meta:
@@ -338,20 +385,26 @@ class LoteCarga(models.Model):
     """
 
     usuario = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="lotes_de_carga"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="lotes_de_carga",
+        verbose_name="usuario",
     )
-    fecha = models.DateTimeField(default=timezone.now)
-    nombre_archivo = models.CharField(max_length=LARGO_TEXTO)
-    sha256 = models.CharField(max_length=64)
+    fecha = models.DateTimeField(default=timezone.now, verbose_name="fecha")
+    nombre_archivo = models.CharField(max_length=LARGO_TEXTO, verbose_name="nombre del archivo")
+    sha256 = models.CharField(max_length=64, verbose_name="huella SHA-256 del archivo")
     estado = models.CharField(
-        max_length=LARGO_TEXTO, choices=ESTADOS_LOTE_CARGA, default=ESTADO_LOTE_VALIDADO
+        max_length=LARGO_TEXTO,
+        choices=ESTADOS_LOTE_CARGA,
+        default=ESTADO_LOTE_VALIDADO,
+        verbose_name="estado",
     )
-    filas_leidas = models.PositiveIntegerField(default=0)
-    listos = models.PositiveIntegerField(default=0)
-    con_campos_vacios = models.PositiveIntegerField(default=0)
-    inconsistentes = models.PositiveIntegerField(default=0)
-    duplicados = models.PositiveIntegerField(default=0)
-    resultado = models.JSONField(default=dict, blank=True)
+    filas_leidas = models.PositiveIntegerField(default=0, verbose_name="filas leídas")
+    listos = models.PositiveIntegerField(default=0, verbose_name="listos")
+    con_campos_vacios = models.PositiveIntegerField(default=0, verbose_name="con campos vacíos")
+    inconsistentes = models.PositiveIntegerField(default=0, verbose_name="inconsistentes")
+    duplicados = models.PositiveIntegerField(default=0, verbose_name="duplicados")
+    resultado = models.JSONField(default=dict, blank=True, verbose_name="resultado")
     objects = LoteCargas()
 
     class Meta:
@@ -378,20 +431,30 @@ class FilaCarga(models.Model):
     y la detección de duplicados encontraron: `[{"campo": …, "porque": …}]`.
     """
 
-    lote = models.ForeignKey(LoteCarga, on_delete=models.CASCADE, related_name="filas")
-    numero_fila = models.PositiveIntegerField()
-    codigo = models.CharField(max_length=LARGO_CODIGO)
-    clasificacion = models.CharField(
-        max_length=LARGO_TEXTO, choices=CLASIFICACIONES_CARGA, default=CLASIFICACION_LISTO
+    lote = models.ForeignKey(
+        LoteCarga, on_delete=models.CASCADE, related_name="filas", verbose_name="carga"
     )
-    datos = models.JSONField()
-    motivos = models.JSONField(default=list, blank=True)
+    numero_fila = models.PositiveIntegerField(verbose_name="número de fila")
+    codigo = models.CharField(max_length=LARGO_CODIGO, verbose_name="código")
+    clasificacion = models.CharField(
+        max_length=LARGO_TEXTO,
+        choices=CLASIFICACIONES_CARGA,
+        default=CLASIFICACION_LISTO,
+        verbose_name="clasificación",
+    )
+    datos = models.JSONField(verbose_name="datos")
+    motivos = models.JSONField(default=list, blank=True, verbose_name="motivos")
     decision = models.CharField(
-        max_length=LARGO_TEXTO, choices=DECISIONES_FILA_CARGA, default=DECISION_SIN_DECIDIR
+        max_length=LARGO_TEXTO,
+        choices=DECISIONES_FILA_CARGA,
+        default=DECISION_SIN_DECIDIR,
+        verbose_name="decisión",
     )
 
     class Meta:
         ordering = ["numero_fila"]
+        verbose_name = "fila de la carga"
+        verbose_name_plural = "filas de la carga"
         constraints = [
             models.UniqueConstraint(fields=["lote", "numero_fila"], name="filacarga_lote_fila")
         ]

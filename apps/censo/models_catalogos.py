@@ -21,9 +21,9 @@ from config.constantes import (
 )
 
 
-def _texto_opcional():
+def _texto_opcional(etiqueta):
     """Texto corto opcional: null significa «Sin dato»."""
-    return models.CharField(max_length=LARGO_TEXTO, null=True, blank=True)
+    return models.CharField(max_length=LARGO_TEXTO, null=True, blank=True, verbose_name=etiqueta)
 
 
 class Especie(models.Model):
@@ -35,10 +35,14 @@ class Especie(models.Model):
     se creó a partir de un nombre que nadie ha confirmado todavía.
     """
 
-    nombre_cientifico = models.CharField(max_length=LARGO_TEXTO, unique=True)
-    nombre_comun = _texto_opcional()
-    alias = models.TextField(blank=True, help_text="Otros nombres de la especie, uno por línea.")
-    familia = _texto_opcional()
+    nombre_cientifico = models.CharField(
+        max_length=LARGO_TEXTO, unique=True, verbose_name="nombre científico"
+    )
+    nombre_comun = _texto_opcional("nombre común")
+    alias = models.TextField(
+        blank=True, help_text="Otros nombres de la especie, uno por línea.", verbose_name="alias"
+    )
+    familia = _texto_opcional("familia")
     origen = models.ForeignKey(
         "censo.ValorCatalogo",
         null=True,
@@ -46,23 +50,36 @@ class Especie(models.Model):
         on_delete=models.PROTECT,
         related_name="especies",
         limit_choices_to={"campo": CAMPO_ORIGEN},
+        verbose_name="origen",
     )
-    forma = models.CharField(max_length=LARGO_TEXTO, choices=FORMAS_ESPECIE, null=True, blank=True)
+    forma = models.CharField(
+        max_length=LARGO_TEXTO, choices=FORMAS_ESPECIE, null=True, blank=True, verbose_name="forma"
+    )
     densidad_madera_g_cm3 = models.DecimalField(
         max_digits=DIGITOS_DENSIDAD_MADERA,
         decimal_places=DECIMALES_DENSIDAD_MADERA,
         null=True,
         blank=True,
+        verbose_name="densidad de la madera (g/cm³)",
     )
-    fuente_densidad = models.TextField(null=True, blank=True)
-    beneficios = models.TextField(blank=True, default="", help_text="Un beneficio por línea.")
-    dato_curioso = models.TextField(null=True, blank=True)
-    cuidados = models.TextField(null=True, blank=True)
+    fuente_densidad = models.TextField(null=True, blank=True, verbose_name="fuente de la densidad")
+    beneficios = models.TextField(
+        blank=True, default="", help_text="Un beneficio por línea.", verbose_name="beneficios"
+    )
+    dato_curioso = models.TextField(null=True, blank=True, verbose_name="dato curioso")
+    cuidados = models.TextField(null=True, blank=True, verbose_name="cuidados")
     fuente_ficha = models.TextField(
-        blank=True, default="", help_text="De dónde sale el texto de la ficha."
+        blank=True,
+        default="",
+        help_text="De dónde sale el texto de la ficha.",
+        verbose_name="fuente de la ficha",
     )
-    ficha_publicada = models.BooleanField(default=False)
-    revisada = models.BooleanField(default=True)
+    ficha_publicada = models.BooleanField(
+        default=False,
+        verbose_name="ficha publicada",
+        help_text="La ficha de especie sale en la cartilla solo si está publicada.",
+    )
+    revisada = models.BooleanField(default=True, verbose_name="revisada")
     history = HistoricalRecords()
 
     class Meta:
@@ -97,8 +114,8 @@ class Especie(models.Model):
 class Brigada(models.Model):
     """Una brigada de campo. Sus grupos son los que registran los árboles."""
 
-    nombre = models.CharField(max_length=LARGO_TEXTO, unique=True)
-    activa = models.BooleanField(default=True)
+    nombre = models.CharField(max_length=LARGO_TEXTO, unique=True, verbose_name="nombre")
+    activa = models.BooleanField(default=True, verbose_name="activa")
     history = HistoricalRecords()
 
     class Meta:
@@ -116,13 +133,19 @@ class GrupoBrigada(models.Model):
     `integrantes` y `alias` van uno por línea.
     """
 
-    brigada = models.ForeignKey(Brigada, on_delete=models.PROTECT, related_name="grupos")
-    nombre = models.CharField(max_length=LARGO_TEXTO)
-    integrantes = models.TextField(blank=True, help_text="Un integrante por línea.")
-    alias = models.TextField(
-        blank=True, help_text="Otros nombres con que llega el grupo en la planilla, uno por línea."
+    brigada = models.ForeignKey(
+        Brigada, on_delete=models.PROTECT, related_name="grupos", verbose_name="brigada"
     )
-    activo = models.BooleanField(default=True)
+    nombre = models.CharField(max_length=LARGO_TEXTO, verbose_name="nombre")
+    integrantes = models.TextField(
+        blank=True, help_text="Un integrante por línea.", verbose_name="integrantes"
+    )
+    alias = models.TextField(
+        blank=True,
+        help_text="Otros nombres con que llega el grupo en la planilla, uno por línea.",
+        verbose_name="alias",
+    )
+    activo = models.BooleanField(default=True, verbose_name="activo")
     history = HistoricalRecords()
 
     class Meta:

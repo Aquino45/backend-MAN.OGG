@@ -13,6 +13,7 @@ from django.urls import path, reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 
+from apps.censo.admin_listas import chip_de_lote
 from apps.censo.models import LoteCarga
 from apps.censo.servicios.carga_planilla import evaluar
 from apps.censo.servicios.lectura_planilla import leer
@@ -33,6 +34,7 @@ from config.constantes import (
     ESTADO_LOTE_CONFIRMADO,
     ESTADO_LOTE_VALIDADO,
     ESTADO_REGISTRO_EN_REVISION,
+    ETIQUETAS_COLUMNAS_ADMIN,
     EXTENSION_PLANILLA,
     FILAS_MAXIMAS_PLANILLA,
     FORMATO_ALERTA_PROBLEMAS,
@@ -49,6 +51,7 @@ from config.constantes import (
     MENSAJE_CARGA_NO_ES_XLSX,
     MENSAJE_CARGA_SIN_ARCHIVO,
     MENSAJE_CARGA_UN_SOLO_CODIGO,
+    PAGINA_ADMIN,
     PARAMETRO_FILTRO_ESTADO_REGISTRO,
     PERMISO_CARGAR_PLANILLA,
     PREFIJO_CAMPO_CARGA,
@@ -72,6 +75,14 @@ RUTAS = (
 @admin.register(LoteCarga)
 class CargaPlanillaAdmin(admin.ModelAdmin):
     """«Cargar planilla» en el índice del panel; la lista de lotes es la pantalla de subida."""
+
+    list_display = ("nombre_archivo", "fecha", "chip_estado", "filas_leidas")
+    list_filter = ("estado",)
+    list_per_page = PAGINA_ADMIN
+
+    @admin.display(description=ETIQUETAS_COLUMNAS_ADMIN["estado_lote"], ordering="estado")
+    def chip_estado(self, lote):
+        return chip_de_lote(lote)
 
     def has_module_permission(self, request):
         return self._puede_cargar(request)
@@ -111,7 +122,9 @@ class CargaPlanillaAdmin(admin.ModelAdmin):
             lote = self._registrar_subida(request)
             if lote is not None:
                 return redirect(self._url("resumen", lote))
-        recientes = LoteCarga.objects.filter(usuario=request.user)[:LOTES_RECIENTES_EN_CARGA]
+        recientes = list(LoteCarga.objects.filter(usuario=request.user)[:LOTES_RECIENTES_EN_CARGA])
+        for lote in recientes:
+            lote.chip_estado_html = chip_de_lote(lote)
         return self._pantalla(
             request,
             "subir",

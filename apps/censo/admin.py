@@ -24,6 +24,7 @@ from apps.censo.admin_calidad import (
 )
 from apps.censo.admin_catalogos import ColumnasDeEspecie
 from apps.censo.admin_geometrias import FIELDSET_UBICACION, UbicacionDelArbolAdmin
+from apps.censo.admin_listas import ChipsDeEstado, filtro_relacionado
 from apps.censo.models import Arbol, ArbolEnPapelera
 from apps.censo.servicios import papelera
 from config.constantes import (
@@ -34,6 +35,7 @@ from config.constantes import (
     DESCRIPCION_DESTACADO_ADMIN,
     MENSAJE_MOTIVO_OBLIGATORIO,
     MENSAJE_RESTAURADO_SIN_DESTACADO,
+    PAGINA_ADMIN,
     PERMISO_CAMBIAR_DEMO,
     TITULO_ADMIN,
     TOPE_DESTACADOS_POR_SECTOR,
@@ -57,29 +59,42 @@ FormularioDeAcciones = type(
 
 @admin.register(Arbol)
 class ArbolAdmin(
-    ColumnasDeEspecie, UbicacionDelArbolAdmin, CalidadDelRegistroAdmin, SimpleHistoryAdmin
+    ChipsDeEstado,
+    ColumnasDeEspecie,
+    UbicacionDelArbolAdmin,
+    CalidadDelRegistroAdmin,
+    SimpleHistoryAdmin,
 ):
     """Árboles vigentes. «Eliminar» manda a la papelera: nunca borra la fila."""
 
     list_display = (
         "codigo",
+        "miniatura",
         "sector",
         "nombre_comun",
         "estado_general",
-        "estado_del_registro",
+        "chip_estado_registro",
         "motivos_de_revision",
-        "destacado",
-        "demo",
+        "chip_destacado",
+        "chip_ejemplo",
     )
     list_filter = (
         FiltroEstadoRegistro,
-        "sector",
+        filtro_relacionado("sector", "sector"),
+        filtro_relacionado("especie", "especie"),
+        filtro_relacionado("grupo", "grupo"),
         "estado_general",
         "destacado",
         "demo",
         "co2_simulado",
     )
-    search_fields = ("codigo", "especie__nombre_comun", "especie__nombre_cientifico")
+    list_per_page = PAGINA_ADMIN
+    search_fields = (
+        "codigo",
+        "especie__nombre_comun",
+        "especie__nombre_cientifico",
+        "especie__alias",
+    )
     list_select_related = ("sector", "especie", "estado_general")
     autocomplete_fields = ("especie",)
     readonly_fields = (
@@ -244,19 +259,28 @@ class ArbolAdmin(
 
 
 @admin.register(ArbolEnPapelera)
-class PapeleraAdmin(ColumnasDeEspecie, admin.ModelAdmin):
+class PapeleraAdmin(ChipsDeEstado, ColumnasDeEspecie, admin.ModelAdmin):
     """Los árboles eliminados: quién, cuándo y por qué. Se restauran o se eliminan en definitiva."""
 
     list_display = (
         "codigo",
+        "miniatura",
         "sector",
         "nombre_comun",
+        "chip_ejemplo",
         "eliminado_por",
         "eliminado_en",
         "motivo_eliminacion",
     )
-    list_filter = ("sector", "demo")
-    search_fields = ("codigo", "especie__nombre_comun", "motivo_eliminacion")
+    list_filter = (filtro_relacionado("sector", "sector"), "demo")
+    list_per_page = PAGINA_ADMIN
+    search_fields = (
+        "codigo",
+        "especie__nombre_comun",
+        "especie__nombre_cientifico",
+        "especie__alias",
+        "motivo_eliminacion",
+    )
     list_select_related = ("sector", "especie", "eliminado_por")
     ordering = ("-eliminado_en",)
     actions = ["restaurar"]

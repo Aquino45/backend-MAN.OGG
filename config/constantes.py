@@ -225,6 +225,28 @@ CAMPOS_CATALOGADOS = (
 )
 """Campos de `Arbol` con listas desplegables en la planilla: sus valores tienen catálogo."""
 
+ETIQUETAS_DE_CAMPOS_CON_AYUDA = {
+    "codigo": "Código",
+    "tipo_individuo": "Tipo de individuo",
+    "identificacion": "Identificación",
+    "origen": "Origen",
+    "condicion_conservacion": "Condición de conservación",
+    "altura_total_m": "Altura total (m)",
+    "dap_cm": "DAP (cm)",
+    "copa_ns_m": "Copa norte-sur (m)",
+    "copa_eo_m": "Copa este-oeste (m)",
+    "estado_general": "Estado general",
+    "estado_copa": "Estado de la copa",
+    "tronco_danos": "Daños del tronco",
+    "raices_base": "Raíces y base",
+    "interferencia_entorno": "Interferencia del entorno",
+    "co2_almacenado_kg": "CO₂ almacenado (kg)",
+    "co2_captura_anual_kg": "CO₂ capturado por año (kg)",
+    "ubicacion": "Ubicación",
+    "demo": "De ejemplo",
+}
+"""Nombre legible de cada dato con ayuda o catálogo, para las listas desplegables del panel."""
+
 _PERMISOS_DE_CAPSULAS = ("ayudacampo", "valorcatalogo")
 
 PERMISOS_CAPSULAS_POR_ROL = {
@@ -874,3 +896,80 @@ MOTIVO_HISTORIAL_FRONTERA_SECTOR = "Recálculo por el cambio de las fronteras de
 PATRON_ROTULO_SECTOR_PLANILLA = r"S\s*(\d+)"
 """Rótulo con que la planilla puede nombrar un sector en lugar del número («S01»); sin distinguir
 mayúsculas."""
+
+# --- identidad y listas del panel --------------------------------------------------------------
+
+NOMBRE_PUBLICO_ADMIN = "Censo arbóreo UPeU Lima"
+"""Nombre del sitio junto al logo del panel."""
+
+PAGINA_ADMIN = 50
+"""Filas por página en las listas del panel."""
+
+VARIANTE_CHIP_PUBLICADO = "publicado"
+VARIANTE_CHIP_REVISION = "revision"
+VARIANTE_CHIP_EJEMPLO = "ejemplo"
+VARIANTE_CHIP_CENSO = "censo"
+VARIANTE_CHIP_DESTACADO = "destacado"
+VARIANTE_CHIP_ACTIVO = "activo"
+VARIANTE_CHIP_INACTIVO = "inactivo"
+VARIANTES_CHIP = (
+    VARIANTE_CHIP_PUBLICADO,
+    VARIANTE_CHIP_REVISION,
+    VARIANTE_CHIP_EJEMPLO,
+    VARIANTE_CHIP_CENSO,
+    VARIANTE_CHIP_DESTACADO,
+    VARIANTE_CHIP_ACTIVO,
+    VARIANTE_CHIP_INACTIVO,
+)
+"""Variantes de color de los chips de las listas; cada una tiene su par de colores en la hoja
+de identidad del panel."""
+
+VARIANTE_CHIP_POR_ESTADO_REGISTRO = {
+    ESTADO_REGISTRO_PUBLICADO: VARIANTE_CHIP_PUBLICADO,
+    ESTADO_REGISTRO_EN_REVISION: VARIANTE_CHIP_REVISION,
+}
+"""Variante del chip según el estado del registro de un árbol."""
+
+VARIANTE_CHIP_POR_ESTADO_LOTE = {
+    ESTADO_LOTE_VALIDADO: VARIANTE_CHIP_REVISION,
+    ESTADO_LOTE_CONFIRMADO: VARIANTE_CHIP_PUBLICADO,
+    ESTADO_LOTE_CANCELADO: VARIANTE_CHIP_INACTIVO,
+}
+"""Variante del chip según el estado de una carga de planilla."""
+
+TEXTOS_CHIPS_ADMIN = {
+    "ejemplo": "De ejemplo",
+    "censo": "Del censo",
+    "destacado": "Destacado",
+    "activo": "Activo",
+    "inactivo": "Inactivo",
+    "ficha_publicada": "Publicada",
+    "ficha_sin_publicar": "Sin publicar",
+    "revisada": "Revisada",
+    "por_revisar": "Por revisar",
+    "con_foto": "con foto",
+    "sin_foto": "sin foto",
+}
+"""Textos de los chips y de la miniatura en las listas del panel."""
+
+ETIQUETAS_COLUMNAS_ADMIN = {
+    "miniatura": "Foto",
+    "ejemplo": "Origen del dato",
+    "destacado": "Destacado",
+    "ficha": "Ficha de especie",
+    "revisada": "Revisión de la especie",
+    "activo": "Estado",
+    "estado_lote": "Estado de la carga",
+    "grupos": "Grupos",
+    "arboles": "Árboles",
+}
+"""Títulos de las columnas que el panel arma por su cuenta."""
+
+ETIQUETAS_FILTROS_ADMIN = {
+    "ejemplo": "De ejemplo",
+    "destacado": "Destacado",
+    "especie": "Especie",
+    "grupo": "Grupo de la brigada",
+    "sector": "Sector",
+}
+"""Títulos de los filtros de las listas del panel."""

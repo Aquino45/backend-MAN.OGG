@@ -12,11 +12,12 @@ from django.utils.text import Truncator
 from apps.censo.models import Arbol
 from apps.censo.servicios.calidad_registro import (
     aplicar,
-    aviso_catalogo_sin_cargar,
+    campos_sin_catalogo,
     cargar_catalogo,
 )
 from apps.censo.servicios.capsulas import lineas_de
 from config.constantes import (
+    AVISO_CATALOGO_SIN_CARGAR,
     AVISO_INDICE_REGISTROS_EN_REVISION,
     AVISO_INDICE_UN_REGISTRO_EN_REVISION,
     AYUDA_BLOQUE_ESTADO_REGISTRO,
@@ -27,6 +28,7 @@ from config.constantes import (
     ETIQUETA_COLUMNA_ESTADO_REGISTRO,
     ETIQUETA_COLUMNA_MOTIVOS_REVISION,
     ETIQUETA_FILTRO_ESTADO_REGISTRO,
+    ETIQUETAS_DE_CAMPOS_CON_AYUDA,
     LARGO_MOTIVOS_EN_LISTA,
     MENSAJE_REGISTRO_EN_REVISION,
     MENSAJE_REGISTRO_PUBLICADO,
@@ -97,6 +99,13 @@ class CalidadDelRegistroAdmin:
         self.message_user(request, aviso, messages.WARNING)
 
 
+def _aviso_catalogo_sin_cargar():
+    """El aviso de catálogo vacío con el nombre legible de cada dato."""
+    campos = campos_sin_catalogo(cargar_catalogo())
+    nombres = [ETIQUETAS_DE_CAMPOS_CON_AYUDA.get(campo, campo) for campo in campos]
+    return AVISO_CATALOGO_SIN_CARGAR.format(campos=", ".join(nombres)) if nombres else None
+
+
 def contexto_del_indice():
     """Lo que el índice del panel muestra de la calidad: registros en revisión y catálogo vacío."""
     total = Arbol.objects.filter(estado_registro=ESTADO_REGISTRO_EN_REVISION).count()
@@ -112,7 +121,7 @@ def contexto_del_indice():
     return {
         "aviso_registros_en_revision": aviso_en_revision,
         "enlace_registros_en_revision": f"{enlace}?{filtro}",
-        "aviso_catalogo_sin_cargar": aviso_catalogo_sin_cargar(cargar_catalogo()),
+        "aviso_catalogo_sin_cargar": _aviso_catalogo_sin_cargar(),
     }
 
 
