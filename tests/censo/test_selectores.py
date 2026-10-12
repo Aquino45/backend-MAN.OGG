@@ -5,7 +5,8 @@ from datetime import UTC, datetime
 import pytest
 from django.contrib.gis.geos import Point
 
-from apps.censo.models import Sector
+from apps.censo.api.serializers import ArbolResumenColeccionSerializer, ArbolSerializer
+from apps.censo.models import Especie, Sector, ValorCatalogo
 from apps.censo.selectores import (
     arbol_por_codigo,
     arboles_de_sector,
@@ -18,7 +19,7 @@ from tests.censo.conftest import arbol_evaluado
 LONGITUD_CAMPUS = -76.8
 LATITUD_CAMPUS = -12.0
 TOLERANCIA_GRADOS = 0.2
-CONSULTAS_DE_LA_CARTILLA = 1 + 3  # el árbol, más ayudas, valores y fichas
+CONSULTAS_DE_LA_CARTILLA = 1 + 2  # el árbol (con su especie y estados), más ayudas y valores
 
 
 def crear_arbol(codigo, sector_id=1, **extra):
@@ -105,7 +106,7 @@ def test_un_arbol_en_revision_no_sale_en_la_lista_ni_en_la_cartilla(sectores):
 
 def test_publicados_es_el_unico_punto_y_excluye_revision_y_papelera(sectores):
     crear_arbol("S01-A001")
-    crear_arbol("S01-A002", nombre_comun=None)
+    crear_arbol("S01-A002", dap_cm=None)
     crear_arbol("S01-A003", eliminado_en=datetime.now(tz=UTC), motivo_eliminacion="Duplicado")
 
     assert [arbol.codigo for arbol in publicados()] == ["S01-A001"]
@@ -158,3 +159,38 @@ def test_la_papelera_no_cuenta_en_los_totales_ni_sale_en_las_lecturas(sectores):
     assert totales[1] == 1
     assert [arbol.codigo for arbol in arboles_de_sector(1)] == ["S01-A001"]
     assert arbol_por_codigo("S01-A002") is None
+
+
+def test_la_lista_y_la_cartilla_tienen_un_numero_de_consultas_fijo(
+    sectores, django_assert_num_queries
+):
+    for orden in range(1, 7):
+        crear_arbol(f"S01-A{orden:03d}", nombre_cientifico=f"Especie {orden}")
+    with django_assert_num_queries(2):
+        arboles = list(arboles_de_sector(1))
+    with django_assert_num_queries(0):
+        datos = ArbolResumenColeccionSerializer(arboles).data
+    with django_assert_num_queries(CONSULTAS_DE_LA_CARTILLA):
+        cartilla = arbol_por_codigo("S01-A001")
+    with django_assert_num_queries(0):
+        detalle = ArbolSerializer(cartilla).data
+
+    assert len(datos["features"]) == 6
+    assert datos["features"][0]["properties"]["nombre_cientifico"] == "Especie 1"
+    assert detalle["nombre_cientifico"] == "Especie 1"
+    assert detalle["origen"] == "Nativa"
+
+
+def test_la_cartilla_aplana_la_especie_y_los_estados_del_catalogo(sectores):
+    nativa = ValorCatalogo.objects.create(campo="origen", valor="Nativa", explicacion="x")
+    bueno = ValorCatalogo.objects.create(campo="estado_general", valor="Bueno", explicacion="x")
+    Especie.objects.create(nombre_cientifico="Schinus molle", nombre_comun="Molle", origen=nativa)
+    crear_arbol("S01-A001")
+
+    cartilla = arbol_por_codigo("S01-A001")
+    datos = ArbolSerializer(cartilla).data
+
+    assert cartilla.estado_general == bueno
+    assert cartilla.especie.origen == nativa
+    assert (datos["nombre_comun"], datos["nombre_cientifico"]) == ("Molle", "Schinus molle")
+    assert (datos["origen"], datos["estado_general"]) == ("Nativa", "Bueno")

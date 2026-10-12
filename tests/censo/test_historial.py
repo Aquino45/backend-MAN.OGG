@@ -33,8 +33,8 @@ def test_el_alta_desde_el_panel_queda_con_el_usuario_del_request(
 def test_cada_cambio_queda_con_sus_diferencias(
     nuevo_arbol, cliente_administrador, usuario_administrador
 ):
-    arbol = nuevo_arbol("S01-A010", nombre_comun="Molle")
-    datos = datos_de_alta(nombre_comun="Palma real")
+    arbol = nuevo_arbol("S01-A010", observaciones="Molle")
+    datos = datos_de_alta(observaciones="Palma real")
 
     cliente_administrador.post(reverse("admin:censo_arbol_change", args=[arbol.pk]), datos)
 
@@ -43,7 +43,7 @@ def test_cada_cambio_queda_con_sus_diferencias(
     assert ultima.history_user == usuario_administrador
     cambios = ultima.diff_against(anterior).changes
     assert {(cambio.field, cambio.old, cambio.new) for cambio in cambios} >= {
-        ("nombre_comun", "Molle", "Palma real")
+        ("observaciones", "Molle", "Palma real")
     }
 
 
@@ -85,19 +85,19 @@ def test_el_panel_lista_las_versiones_de_un_arbol(nuevo_arbol, cliente_administr
 def test_volver_a_una_version_anterior_queda_en_el_historial(nuevo_arbol, rol, request):
     cliente = request.getfixturevalue(rol)
     usuario = request.getfixturevalue(rol.replace("cliente", "usuario"))
-    arbol = nuevo_arbol("S01-A010", nombre_comun="Molle")
-    arbol.nombre_comun = "Palma real"
+    arbol = nuevo_arbol("S01-A010", observaciones="Molle")
+    arbol.observaciones = "Palma real"
     arbol.save()
-    version_vieja = arbol.history.filter(nombre_comun="Molle").get()
+    version_vieja = arbol.history.filter(observaciones="Molle").get()
     url = reverse("admin:censo_arbol_simple_history", args=[arbol.pk, version_vieja.pk])
 
     assert cliente.get(url).status_code == 200
-    respuesta = cliente.post(url, datos_de_alta(nombre_comun="Molle"))
+    respuesta = cliente.post(url, datos_de_alta(observaciones="Molle"))
 
     assert respuesta.status_code == 302
-    assert Arbol.objects.get(pk=arbol.pk).nombre_comun == "Molle"
+    assert Arbol.objects.get(pk=arbol.pk).observaciones == "Molle"
     ultima = arbol.history.first()
-    assert ultima.nombre_comun == "Molle"
+    assert ultima.observaciones == "Molle"
     assert ultima.history_user == usuario
     assert arbol.history.count() == 3
 
@@ -123,34 +123,34 @@ def test_volver_a_una_version_no_cambia_la_marca_demo(nuevo_arbol, rol, request)
 
 
 def test_volver_a_una_version_conserva_uid_y_fila_de_origen(nuevo_arbol, cliente_editor):
-    arbol = nuevo_arbol("S01-A010", nombre_comun="Molle", fila_origen=7)
+    arbol = nuevo_arbol("S01-A010", observaciones="Molle", fila_origen=7)
     uid = arbol.uid
     Arbol.objects.filter(pk=arbol.pk).update(fila_origen=9)
     arbol.refresh_from_db()
-    arbol.nombre_comun = "Palma real"
+    arbol.observaciones = "Palma real"
     arbol.save()
-    version_vieja = arbol.history.filter(nombre_comun="Molle").get()
+    version_vieja = arbol.history.filter(observaciones="Molle").get()
 
-    cliente_editor.post(url_de_version(arbol, version_vieja), datos_de_alta(nombre_comun="Molle"))
+    cliente_editor.post(url_de_version(arbol, version_vieja), datos_de_alta(observaciones="Molle"))
 
     actual = Arbol.objects.get(pk=arbol.pk)
-    assert (actual.nombre_comun, actual.uid, actual.fila_origen) == ("Molle", uid, 9)
+    assert (actual.observaciones, actual.uid, actual.fila_origen) == ("Molle", uid, 9)
 
 
 def test_volver_a_una_version_de_un_arbol_en_la_papelera_lo_deja_en_la_papelera(
     nuevo_arbol, cliente_editor, usuario_administrador
 ):
-    arbol = nuevo_arbol("S01-A010", nombre_comun="Molle")
-    arbol.nombre_comun = "Palma real"
+    arbol = nuevo_arbol("S01-A010", observaciones="Molle")
+    arbol.observaciones = "Palma real"
     arbol.save()
     mover_a_papelera(arbol, usuario_administrador, MOTIVO)
-    version_vieja = arbol.history.filter(nombre_comun="Molle").get()
+    version_vieja = arbol.history.filter(observaciones="Molle").get()
     versiones_antes = arbol.history.count()
 
-    cliente_editor.post(url_de_version(arbol, version_vieja), datos_de_alta(nombre_comun="Molle"))
+    cliente_editor.post(url_de_version(arbol, version_vieja), datos_de_alta(observaciones="Molle"))
 
     actual = Arbol.todos.get(pk=arbol.pk)
-    assert actual.nombre_comun == "Molle"
+    assert actual.observaciones == "Molle"
     assert actual.eliminado_en is not None
     assert (actual.eliminado_por, actual.motivo_eliminacion) == (usuario_administrador, MOTIVO)
     assert arbol.history.count() == versiones_antes + 1

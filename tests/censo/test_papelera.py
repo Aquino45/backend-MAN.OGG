@@ -141,26 +141,26 @@ def test_el_arbol_de_la_papelera_se_valida_a_si_mismo_sin_chocar(nuevo_arbol, us
 def test_importar_planilla_rechaza_la_fila_de_un_arbol_en_la_papelera(
     nuevo_arbol, usuario, ruta_planilla
 ):
-    arbol = nuevo_arbol("S01-A001", nombre_comun="Molle")
+    arbol = nuevo_arbol("S01-A001", observaciones="Molle")
     mover_a_papelera(arbol, usuario, MOTIVO)
-    crear_planilla(ruta_planilla, [fila(codigo="S01-A001", nombre_comun="Palma")])
+    crear_planilla(ruta_planilla, [fila(codigo="S01-A001", observaciones="Palma")])
 
     with pytest.raises(ValueError, match="está en la papelera; puede restaurarse"):
         importar_planilla(ruta_planilla)
 
     guardado = Arbol.todos.get(codigo="S01-A001")
-    assert guardado.nombre_comun == "Molle"  # no se actualizó en silencio
+    assert guardado.observaciones == "Molle"  # no se actualizó en silencio
     assert guardado.eliminado_en is not None
 
 
 def test_importar_planilla_sigue_actualizando_a_los_vigentes(nuevo_arbol, ruta_planilla):
-    nuevo_arbol("S01-A001", nombre_comun="Molle", demo=False)
-    crear_planilla(ruta_planilla, [fila(codigo="S01-A001", nombre_comun="Palma")])
+    nuevo_arbol("S01-A001", observaciones="Molle", demo=False)
+    crear_planilla(ruta_planilla, [fila(codigo="S01-A001", observaciones="Palma")])
 
     reporte = importar_planilla(ruta_planilla)
 
     assert reporte.actualizados == 1
-    assert Arbol.objects.get(codigo="S01-A001").nombre_comun == "Palma"
+    assert Arbol.objects.get(codigo="S01-A001").observaciones == "Palma"
 
 
 # --- eliminación definitiva -------------------------------------------------------------------

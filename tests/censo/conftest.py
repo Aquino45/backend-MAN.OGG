@@ -16,10 +16,15 @@ from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 from openpyxl.worksheet.datavalidation import DataValidation
 
-from apps.censo.models import Arbol, Sector
+from apps.censo.models import Arbol, Brigada, Especie, GrupoBrigada, Sector, ValorCatalogo
 from apps.censo.servicios.calidad_registro import aplicar
 from apps.censo.servicios.importar_sectores import importar_sectores
+from apps.censo.servicios.resolver_campos import Resolutor, aplicar_textos
 from config.constantes import (
+    CAMPO_ORIGEN,
+    CAMPOS_ESTADO_ARBOL,
+    CAMPOS_TEXTO_RESUELTOS,
+    COLUMNAS_OPCIONALES_PLANILLA,
     COLUMNAS_PLANILLA,
     HOJA_PLANILLA,
     NOMBRE_ROL_ADMINISTRADOR,
@@ -65,19 +70,20 @@ MEDIDAS_FILA_COMPLETA = {
 }
 
 
-def crear_planilla(ruta, filas, sin_columnas=()):
+def crear_planilla(ruta, filas, sin_columnas=(), columnas_ajenas=()):
     """Escribe una planilla de prueba; cada fila es {campo: valor}.
 
-    Sin `codigo` en la fila se escribe la fórmula de la planilla real (sin valor guardado).
+    Sin `codigo` en la fila se escribe la fórmula de la planilla real (sin valor guardado). Trae
+    las columnas opcionales (salvo las de `sin_columnas`) y, al final, las `columnas_ajenas`:
+    títulos que la planilla no usa y que se deben ignorar.
     """
     libro = Workbook()
     hoja = libro.active
     hoja.title = HOJA_PLANILLA
-    encabezados = [enc for enc in COLUMNAS_PLANILLA if enc not in sin_columnas]
-    hoja.append(encabezados)
-    columna_por_campo = {
-        COLUMNAS_PLANILLA[enc]: indice for indice, enc in enumerate(encabezados, start=1)
-    }
+    columnas = {**COLUMNAS_PLANILLA, **COLUMNAS_OPCIONALES_PLANILLA}
+    encabezados = [enc for enc in columnas if enc not in sin_columnas]
+    hoja.append([*encabezados, *columnas_ajenas])
+    columna_por_campo = {columnas[enc]: indice for indice, enc in enumerate(encabezados, start=1)}
     for numero_fila, fila in enumerate(filas, start=2):
         for campo, valor in fila.items():
             if campo in columna_por_campo:
@@ -126,6 +132,68 @@ FUENTE_PANEL = "Prueba del panel de administración"
 CLAVE_PRUEBA = "clave-de-prueba-1234"
 
 
+def arbol_con_textos(codigo, sector_id, **datos):
+    """Un árbol sin guardar. Los nombres, el origen, los estados y la brigada se dan como texto.
+
+    Se resuelven con el mismo código de producción. La especie se crea si no existe (con el origen
+    del catálogo, si ya está cargado); lo que no se resuelve queda en `valores_originales`.
+    """
+    textos = {campo: datos.pop(campo) for campo in CAMPOS_TEXTO_RESUELTOS if campo in datos}
+    arbol = Arbol(codigo=codigo, sector_id=sector_id, **datos)
+    _asegurar_especie(textos)
+    aplicar_textos(arbol, textos)
+    return arbol
+
+
+def arbol_en_memoria_con_textos(codigo, sector_id, **datos):
+    """Un árbol sin guardar ni consultar la BD: cada texto va en una fila suelta, sin guardar.
+
+    Sirve para probar la regla de calidad, que solo lee el texto de los datos.
+    """
+    textos = {campo: datos.pop(campo) for campo in CAMPOS_TEXTO_RESUELTOS if campo in datos}
+    estados = {
+        campo: ValorCatalogo(campo=campo, valor=textos[campo])
+        for campo in CAMPOS_ESTADO_ARBOL
+        if textos.get(campo) is not None
+    }
+    arbol = Arbol(codigo=codigo, sector_id=sector_id, **datos, **estados)
+    nombres = [textos.get(c) for c in ("nombre_cientifico", "nombre_comun", CAMPO_ORIGEN)]
+    if any(nombre is not None for nombre in nombres):
+        origen = textos.get(CAMPO_ORIGEN)
+        arbol.especie = Especie(
+            nombre_cientifico=textos.get("nombre_cientifico"),
+            nombre_comun=textos.get("nombre_comun"),
+            origen=None if origen is None else ValorCatalogo(campo=CAMPO_ORIGEN, valor=origen),
+        )
+    if textos.get("brigada") is not None:
+        arbol.grupo = GrupoBrigada(nombre="grupo", brigada=Brigada(nombre=textos["brigada"]))
+    return arbol
+
+
+def _asegurar_especie(textos):
+    """Crea la especie del nombre científico si no hay una que coincida."""
+    cientifico = textos.get("nombre_cientifico")
+    if not cientifico or Resolutor.desde_bd().especie(cientifico) is not None:
+        return
+    origen = ValorCatalogo.objects.filter(campo=CAMPO_ORIGEN, valor=textos.get(CAMPO_ORIGEN))
+    Especie.objects.create(
+        nombre_cientifico=cientifico, nombre_comun=textos.get("nombre_comun"), origen=origen.first()
+    )
+
+
+@pytest.fixture
+def especie_molle(db):
+    """La especie de las planillas de prueba: la ingesta nunca crea una especie que no existe."""
+    return Especie.objects.create(nombre_cientifico="Schinus molle", nombre_comun="Molle")
+
+
+@pytest.fixture
+def especies_demo(especie_molle):
+    """Las tres especies de los árboles simulados (con Schinus molle de `especie_molle`)."""
+    Especie.objects.create(nombre_cientifico="Prosopis pallida", nombre_comun="Huarango")
+    Especie.objects.create(nombre_cientifico="Roystonea regia", nombre_comun="Palma real")
+
+
 @pytest.fixture
 def nuevo_arbol(sectores):
     """Fábrica de árboles de prueba: siempre con fuente y `demo=True` (nunca datos del censo)."""
@@ -133,7 +201,9 @@ def nuevo_arbol(sectores):
     def crear(codigo="S01-A001", sector_id=1, **extra):
         datos = {"fuente": FUENTE_PANEL, "demo": True}
         datos.update(extra)
-        return Arbol.objects.create(codigo=codigo, sector_id=sector_id, **datos)
+        arbol = arbol_con_textos(codigo, sector_id, **datos)
+        arbol.save()
+        return arbol
 
     return crear
 
@@ -181,7 +251,7 @@ def arbol_evaluado(codigo="S01-A001", sector_id=1, demo=False, **extra):
         demo=demo,
     )
     datos.update(extra)
-    arbol = Arbol(codigo=codigo, sector_id=sector_id, **datos)
+    arbol = arbol_con_textos(codigo, sector_id, **datos)
     aplicar(arbol)
     arbol.save()
     return arbol

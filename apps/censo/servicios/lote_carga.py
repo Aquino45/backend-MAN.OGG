@@ -8,7 +8,7 @@ import hashlib
 
 from django.db import transaction
 
-from apps.censo.models import Arbol, FilaCarga, LoteCarga
+from apps.censo.models import Arbol, Especie, FilaCarga, LoteCarga, ValorCatalogo
 from apps.censo.servicios.carga_planilla import aplicar_decisiones, evaluar
 from apps.censo.servicios.lectura_planilla import (
     ENCABEZADO_POR_CAMPO,
@@ -18,6 +18,8 @@ from apps.censo.servicios.lectura_planilla import (
     texto_de,
 )
 from config.constantes import (
+    CAMPO_MOTIVO_ESPECIE,
+    CAMPOS_CATALOGADOS,
     CAMPOS_DE_UBICACION_PLANILLA,
     CAMPOS_NUMERICOS_PLANILLA,
     CLASIFICACION_CAMPOS_VACIOS,
@@ -95,6 +97,21 @@ def mensajes_de_no_incorporacion(lote):
         ).format(codigo=codigo)
         for codigo in codigos
     ]
+
+
+def valores_activos_del_catalogo():
+    """`{campo: [valores activos]}` para las listas de la revisión.
+
+    Los campos del catálogo van en su orden; el nombre científico ofrece las especies existentes.
+    """
+    activos = {campo: [] for campo in CAMPOS_CATALOGADOS}
+    filas = ValorCatalogo.objects.filter(activo=True).order_by("campo", "orden", "valor")
+    for campo, valor in filas.values_list("campo", "valor"):
+        activos.setdefault(campo, []).append(valor)
+    activos[CAMPO_MOTIVO_ESPECIE] = list(
+        Especie.objects.order_by("nombre_cientifico").values_list("nombre_cientifico", flat=True)
+    )
+    return activos
 
 
 def campos_a_corregir(fila, activos):

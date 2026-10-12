@@ -12,16 +12,20 @@ from decimal import Decimal, InvalidOperation
 from django.db import transaction
 
 from apps.censo.models import Arbol, ValorCatalogo
-from apps.censo.servicios.capsulas import normalizar
+from apps.censo.servicios.normalizacion import normalizar
+from apps.censo.servicios.resolver_campos import RELACIONES_DEL_ARBOL, texto_de
 from config.constantes import (
     AVISO_CATALOGO_SIN_CARGAR,
     CAMPO_DAP_EXENTO_EN_JUVENIL,
+    CAMPO_MOTIVO_ESPECIE,
     CAMPOS_CATALOGADOS,
     CAMPOS_OBLIGATORIOS_CALIDAD,
     CAMPOS_OBLIGATORIOS_SI_NO_ES_EJEMPLO,
+    CAMPOS_TEXTO_RESUELTOS,
     ESTADO_REGISTRO_EN_REVISION,
     ESTADO_REGISTRO_PUBLICADO,
     ETIQUETAS_CAMPOS_CALIDAD,
+    MOTIVO_ESPECIE_NO_REGISTRADA,
     MOTIVO_FALTA_DATO,
     MOTIVO_FUERA_DE_CATALOGO,
     MOTIVO_FUERA_DE_RANGO,
@@ -95,11 +99,12 @@ def evaluar(arbol, catalogo=None, geom_sector=None, textos_no_numericos=None):
     for campo in _campos_exigidos(arbol):
         if campo in textos:
             motivos.append(_motivo(campo, MOTIVO_NO_ES_NUMERO, texto=textos[campo]))
-        elif _vacio(getattr(arbol, campo)):
+        elif _vacio(_valor_de(arbol, campo)):
             if not (campo == CAMPO_DAP_EXENTO_EN_JUVENIL and _es_juvenil(arbol)):
                 motivos.append(_motivo(campo, MOTIVO_FALTA_DATO))
         elif campo in RANGOS_MEDIDAS:
             motivos += _motivos_de_medida(campo, getattr(arbol, campo))
+    motivos += _motivos_de_especie(arbol)
     motivos += _motivos_de_catalogo(arbol, catalogo)
     motivos += _motivos_de_sector(arbol, geom_sector)
     return motivos
@@ -137,7 +142,9 @@ def buscar_duplicado_por_ubicacion(codigo, ubicacion, nombre_cientifico):
     """Código de otro árbol vigente con la misma ubicación exacta y la misma especie, o None."""
     if ubicacion is None or not (nombre_cientifico or "").strip():
         return None
-    otros = Arbol.objects.filter(ubicacion=ubicacion, nombre_cientifico__iexact=nombre_cientifico)
+    otros = Arbol.objects.filter(
+        ubicacion=ubicacion, especie__nombre_cientifico__iexact=nombre_cientifico
+    )
     return otros.exclude(codigo=codigo).values_list("codigo", flat=True).first()
 
 
@@ -150,7 +157,8 @@ def recalcular_calidad():
     catalogo = cargar_catalogo()
     reporte = ReporteRecalculo(catalogos_sin_cargar=campos_sin_catalogo(catalogo))
     with transaction.atomic():
-        for arbol in Arbol.todos.select_related("sector").order_by("codigo"):
+        arboles = Arbol.todos.select_related("sector", *RELACIONES_DEL_ARBOL)
+        for arbol in arboles.order_by("codigo"):
             antes = _estado_de(arbol)
             aplicar(arbol, catalogo)
             reporte.revisados += 1
@@ -181,8 +189,13 @@ def _vacio(valor):
     return valor is None or (isinstance(valor, str) and not valor.strip())
 
 
+def _valor_de(arbol, campo):
+    """El dato del árbol; los nombres, estados y la brigada se leen como texto desde sus tablas."""
+    return texto_de(arbol, campo) if campo in CAMPOS_TEXTO_RESUELTOS else getattr(arbol, campo)
+
+
 def _es_juvenil(arbol):
-    return normalizar(arbol.tipo_individuo) == normalizar(VALOR_TIPO_JUVENIL)
+    return normalizar(texto_de(arbol, "tipo_individuo")) == normalizar(VALOR_TIPO_JUVENIL)
 
 
 def _motivo(campo, plantilla, **datos):
@@ -219,11 +232,27 @@ def _a_numero(valor):
     return numero if numero.is_finite() else None
 
 
+def _motivos_de_especie(arbol):
+    """Un nombre que no coincide con una sola especie registrada manda a revisión."""
+    if arbol.especie is not None:
+        return []
+    for campo in ("nombre_cientifico", "nombre_comun"):
+        nombre = texto_de(arbol, campo)
+        if not _vacio(nombre):
+            texto = MOTIVO_ESPECIE_NO_REGISTRADA.format(texto=nombre)
+            return [Motivo(CAMPO_MOTIVO_ESPECIE, texto)]
+    return []
+
+
 def _motivos_de_catalogo(arbol, catalogo):
-    """Un valor que no está en el catálogo (comparado normalizado) manda a revisión."""
+    """Un valor que no está en el catálogo (comparado normalizado) manda a revisión.
+
+    Una referencia al catálogo siempre está en él; manda a revisión el texto que la planilla trajo
+    y no se pudo resolver (queda en `valores_originales`).
+    """
     motivos = []
     for campo in CAMPOS_CATALOGADOS:
-        valor = getattr(arbol, campo)
+        valor = texto_de(arbol, campo)
         permitidos = catalogo.get(campo)
         if permitidos and not _vacio(valor) and normalizar(valor) not in permitidos:
             motivos.append(_motivo(campo, MOTIVO_FUERA_DE_CATALOGO, valor=valor))

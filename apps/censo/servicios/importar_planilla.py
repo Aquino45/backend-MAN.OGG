@@ -9,14 +9,13 @@ from dataclasses import dataclass, field
 
 from django.db import transaction
 
-from apps.censo.servicios.carga_planilla import (
+from apps.censo.servicios.carga_planilla import aplicar_decisiones, evaluar
+from apps.censo.servicios.lectura_planilla import leer
+from apps.censo.servicios.resultados_carga import (
     ArbolFueraDeSector,
     RegistroEnRevision,
     ValorNoValido,
-    aplicar_decisiones,
-    evaluar,
 )
-from apps.censo.servicios.lectura_planilla import leer
 from config.constantes import DECISION_CONSERVAR, DECISION_DESCARTAR
 
 
@@ -43,6 +42,7 @@ class ReportePlanilla:
     fechas_no_validas: list[ValorNoValido] = field(default_factory=list)
     fuera_de_catalogo: list[ValorNoValido] = field(default_factory=list)
     fuera_de_sector: list[ArbolFueraDeSector] = field(default_factory=list)
+    sin_resolver: list[ValorNoValido] = field(default_factory=list)
     publicados: int = 0
     en_revision: list[RegistroEnRevision] = field(default_factory=list)
     duplicados: list[FilaDuplicada] = field(default_factory=list)
@@ -90,6 +90,7 @@ def importar_planilla(ruta, seco=False):
         reporte.fechas_no_validas += fila.fechas_no_validas
         reporte.fuera_de_catalogo += fila.fuera_de_catalogo
         reporte.fuera_de_sector += fila.fuera_de_sector
+        reporte.sin_resolver += fila.sin_resolver
     return reporte
 
 

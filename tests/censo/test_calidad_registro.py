@@ -19,6 +19,7 @@ from apps.censo.servicios.calidad_registro import (
     recalcular_calidad,
 )
 from apps.censo.servicios.capsulas import normalizar
+from apps.censo.servicios.resolver_campos import texto_de
 from config.constantes import (
     CAMPOS_CATALOGADOS,
     CAMPOS_OBLIGATORIOS_CALIDAD,
@@ -29,7 +30,11 @@ from config.constantes import (
     TOLERANCIA_FUERA_DE_SECTOR_M,
     VALOR_TIPO_JUVENIL,
 )
-from tests.censo.conftest import arbol_evaluado, valores_de_arbol_completo
+from tests.censo.conftest import (
+    arbol_en_memoria_con_textos,
+    arbol_evaluado,
+    valores_de_arbol_completo,
+)
 
 LADO_SECTOR_M = 100
 SECTOR_DE_PRUEBA = Polygon.from_bbox((0, 0, LADO_SECTOR_M, LADO_SECTOR_M))
@@ -42,7 +47,7 @@ def arbol_en_memoria(**cambios):
     valores = valores_de_arbol_completo()
     valores["ubicacion"] = Point(*CENTRO, srid=SRID_UTM_CENSO)
     valores.update(cambios)
-    return Arbol(codigo="S01-A001", sector_id=1, fuente="Prueba", **valores)
+    return arbol_en_memoria_con_textos("S01-A001", 1, fuente="Prueba", **valores)
 
 
 def campos_de(motivos):
@@ -104,9 +109,9 @@ def test_un_juvenil_sigue_sin_poder_traer_un_dap_fuera_de_rango():
     assert campos_de(evaluar_en_sector(arbol)) == ["dap_cm"]
 
 
-def test_brigada_vacia_se_exige_solo_a_un_arbol_real():
-    assert campos_de(evaluar_en_sector(arbol_en_memoria(demo=False, brigada=None))) == ["brigada"]
-    assert evaluar_en_sector(arbol_en_memoria(demo=True, brigada=None)) == []
+@pytest.mark.parametrize("demo", [True, False])
+def test_la_brigada_es_opcional_y_nunca_manda_a_revision(demo):
+    assert evaluar_en_sector(arbol_en_memoria(demo=demo, brigada=None)) == []
 
 
 def test_un_destacado_sin_motivo_se_publica():
@@ -168,7 +173,9 @@ def test_un_texto_donde_va_un_numero_manda_aunque_sea_juvenil():
 
 
 def catalogo_de_prueba():
-    return {campo: {normalizar(getattr(arbol_en_memoria(), campo))} for campo in CAMPOS_CATALOGADOS}
+    return {
+        campo: {normalizar(texto_de(arbol_en_memoria(), campo))} for campo in CAMPOS_CATALOGADOS
+    }
 
 
 def test_un_valor_del_catalogo_se_compara_normalizado():
@@ -271,7 +278,7 @@ def test_el_helper_de_tests_crea_un_arbol_real_publicado(sectores):
     arbol = arbol_evaluado()
 
     assert arbol.demo is False
-    assert arbol.brigada
+    assert texto_de(arbol, "brigada")
     assert arbol.estado_registro == ESTADO_REGISTRO_PUBLICADO
 
 
@@ -319,7 +326,7 @@ def test_sin_campos_sin_catalogo_no_hay_aviso(db):
 
 def test_recalcular_calidad_evalua_a_todos_y_es_idempotente(sectores):
     bueno = arbol_evaluado("S01-A001")
-    malo = arbol_evaluado("S01-A002", nombre_comun=None)
+    malo = arbol_evaluado("S01-A002", estado_general=None)
     Arbol.todos.filter(pk__in=[bueno.pk, malo.pk]).update(
         estado_registro=ESTADO_REGISTRO_EN_REVISION, motivos_revision=""
     )
@@ -331,7 +338,7 @@ def test_recalcular_calidad_evalua_a_todos_y_es_idempotente(sectores):
     malo.refresh_from_db()
     assert bueno.estado_registro == ESTADO_REGISTRO_PUBLICADO
     assert malo.estado_registro == ESTADO_REGISTRO_EN_REVISION
-    assert "Nombre común" in malo.motivos_revision
+    assert "Estado general" in malo.motivos_revision
     assert (primera.revisados, primera.publicados, primera.en_revision) == (2, 1, 1)
     assert primera.cambiaron == 2
     assert segunda.cambiaron == 0
@@ -359,7 +366,7 @@ def test_buscar_duplicado_misma_ubicacion_y_misma_especie(sectores):
     existente = arbol_evaluado("S01-A001")
 
     encontrado = buscar_duplicado_por_ubicacion(
-        "S01-A002", existente.ubicacion, existente.nombre_cientifico.upper()
+        "S01-A002", existente.ubicacion, texto_de(existente, "nombre_cientifico").upper()
     )
 
     assert encontrado == "S01-A001"
@@ -370,15 +377,20 @@ def test_no_es_duplicado_con_otra_especie_ni_con_su_propio_codigo(sectores):
 
     assert buscar_duplicado_por_ubicacion("S01-A002", existente.ubicacion, "Otra especie") is None
     assert (
-        buscar_duplicado_por_ubicacion("S01-A001", existente.ubicacion, existente.nombre_cientifico)
+        buscar_duplicado_por_ubicacion(
+            "S01-A001", existente.ubicacion, texto_de(existente, "nombre_cientifico")
+        )
         is None
     )
-    assert buscar_duplicado_por_ubicacion("S01-A002", None, existente.nombre_cientifico) is None
+    assert (
+        buscar_duplicado_por_ubicacion("S01-A002", None, texto_de(existente, "nombre_cientifico"))
+        is None
+    )
 
 
 def test_el_comando_recalcular_calidad_imprime_el_reporte(sectores):
     arbol_evaluado("S01-A001")
-    arbol_evaluado("S01-A002", nombre_comun=None)
+    arbol_evaluado("S01-A002", estado_general=None)
     salida = StringIO()
 
     call_command("recalcular_calidad", stdout=salida)

@@ -36,14 +36,15 @@ backend/
 │   │   ├── seguridad.py       ← permisos y throttling por defecto
 │   │   └── migrations/        ← 0001_esquema (crea el esquema de la BD)
 │   └── censo/                 ← el dominio del censo
-│       ├── models.py          ← Sector, Arbol
+│       ├── models.py          ← Sector, Arbol, catálogos y lotes de carga
+│       ├── models_catalogos.py ← Especie, Brigada, GrupoBrigada (models.py los importa)
 │       ├── selectores.py      ← lecturas: sectores_con_total(), arboles_de_sector(id), arbol_por_codigo(cod)
-│       ├── servicios/         ← importar_sectores.py, importar_planilla.py
+│       ├── servicios/         ← importar_sectores.py, importar_planilla.py, carga_planilla.py, resolver_campos.py…
 │       ├── api/
 │       │   ├── serializers.py ← DTO de salida, con la forma exacta del contrato
 │       │   ├── views.py       ← controladores delgados
 │       │   └── urls.py
-│       ├── admin.py
+│       ├── admin.py           ← árboles y papelera; admin_catalogos.py (especies, brigadas, sectores), admin_carga.py, admin_capsulas.py
 │       ├── management/commands/ ← comandos delgados que llaman a un servicio
 │       └── migrations/
 ├── contrato/                  ← openapi.yaml + ejemplos (manda)
@@ -66,6 +67,21 @@ backend/
 
 - Toda coordenada se guarda en `SRID_UTM_CENSO` y se transforma a `SRID_MAPA` en el **selector**, con PostGIS (`Transform`), nunca a mano.
 - Un archivo de más de ~300 líneas se parte, y cada pieza nueva viene con su test.
+
+## 4 bis. Modelo de datos de los catálogos
+`Arbol` ya no es una tabla plana: lo que es de la especie, del catálogo o de la brigada vive en su tabla y el árbol lo referencia. **La API no cambia**: los serializers aplanan las tablas, así que el contrato sigue igual.
+
+| Tabla | Qué guarda | Relación |
+|---|---|---|
+| `Especie` (con historial) | nombre científico (único), nombre común, `alias` (uno por línea), familia, `forma`, densidad de la madera, la ficha de ayuda (`beneficios`, `dato_curioso`, `cuidados`, `fuente_ficha`, `ficha_publicada`) y `revisada` | `origen` → `ValorCatalogo` (campo `origen`) |
+| `Brigada` (con historial) | `nombre` (único), `activa` | tiene muchos `GrupoBrigada` |
+| `GrupoBrigada` (con historial) | `nombre` (único dentro de la brigada), `integrantes`, `alias`, `activo` | `brigada` → `Brigada` |
+| `Arbol` | `especie`, `grupo`, los 8 estados (`tipo_individuo`, `identificacion`, `condicion_conservacion`, `estado_general`, `estado_copa`, `tronco_danos`, `raices_base`, `interferencia_entorno`) como FK a `ValorCatalogo`, y `valores_originales` (JSON) | todas opcionales; la brigada del árbol sale de su grupo |
+
+- **Nunca se inventa una especie en la ingesta.** `servicios/resolver_campos.py` busca el texto de la planilla (normalizado: sin mayúsculas, tildes ni espacios de más) en el nombre científico, el alias y el nombre común. Lo que no coincide con una sola fila queda en `valores_originales` y el árbol va a revisión (especie y estados). El **grupo es opcional**: «Brigada» y «Grupo» se resuelven juntos y lo que no se reconoce solo se informa.
+- `texto_de(arbol, campo)` devuelve el texto de un dato desde las tablas y, si falta, desde `valores_originales`; lo usan la regla de calidad y las cápsulas; el serializer hace el mismo aplanado leyendo los campos que trae el selector (no llama servicios).
+- Los nombres de una especie no pueden chocar con los de otra: `servicios/validar_especie.py` lo valida (lo llaman el formulario del panel y `cargar_capsulas`; los modelos no importan servicios).
+- Una especie con `revisada = false` nació de un nombre que nadie ha confirmado; se revisa en el panel.
 
 ## 5. Receta: agregar un endpoint
 1. ¿Está en el contrato? Si no, primero se cambia el contrato, y lo aprueba quien lleva el front.

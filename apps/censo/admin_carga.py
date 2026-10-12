@@ -14,7 +14,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
 
 from apps.censo.models import LoteCarga
-from apps.censo.servicios.carga_planilla import evaluar, valores_activos_del_catalogo
+from apps.censo.servicios.carga_planilla import evaluar
 from apps.censo.servicios.lectura_planilla import leer
 from apps.censo.servicios.lote_carga import (
     campos_a_corregir,
@@ -25,6 +25,7 @@ from apps.censo.servicios.lote_carga import (
     filas_con_problema,
     mensajes_de_no_incorporacion,
     registrar_lote,
+    valores_activos_del_catalogo,
 )
 from config.constantes import (
     BYTES_POR_MB,

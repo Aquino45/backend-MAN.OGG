@@ -15,6 +15,7 @@ from openpyxl.utils.cell import range_boundaries
 
 from apps.censo.models import Arbol
 from config.constantes import (
+    COLUMNAS_OPCIONALES_PLANILLA,
     COLUMNAS_PLANILLA,
     FILA_ENCABEZADOS_PLANILLA,
     FORMATOS_FECHA_PLANILLA,
@@ -29,8 +30,11 @@ CAMPOS_DECIMALES = {
 }
 """Campos decimales del modelo: de ellos salen los límites de dígitos (`max_digits`, etc.)."""
 
-ENCABEZADO_POR_CAMPO = {campo: encabezado for encabezado, campo in COLUMNAS_PLANILLA.items()}
-"""Inverso de COLUMNAS_PLANILLA, para nombrar la columna en los reportes."""
+ENCABEZADO_POR_CAMPO = {
+    campo: encabezado
+    for encabezado, campo in {**COLUMNAS_PLANILLA, **COLUMNAS_OPCIONALES_PLANILLA}.items()
+}
+"""Inverso de COLUMNAS_PLANILLA y las opcionales, para nombrar la columna en los reportes."""
 
 
 @dataclass
@@ -81,7 +85,10 @@ def _abrir_hojas(contenido, nombre):
 
 
 def _ubicar_columnas(hoja):
-    """Devuelve {campo: número de columna} buscando los encabezados por nombre."""
+    """Devuelve {campo: número de columna} buscando los encabezados por nombre.
+
+    Las columnas opcionales entran solo si la planilla las trae; las ajenas se ignoran.
+    """
     posicion_por_encabezado = {
         str(celda.value).strip(): celda.column
         for celda in hoja[FILA_ENCABEZADOS_PLANILLA]
@@ -90,7 +97,11 @@ def _ubicar_columnas(hoja):
     faltan = [e for e in COLUMNAS_PLANILLA if e not in posicion_por_encabezado]
     if faltan:
         raise ValueError("Faltan columnas en la planilla: " + ", ".join(faltan))
-    return {campo: posicion_por_encabezado[enc] for enc, campo in COLUMNAS_PLANILLA.items()}
+    return {
+        campo: posicion_por_encabezado[encabezado]
+        for encabezado, campo in {**COLUMNAS_PLANILLA, **COLUMNAS_OPCIONALES_PLANILLA}.items()
+        if encabezado in posicion_por_encabezado
+    }
 
 
 def _leer_catalogos(hoja, columnas):

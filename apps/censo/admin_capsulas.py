@@ -1,4 +1,4 @@
-"""Panel de las cápsulas de ayuda: ayudas por dato, catálogo de valores y fichas de especie.
+"""Panel de las cápsulas de ayuda: ayudas por dato y catálogo de valores.
 
 Cada guardado pasa por `full_clean()` y queda en el historial. El catálogo muestra cuántos
 árboles vigentes usan cada valor y tiene una vista de solo lectura con los valores que los
@@ -13,7 +13,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from simple_history.admin import SimpleHistoryAdmin
 
-from apps.censo.models import AyudaCampo, FichaEspecie, ValorCatalogo
+from apps.censo.models import AyudaCampo, ValorCatalogo
 from apps.censo.selectores import conteo_de_valores_de_arboles, valores_fuera_del_catalogo
 from config.constantes import AYUDA_VALORES_FUERA_DEL_CATALOGO, TITULO_VALORES_FUERA_DEL_CATALOGO
 
@@ -86,10 +86,3 @@ class ValorCatalogoAdmin(_AdminDeCapsulas):
 def _datos_de_alta(fila):
     """Campo y valor que el formulario de alta trae ya puestos."""
     return {"campo": fila["campo"], "valor": fila["valor"]}
-
-
-@admin.register(FichaEspecie)
-class FichaEspecieAdmin(_AdminDeCapsulas):
-    list_display = ("nombre_cientifico", "nombre_comun", "publicada")
-    list_filter = ("publicada",)
-    search_fields = ("nombre_cientifico", "nombre_comun", "alias")

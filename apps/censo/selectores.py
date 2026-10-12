@@ -10,9 +10,16 @@ entregan en WGS 84 (`SRID_MAPA`), transformadas por PostGIS; el redondeo lo hace
 from django.contrib.gis.db.models.functions import Transform
 from django.db.models import Count, Q
 
-from apps.censo.models import Arbol, AyudaCampo, FichaEspecie, Sector, ValorCatalogo
+from apps.censo.models import Arbol, AyudaCampo, Sector, ValorCatalogo
 from apps.censo.servicios.capsulas import armar_capsulas, buscar_ficha
-from config.constantes import CAMPOS_CATALOGADOS, ESTADO_REGISTRO_PUBLICADO, SRID_MAPA
+from apps.censo.servicios.resolver_campos import RELACIONES_DEL_ARBOL
+from config.constantes import (
+    CAMPO_ORIGEN,
+    CAMPOS_CATALOGADOS,
+    CAMPOS_ESTADO_ARBOL,
+    ESTADO_REGISTRO_PUBLICADO,
+    SRID_MAPA,
+)
 
 
 def publicados():
@@ -49,7 +56,7 @@ def arboles_de_sector(sector_id):
     """
     if not Sector.objects.filter(id=sector_id).exists():
         return None
-    arboles = publicados().filter(sector_id=sector_id)
+    arboles = publicados().filter(sector_id=sector_id).select_related(*RELACIONES_DEL_ARBOL)
     return arboles.annotate(**_con_ubicacion_mapa()).order_by("codigo")
 
 
@@ -58,33 +65,58 @@ def arbol_por_codigo(codigo):
 
     Trae la posición lista para el mapa (`ubicacion_mapa`, en WGS 84) y también la ubicación UTM
     tal como está guardada (`ubicacion`), de donde salen las coordenadas UTM de la cartilla.
-    Deja también armadas sus `capsulas` y su `ficha_especie` (null si no hay ficha publicada), con
-    3 consultas más: las ayudas activas, los valores activos del catálogo y las fichas publicadas.
+    Deja también armadas sus `capsulas` y su `ficha_especie` (null si su especie no tiene la ficha
+    publicada), con 2 consultas más: las ayudas activas y los valores activos del catálogo. La
+    especie, el grupo y los estados vienen en la misma consulta del árbol.
     """
-    arbol = publicados().annotate(**_con_ubicacion_mapa()).filter(codigo=codigo).first()
+    arbol = (
+        publicados()
+        .select_related(*RELACIONES_DEL_ARBOL)
+        .annotate(**_con_ubicacion_mapa())
+        .filter(codigo=codigo)
+        .first()
+    )
     if arbol is None:
         return None
     ayudas = list(AyudaCampo.objects.filter(activo=True))
     valores = list(ValorCatalogo.objects.filter(activo=True))
-    fichas = list(FichaEspecie.objects.filter(publicada=True))
     arbol.capsulas = armar_capsulas(arbol, ayudas, valores)
-    arbol.ficha_especie = buscar_ficha(arbol, fichas)
+    arbol.ficha_especie = buscar_ficha(arbol)
     return arbol
 
 
 def conteo_de_valores_de_arboles():
     """Cuántos árboles vigentes tienen cada valor, como `{(campo, valor): total}`.
 
-    Mira los campos catalogados; el valor se toma exacto («bueno» y «Bueno» van aparte) y se
-    omiten los vacíos.
+    Mira los campos catalogados. Un valor del catálogo se cuenta por su texto; lo que la planilla
+    trajo y no se pudo resolver se cuenta tal cual (`valores_originales`: «bueno» y «Bueno» van
+    aparte). Se omiten los vacíos.
     """
     conteo = {}
-    for campo in CAMPOS_CATALOGADOS:
-        filas = Arbol.objects.filter(**{f"{campo}__isnull": False}).values(campo)
+    for campo in CAMPOS_ESTADO_ARBOL:
+        filas = Arbol.objects.filter(**{f"{campo}__isnull": False}).values(f"{campo}__valor")
         for fila in filas.annotate(total=Count("pk")):
-            if fila[campo].strip():
-                conteo[(campo, fila[campo])] = fila["total"]
+            conteo[(campo, fila[f"{campo}__valor"])] = fila["total"]
+    filas = Arbol.objects.filter(especie__origen__isnull=False).values("especie__origen__valor")
+    for fila in filas.annotate(total=Count("pk")):
+        conteo[(CAMPO_ORIGEN, fila["especie__origen__valor"])] = fila["total"]
+    for campo, texto in _textos_sin_resolver():
+        conteo[(campo, texto)] = conteo.get((campo, texto), 0) + 1
     return conteo
+
+
+def _textos_sin_resolver():
+    """`(campo, texto)` de cada texto catalogado que un árbol vigente trae y no tiene resuelto."""
+    resueltos = {campo: f"{campo}_id" for campo in CAMPOS_ESTADO_ARBOL}
+    resueltos[CAMPO_ORIGEN] = "especie__origen_id"
+    arboles = Arbol.objects.exclude(valores_originales={}).values(
+        "valores_originales", *resueltos.values()
+    )
+    for arbol in arboles:
+        for campo in CAMPOS_CATALOGADOS:
+            texto = arbol["valores_originales"].get(campo)
+            if isinstance(texto, str) and texto.strip() and arbol[resueltos[campo]] is None:
+                yield campo, texto
 
 
 def valores_fuera_del_catalogo():

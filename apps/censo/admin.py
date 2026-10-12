@@ -7,7 +7,6 @@ cada cambio queda en el historial. Los permisos de cada rol vienen de la migraci
 from django import forms
 from django.contrib import admin, messages
 from django.contrib.admin.helpers import ActionForm
-from django.contrib.gis.admin.options import GeoModelAdminMixin
 from django.db import transaction
 from django.http import HttpResponseRedirect
 from django.urls import reverse
@@ -23,7 +22,8 @@ from apps.censo.admin_calidad import (
     CalidadDelRegistroAdmin,
     FiltroEstadoRegistro,
 )
-from apps.censo.models import Arbol, ArbolEnPapelera, Sector
+from apps.censo.admin_catalogos import ColumnasDeEspecie, MapaDelCampus
+from apps.censo.models import Arbol, ArbolEnPapelera
 from apps.censo.servicios import papelera
 from config.constantes import (
     AVISO_ARBOL_DE_EJEMPLO,
@@ -31,9 +31,6 @@ from config.constantes import (
     CAMPO_MOTIVO_ELIMINACION,
     CAMPOS_FUERA_DE_LA_REVERSION,
     DESCRIPCION_DESTACADO_ADMIN,
-    MAPA_ADMIN_LAT,
-    MAPA_ADMIN_LON,
-    MAPA_ADMIN_ZOOM,
     MENSAJE_MOTIVO_OBLIGATORIO,
     MENSAJE_RESTAURADO_SIN_DESTACADO,
     PERMISO_CAMBIAR_DEMO,
@@ -57,30 +54,8 @@ FormularioDeAcciones = type(
 """Barra de acciones del listado de árboles, con el campo del motivo."""
 
 
-class MapaDelCampus(GeoModelAdminMixin):
-    """Los mapas del panel abren centrados en el campus (grados WGS 84)."""
-
-    gis_widget_kwargs = {
-        "attrs": {
-            "default_lon": MAPA_ADMIN_LON,
-            "default_lat": MAPA_ADMIN_LAT,
-            "default_zoom": MAPA_ADMIN_ZOOM,
-        }
-    }
-
-
-@admin.register(Sector)
-class SectorAdmin(MapaDelCampus, SimpleHistoryAdmin):
-    """Los sectores se editan (con su geometría) pero no se borran desde el panel."""
-
-    list_display = ("id", "nombre", "provisional")
-
-    def has_delete_permission(self, request, obj=None):
-        return False
-
-
 @admin.register(Arbol)
-class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
+class ArbolAdmin(ColumnasDeEspecie, CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
     """Árboles vigentes. «Eliminar» manda a la papelera: nunca borra la fila."""
 
     list_display = (
@@ -101,8 +76,12 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
         "demo",
         "co2_simulado",
     )
-    search_fields = ("codigo", "nombre_comun", "nombre_cientifico")
+    search_fields = ("codigo", "especie__nombre_comun", "especie__nombre_cientifico")
+    list_select_related = ("sector", "especie", "estado_general")
+    autocomplete_fields = ("especie",)
     readonly_fields = (
+        "origen_de_la_especie",
+        "valores_originales",
         "tipo_de_dato",
         "bloque_estado_registro",
         "uid",
@@ -125,11 +104,11 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
                     ("codigo", "uid"),
                     "sector",
                     "fecha_registro",
-                    "brigada",
+                    "grupo",
                     "tipo_individuo",
-                    ("nombre_comun", "nombre_cientifico"),
+                    "especie",
+                    "origen_de_la_especie",
                     "identificacion",
-                    "origen",
                     "condicion_conservacion",
                 )
             },
@@ -169,6 +148,7 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
                 "fields": (
                     "fuente",
                     "fila_origen",
+                    "valores_originales",
                     "demo",
                     "creado_en",
                     "actualizado_en",
@@ -261,7 +241,7 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
 
 
 @admin.register(ArbolEnPapelera)
-class PapeleraAdmin(admin.ModelAdmin):
+class PapeleraAdmin(ColumnasDeEspecie, admin.ModelAdmin):
     """Los árboles eliminados: quién, cuándo y por qué. Se restauran o se eliminan en definitiva."""
 
     list_display = (
@@ -273,7 +253,8 @@ class PapeleraAdmin(admin.ModelAdmin):
         "motivo_eliminacion",
     )
     list_filter = ("sector", "demo")
-    search_fields = ("codigo", "nombre_comun", "motivo_eliminacion")
+    search_fields = ("codigo", "especie__nombre_comun", "motivo_eliminacion")
+    list_select_related = ("sector", "especie", "eliminado_por")
     ordering = ("-eliminado_en",)
     actions = ["restaurar"]
 

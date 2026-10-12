@@ -9,7 +9,7 @@ from django.contrib.gis.geos import Point
 from django.core.cache import cache
 from django.urls import reverse
 
-from apps.censo.models import Arbol, FichaEspecie
+from apps.censo.models import Arbol, Especie
 from apps.censo.servicios.calidad_registro import aplicar
 from apps.censo.servicios.capsulas import cargar_capsulas
 from apps.core.seguridad import LimiteAnonimo
@@ -250,7 +250,7 @@ def test_la_cartilla_cumple_el_contrato_con_capsulas_y_ficha_reales(
     cliente_api, arboles_del_sector_1, cumple_schema
 ):
     cargar_capsulas(RUTA_CAPSULAS)
-    FichaEspecie.objects.filter(nombre_cientifico="Schinus molle").update(publicada=True)
+    Especie.objects.filter(nombre_cientifico="Schinus molle").update(ficha_publicada=True)
 
     cartilla = cliente_api.get(url_arbol("S01-A001")).json()
     sin_ficha = cliente_api.get(url_arbol("S01-A002")).json()

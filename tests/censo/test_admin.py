@@ -12,7 +12,7 @@ from django.core.exceptions import ValidationError
 from django.test import Client
 from django.urls import reverse
 
-from apps.censo.models import Arbol, AyudaCampo, FichaEspecie, Sector, ValorCatalogo
+from apps.censo.models import Arbol, AyudaCampo, Especie, Sector, ValorCatalogo
 from apps.censo.servicios.papelera import mover_a_papelera
 from config import constantes
 from config.constantes import (
@@ -23,6 +23,7 @@ from config.constantes import (
     NOMBRE_ROL_EDITOR,
     PERMISOS_CAPSULAS_POR_ROL,
     PERMISOS_CARGA_POR_ROL,
+    PERMISOS_CATALOGOS_POR_ROL,
     PERMISOS_POR_ROL,
     SRID_MAPA,
     TITULO_ADMIN,
@@ -139,10 +140,14 @@ def test_el_administrador_tiene_todo_y_el_editor_no(usuario_administrador, usuar
 
     assert administrador == set(PERMISOS_POR_ROL[NOMBRE_ROL_ADMINISTRADOR]) | set(
         PERMISOS_CAPSULAS_POR_ROL[NOMBRE_ROL_ADMINISTRADOR]
-    ) | set(PERMISOS_CARGA_POR_ROL[NOMBRE_ROL_ADMINISTRADOR])
+    ) | set(PERMISOS_CARGA_POR_ROL[NOMBRE_ROL_ADMINISTRADOR]) | set(
+        PERMISOS_CATALOGOS_POR_ROL[NOMBRE_ROL_ADMINISTRADOR]
+    )
     assert editor == set(PERMISOS_POR_ROL[NOMBRE_ROL_EDITOR]) | set(
         PERMISOS_CAPSULAS_POR_ROL[NOMBRE_ROL_EDITOR]
-    ) | set(PERMISOS_CARGA_POR_ROL[NOMBRE_ROL_EDITOR])
+    ) | set(PERMISOS_CARGA_POR_ROL[NOMBRE_ROL_EDITOR]) | set(
+        PERMISOS_CATALOGOS_POR_ROL[NOMBRE_ROL_EDITOR]
+    )
     assert {"change_sector", "cambiar_demo", "delete_arbolenpapelera"} <= administrador
     assert not {"change_sector", "add_sector", "cambiar_demo", "delete_arbolenpapelera"} & editor
     assert {"add_arbol", "change_arbol", "delete_arbol", "change_arbolenpapelera"} <= editor
@@ -418,7 +423,7 @@ def test_el_boton_eliminar_con_un_arbol_invalido_avisa_sin_error_ni_exito(
 
 # --- cápsulas: ayudas, catálogo, fichas y valores fuera del catálogo --------------------------
 
-TABLAS_DE_CAPSULAS = ["ayudacampo", "valorcatalogo", "fichaespecie"]
+TABLAS_DE_CAPSULAS = ["ayudacampo", "valorcatalogo", "especie"]
 FUENTE_FICHA = "Fuente de prueba de la ficha"
 
 
@@ -430,7 +435,8 @@ def datos_de_ficha(**extra):
         "beneficios": "Da sombra",
         "dato_curioso": "",
         "cuidados": "",
-        "fuente": FUENTE_FICHA,
+        "fuente_ficha": FUENTE_FICHA,
+        "revisada": "on",
     }
     datos.update(extra)
     return datos
@@ -442,11 +448,11 @@ def capsulas_creadas(db):
     valor = ValorCatalogo.objects.create(
         campo="estado_general", valor="Bueno", explicacion="Está sano."
     )
-    ficha = FichaEspecie.objects.create(
+    especie = Especie.objects.create(
         nombre_cientifico="Schinus molle", nombre_comun="Molle", beneficios="Sombra",
-        fuente=FUENTE_FICHA,
+        fuente_ficha=FUENTE_FICHA,
     )  # fmt: skip
-    return {"ayudacampo": ayuda, "valorcatalogo": valor, "fichaespecie": ficha}
+    return {"ayudacampo": ayuda, "valorcatalogo": valor, "especie": especie}
 
 
 @pytest.mark.parametrize("rol", ROLES)
@@ -474,27 +480,26 @@ def test_el_editor_no_borra_las_capsulas_y_el_administrador_si(
 
 
 def test_el_editor_publica_una_ficha_con_el_permiso_de_cambio(capsulas_creadas, cliente_editor):
-    ficha = capsulas_creadas["fichaespecie"]
+    especie = capsulas_creadas["especie"]
 
     respuesta = cliente_editor.post(
-        reverse("admin:censo_fichaespecie_change", args=[ficha.pk]),
-        datos_de_ficha(publicada="on"),
+        reverse("admin:censo_especie_change", args=[especie.pk]),
+        datos_de_ficha(ficha_publicada="on"),
     )
 
     assert respuesta.status_code == 302
-    ficha.refresh_from_db()
-    assert ficha.publicada is True
-    assert (ficha.dato_curioso, ficha.cuidados) == (None, None)
+    especie.refresh_from_db()
+    assert especie.ficha_publicada is True
+    assert (especie.dato_curioso, especie.cuidados) == (None, None)
 
 
-def test_una_ficha_sin_fuente_no_se_guarda(cliente_editor, db):
+def test_una_ficha_publicada_sin_fuente_no_se_guarda(cliente_editor, db):
     respuesta = cliente_editor.post(
-        reverse("admin:censo_fichaespecie_add"), datos_de_ficha(fuente="")
+        reverse("admin:censo_especie_add"), datos_de_ficha(fuente_ficha="", ficha_publicada="on")
     )
 
     assert respuesta.status_code == 200
-    assert "fuente" in respuesta.context["adminform"].form.errors
-    assert FichaEspecie.objects.count() == 0
+    assert Especie.objects.count() == 0
 
 
 def test_save_model_valida_con_full_clean(db, cliente_administrador, usuario_administrador):
@@ -583,25 +588,42 @@ def test_la_vista_de_fuera_del_catalogo_exige_el_permiso_de_ver(nuevo_arbol, db)
 
 # --- calidad del registro: filtro, columna, bloque, guardado e índice --------------------------
 
-CAMPOS_DEL_FORMULARIO_COMPLETO = {
-    "tipo_individuo": "Árbol ≥1.30 m (medir DAP)",
-    "nombre_comun": "Molle",
-    "nombre_cientifico": "Schinus molle",
-    "identificacion": "Identificada",
-    "origen": "Nativa",
+MEDIDAS_DEL_FORMULARIO_COMPLETO = {
     "altura_total_m": "8.5",
     "dap_cm": "35.25",
     "copa_ns_m": "4.5",
     "copa_eo_m": "5",
+    "co2_almacenado_kg": "120.5",
+    "co2_captura_anual_kg": "10.25",
+}
+ESTADOS_DEL_FORMULARIO_COMPLETO = {
+    "tipo_individuo": "Árbol ≥1.30 m (medir DAP)",
+    "identificacion": "Identificada",
     "estado_general": "Bueno",
     "estado_copa": "Buena",
     "tronco_danos": "Sin daño aparente",
     "raices_base": "Sin daño aparente",
     "interferencia_entorno": "Ninguna",
-    "co2_almacenado_kg": "120.5",
-    "co2_captura_anual_kg": "10.25",
-    "brigada": "Brigada A",
 }
+
+
+def formulario_completo():
+    """Los datos del formulario de un árbol completo: la especie y los estados van por su id."""
+    nativa = ValorCatalogo.objects.get_or_create(
+        campo="origen", valor="Nativa", defaults={"explicacion": "x"}
+    )[0]
+    especie = Especie.objects.get_or_create(
+        nombre_cientifico="Schinus molle", defaults={"nombre_comun": "Molle", "origen": nativa}
+    )[0]
+    datos = {**MEDIDAS_DEL_FORMULARIO_COMPLETO, "especie": especie.pk}
+    for campo, valor in ESTADOS_DEL_FORMULARIO_COMPLETO.items():
+        catalogado = ValorCatalogo.objects.get_or_create(
+            campo=campo, valor=valor, defaults={"explicacion": "x"}
+        )[0]
+        datos[campo] = catalogado.pk
+    return datos
+
+
 SRID_DEL_MAPA_DEL_PANEL = 3857
 SIN_UBICACION = "Falta el dato «Ubicación»"
 
@@ -615,7 +637,7 @@ def url_de_arboles(**parametros):
 @pytest.fixture
 def uno_publicado_y_uno_en_revision(sectores):
     publicado = arbol_evaluado("S01-A001")
-    en_revision = arbol_evaluado("S01-A002", nombre_comun=None)
+    en_revision = arbol_evaluado("S01-A002", estado_general=None)
     return publicado, en_revision
 
 
@@ -640,7 +662,7 @@ def test_la_lista_muestra_el_estado_y_los_motivos(cliente_editor, uno_publicado_
     contenido = cliente_editor.get(url_de_arboles()).content.decode()
 
     assert "Motivos de revisión" in contenido
-    assert "Falta el dato «Nombre común»" in contenido
+    assert "Falta el dato «Estado general»" in contenido
     assert "En revisión" in contenido
 
 
@@ -652,7 +674,7 @@ def test_el_formulario_muestra_los_motivos_en_solo_lectura(
     respuesta = cliente_editor.get(reverse("admin:censo_arbol_change", args=[en_revision.pk]))
 
     contenido = respuesta.content.decode()
-    assert "<li>Falta el dato «Nombre común»</li>" in contenido
+    assert "<li>Falta el dato «Estado general»</li>" in contenido
     assert 'name="estado_registro"' not in contenido
     assert 'name="motivos_revision"' not in contenido
 
@@ -660,7 +682,7 @@ def test_el_formulario_muestra_los_motivos_en_solo_lectura(
 def test_el_alta_incompleta_queda_en_revision_y_el_aviso_dice_que_le_falta(
     sectores, cliente_editor, cliente_api
 ):
-    datos = datos_de_alta(**CAMPOS_DEL_FORMULARIO_COMPLETO)
+    datos = datos_de_alta(**formulario_completo())
 
     respuesta = cliente_editor.post(reverse("admin:censo_arbol_add"), datos, follow=True)
 
@@ -674,25 +696,25 @@ def test_el_alta_incompleta_queda_en_revision_y_el_aviso_dice_que_le_falta(
 def test_guardar_un_arbol_publicado_con_un_dato_vacio_lo_manda_a_revision(
     sectores, cliente_editor, cliente_api
 ):
+    datos = datos_de_alta(codigo="S01-A001", **formulario_completo())
     arbol = arbol_evaluado("S01-A001")
     assert arbol.estado_registro == ESTADO_REGISTRO_PUBLICADO
-    datos = datos_de_alta(codigo="S01-A001", **CAMPOS_DEL_FORMULARIO_COMPLETO)
-    datos["nombre_comun"] = ""
+    datos["estado_general"] = ""
 
     cliente_editor.post(reverse("admin:censo_arbol_change", args=[arbol.pk]), datos)
 
     arbol.refresh_from_db()
     assert arbol.estado_registro == ESTADO_REGISTRO_EN_REVISION
-    assert "Falta el dato «Nombre común»" in arbol.motivos_revision
+    assert "Falta el dato «Estado general»" in arbol.motivos_revision
     assert cliente_api.get(reverse("arbol", kwargs={"codigo": "S01-A001"})).status_code == 404
 
 
 def test_corregir_un_arbol_en_revision_en_el_panel_lo_publica_y_lo_avisa(
     sectores, cliente_editor, cliente_api
 ):
-    arbol = arbol_evaluado("S01-A001", nombre_comun=None)
+    arbol = arbol_evaluado("S01-A001", estado_general=None)
     ubicacion = arbol.ubicacion.transform(SRID_DEL_MAPA_DEL_PANEL, clone=True).wkt
-    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **CAMPOS_DEL_FORMULARIO_COMPLETO)
+    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **formulario_completo())
     datos["demo"] = ""
 
     respuesta = cliente_editor.post(
@@ -730,8 +752,8 @@ def test_el_indice_avisa_cuantos_registros_estan_en_revision_con_enlace(
 
 def test_el_indice_cuenta_en_plural_y_no_avisa_si_no_hay_ninguno(cliente_administrador, sectores):
     assert "en revisión" not in cliente_administrador.get(reverse("admin:index")).content.decode()
-    arbol_evaluado("S01-A001", nombre_comun=None)
-    arbol_evaluado("S01-A002", nombre_comun=None)
+    arbol_evaluado("S01-A001", estado_general=None)
+    arbol_evaluado("S01-A002", estado_general=None)
 
     contenido = cliente_administrador.get(reverse("admin:index")).content.decode()
 
@@ -771,7 +793,7 @@ def test_el_formulario_trae_la_casilla_de_co2_simulado_con_su_ayuda(
 def test_marcar_la_casilla_de_un_real_con_co2_se_guarda(sectores, cliente_editor):
     arbol = arbol_evaluado("S01-A001", co2_simulado=False)
     ubicacion = arbol.ubicacion.transform(SRID_DEL_MAPA_DEL_PANEL, clone=True).wkt
-    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **CAMPOS_DEL_FORMULARIO_COMPLETO)
+    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **formulario_completo())
 
     cliente_editor.post(reverse("admin:censo_arbol_change", args=[arbol.pk]), datos)
     assert Arbol.objects.get(pk=arbol.pk).co2_simulado is False
@@ -788,7 +810,7 @@ def test_un_ejemplo_con_co2_queda_simulado_aunque_se_desmarque_la_casilla(
     arbol = arbol_de_ejemplo("S01-A001")
     assert arbol.co2_simulado is True
     ubicacion = arbol.ubicacion.transform(SRID_DEL_MAPA_DEL_PANEL, clone=True).wkt
-    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **CAMPOS_DEL_FORMULARIO_COMPLETO)
+    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **formulario_completo())
     datos.update(demo="on", brigada="")
 
     cliente_administrador.post(reverse("admin:censo_arbol_change", args=[arbol.pk]), datos)
@@ -799,7 +821,7 @@ def test_un_ejemplo_con_co2_queda_simulado_aunque_se_desmarque_la_casilla(
 def test_sin_co2_la_casilla_se_quita_al_guardar(sectores, cliente_editor):
     arbol = arbol_evaluado("S01-A001")
     ubicacion = arbol.ubicacion.transform(SRID_DEL_MAPA_DEL_PANEL, clone=True).wkt
-    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **CAMPOS_DEL_FORMULARIO_COMPLETO)
+    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **formulario_completo())
     datos.update(co2_almacenado_kg="", co2_captura_anual_kg="", co2_simulado="on")
 
     cliente_editor.post(reverse("admin:censo_arbol_change", args=[arbol.pk]), datos)

@@ -19,13 +19,14 @@ from apps.censo.api.serializers import (
     ArbolSerializer,
     SectorColeccionSerializer,
 )
-from apps.censo.models import Arbol, Sector
+from apps.censo.models import Arbol, Especie, Sector
 from config.constantes import (
     DECIMALES_COORDENADAS,
     DECIMALES_UTM,
     ESTADO_REGISTRO_PUBLICADO,
     SRID_UTM_CENSO,
 )
+from tests.censo.conftest import arbol_con_textos
 
 RUTA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "validar_contrato.py"
 FUENTE_PRUEBA = "Prueba de serializers"
@@ -106,7 +107,9 @@ def crear_arbol(codigo, ubicacion=None, **extra):
     extra.setdefault("fuente", FUENTE_PRUEBA)
     extra.setdefault("estado_registro", ESTADO_REGISTRO_PUBLICADO)
     extra.setdefault("co2_simulado", any(extra.get(campo) is not None for campo in CAMPOS_DE_CO2))
-    return Arbol.objects.create(codigo=codigo, sector_id=1, ubicacion=ubicacion, demo=True, **extra)
+    arbol = arbol_con_textos(codigo, 1, ubicacion=ubicacion, demo=True, **extra)
+    arbol.save()
+    return arbol
 
 
 @pytest.fixture
@@ -206,7 +209,14 @@ def test_cartilla_entrega_los_textos_de_contexto_tal_cual(arbol_completo):
 
 @pytest.mark.parametrize("campo", CAMPOS_DE_CONTEXTO)
 def test_texto_de_contexto_vacio_se_entrega_como_null(contrato, arbol_completo, campo):
-    Arbol.objects.filter(codigo=CODIGO_COMPLETO).update(**{campo: ""})
+    if campo == "observaciones":
+        cambios = {campo: ""}
+    else:
+        cambios = {"valores_originales": {campo: ""}}
+        if campo != "origen":
+            cambios[campo] = None
+    Arbol.objects.filter(codigo=CODIGO_COMPLETO).update(**cambios)
+    Especie.objects.update(origen=None)
 
     datos = cartilla(CODIGO_COMPLETO)
 

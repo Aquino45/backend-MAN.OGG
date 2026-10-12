@@ -18,7 +18,9 @@ from django.db import models, transaction
 from apps.censo.models import Arbol, Sector
 from apps.censo.servicios.calidad_registro import CAMPOS_DEL_ESTADO, aplicar, cargar_catalogo
 from apps.censo.servicios.importar_planilla import ArbolFueraDeSector
+from apps.censo.servicios.resolver_campos import Resolutor, aplicar_textos
 from config.constantes import (
+    CAMPOS_TEXTO_RESUELTOS,
     CLAVES_EXTRA_DEMO,
     LETRA_CODIGO_DEMO,
     MENSAJE_CODIGO_EN_PAPELERA,
@@ -35,11 +37,17 @@ CLAVES_CONOCIDAS = (
     frozenset(
         campo.name
         for campo in Arbol._meta.concrete_fields
-        if campo.editable and not campo.auto_created and not isinstance(campo, GeometryField)
+        if campo.editable
+        and not campo.auto_created
+        and not campo.is_relation
+        and not isinstance(campo, GeometryField)
     )
+    | frozenset(CAMPOS_TEXTO_RESUELTOS)
+    | CAMPOS_PROPIOS
     | CLAVES_EXTRA_DEMO
 )
-"""Claves que puede traer un árbol del archivo: campos editables del modelo y las del contrato."""
+"""Claves que puede traer un árbol del archivo: campos editables del modelo (los nombres, el origen
+y los estados llegan como texto) y las del contrato."""
 
 CAMPOS_DECIMALES = frozenset(
     campo.name for campo in Arbol._meta.concrete_fields if isinstance(campo, models.DecimalField)
@@ -82,6 +90,7 @@ def cargar_demo(ruta):
         field_name="codigo"
     )
     catalogo = cargar_catalogo()
+    resolutor = Resolutor.desde_bd()
     guardados = {}
     reporte = ReporteDemo(archivo=ruta.name)
     with transaction.atomic():
@@ -92,7 +101,7 @@ def cargar_demo(ruta):
                 reporte.creados += 1
             else:
                 reporte.actualizados += 1
-            guardados[registro.codigo] = _guardar(arbol, registro, catalogo)
+            guardados[registro.codigo] = _guardar(arbol, registro, catalogo, resolutor)
         for registro in registros:
             aviso = _aviso_fuera_de_sector(guardados[registro.codigo], sectores[registro.id_sector])
             if aviso is not None:
@@ -260,10 +269,13 @@ def _problemas_con_la_bd(registros):
     return problemas
 
 
-def _guardar(arbol, registro, catalogo):
+def _guardar(arbol, registro, catalogo, resolutor):
     """Copia los valores, valida con el modelo, guarda y aplica la regla de calidad."""
+    textos = {n: v for n, v in registro.valores.items() if n in CAMPOS_TEXTO_RESUELTOS}
     for nombre, valor in registro.valores.items():
-        setattr(arbol, nombre, valor)
+        if nombre not in textos:
+            setattr(arbol, nombre, valor)
+    aplicar_textos(arbol, textos, resolutor)
     arbol.sector_id = registro.id_sector
     arbol.co2_simulado = True  # el CO₂ de un ejemplo siempre es simulado; sin CO₂ la regla lo quita
     # PostGIS transforma el punto de WGS84 al SRID del campo al guardar; Python no lo toca.

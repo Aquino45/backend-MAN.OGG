@@ -6,12 +6,11 @@ las filas que entran. El panel guarda el lote entre un paso y otro (`lote_carga`
 """
 
 import re
-from dataclasses import dataclass, field
 
 from django.contrib.gis.geos import Point
 from django.db import transaction
 
-from apps.censo.models import Arbol, Sector, ValorCatalogo
+from apps.censo.models import Arbol, Sector
 from apps.censo.servicios.calidad_registro import (
     Motivo,
     aplicar,
@@ -26,8 +25,21 @@ from apps.censo.servicios.lectura_planilla import (
     numero_de,
     texto_de,
 )
+from apps.censo.servicios.resolver_campos import (
+    Resolutor,
+    nombre_cientifico_de,
+    valores_sobre_existente,
+)
+from apps.censo.servicios.resultados_carga import (
+    ArbolFueraDeSector,
+    Evaluacion,
+    FilaEvaluada,
+    RegistroEnRevision,
+    ResultadoCarga,
+    ValorNoValido,
+)
 from config.constantes import (
-    CAMPOS_CATALOGADOS,
+    CAMPO_GRUPO,
     CAMPOS_CON_NOTA_PLANILLA,
     CAMPOS_NUMERICOS_PLANILLA,
     CLASIFICACION_CAMPOS_VACIOS,
@@ -64,105 +76,6 @@ CAMPOS_TEXTO = (
 """Campos de texto que se copian tal cual (sin espacios en los bordes) al modelo."""
 
 
-@dataclass
-class ValorNoValido:
-    """Un valor de la planilla que no se pudo leer como se esperaba."""
-
-    codigo: str
-    columna: str
-    texto: str
-
-
-@dataclass
-class ArbolFueraDeSector:
-    """Un árbol cuyo punto cae fuera del polígono de su sector."""
-
-    codigo: str
-    sector: int
-    distancia_m: float
-
-
-@dataclass
-class RegistroEnRevision:
-    """Un registro que entró a la BD pero no sale en la web, con sus motivos."""
-
-    codigo: str
-    motivos: list[str]
-
-
-@dataclass
-class FilaEvaluada:
-    """Una fila ya evaluada: lo que se guardaría, sus motivos y en qué grupo cae."""
-
-    numero_fila: int
-    codigo: str
-    datos: dict
-    valores: dict
-    textos_no_numericos: dict
-    motivos: list
-    clasificacion: str
-    codigo_calculado: bool = False
-    repetida: bool = False
-    duplicado: Motivo | None = None
-    duplicado_por_ubicacion: bool = False
-    sin_coordenadas: bool = False
-    numeros_no_validos: list = field(default_factory=list)
-    fechas_no_validas: list = field(default_factory=list)
-    fuera_de_catalogo: list = field(default_factory=list)
-    fuera_de_sector: list = field(default_factory=list)
-
-    @property
-    def motivos_a_mostrar(self):
-        return [*self.motivos, *([self.duplicado] if self.duplicado else [])]
-
-
-@dataclass
-class Evaluacion:
-    """Todas las filas evaluadas; no se escribió nada."""
-
-    nombre_archivo: str
-    filas: list = field(default_factory=list)
-    catalogo_calidad: dict = field(default_factory=dict)
-    catalogo_sin_cargar: str | None = None
-
-    def cuentas(self):
-        """Cuántas filas hay de cada clasificación."""
-        return {c: sum(f.clasificacion == c for f in self.filas) for c in CLASIFICACIONES_TODAS}
-
-    def con_problema(self):
-        return [f for f in self.filas if f.clasificacion in CLASIFICACIONES_CON_PROBLEMA]
-
-
-CLASIFICACIONES_TODAS = (
-    CLASIFICACION_LISTO,
-    CLASIFICACION_CAMPOS_VACIOS,
-    CLASIFICACION_INCONSISTENTE,
-    CLASIFICACION_DUPLICADO,
-)
-
-
-@dataclass
-class ResultadoCarga:
-    """Qué pasó con cada fila al guardar."""
-
-    creados: int = 0
-    actualizados: int = 0
-    publicados: list[str] = field(default_factory=list)
-    en_revision: list[RegistroEnRevision] = field(default_factory=list)
-    no_incorporados: list[str] = field(default_factory=list)
-    ejemplo_sin_cambios: list[str] = field(default_factory=list)
-    ejemplo_reemplazados: list[str] = field(default_factory=list)
-
-    def como_dict(self):
-        """Los códigos de cada grupo, para guardarlos en la bitácora del lote."""
-        return {
-            "publicados": self.publicados,
-            "en_revision": [registro.codigo for registro in self.en_revision],
-            "no_incorporados": self.no_incorporados,
-            "ejemplo_sin_cambios": self.ejemplo_sin_cambios,
-        }
-
-
 # --- paso 2: evaluar ------------------------------------------------------------
 
 
@@ -175,6 +88,7 @@ def evaluar(planilla):
     papelera.
     """
     catalogo = cargar_catalogo()
+    resolutor = Resolutor.desde_bd()
     evaluacion = Evaluacion(
         nombre_archivo=planilla.nombre_archivo,
         catalogo_calidad=catalogo,
@@ -186,7 +100,7 @@ def evaluar(planilla):
         id_sector = entero_sector(datos["sector"])
         orden_en_sector[id_sector] = orden_en_sector.get(id_sector, 0) + 1
         fila = _evaluar_fila(
-            numero_fila, datos, planilla, sectores[id_sector], orden_en_sector, catalogo
+            numero_fila, datos, planilla, sectores[id_sector], orden_en_sector, catalogo, resolutor
         )
         _marcar_duplicados(fila, por_codigo, por_ubicacion)
         evaluacion.filas.append(fila)
@@ -207,7 +121,7 @@ def _cargar_sectores(filas):
     return sectores
 
 
-def _evaluar_fila(numero_fila, datos, planilla, sector, orden_en_sector, catalogo):
+def _evaluar_fila(numero_fila, datos, planilla, sector, orden_en_sector, catalogo, resolutor):
     """Convierte una fila en lo que se guardaría y le aplica la regla de calidad."""
     codigo = texto_de(datos["codigo"])
     calculado = codigo is None
@@ -245,7 +159,12 @@ def _evaluar_fila(numero_fila, datos, planilla, sector, orden_en_sector, catalog
     valores["fila_origen"] = numero_fila
     valores["demo"] = False
     valores["co2_simulado"] = CO2_PLANILLA_ES_SIMULADO
-    candidato = Arbol(codigo=codigo, **valores)
+    valores[CAMPO_GRUPO] = texto_de(datos.get(CAMPO_GRUPO))
+    fila.valores, no_resueltos = resolutor.resolver_con_aviso(valores)
+    fila.sin_resolver = [
+        ValorNoValido(codigo, ENCABEZADO_POR_CAMPO[campo], texto) for campo, texto in no_resueltos
+    ]
+    candidato = Arbol(codigo=codigo, **fila.valores)
     motivos = aplicar(candidato, catalogo, sector.geom, fila.textos_no_numericos)
     fila.motivos, fila.clasificacion = motivos, _clasificar(motivos)
     return fila
@@ -304,7 +223,7 @@ def _marcar_duplicados(fila, por_codigo, por_ubicacion):
             )
         return
     por_codigo[fila.codigo] = fila
-    ubicacion, especie = fila.valores["ubicacion"], fila.valores["nombre_cientifico"]
+    ubicacion, especie = fila.valores["ubicacion"], nombre_cientifico_de(fila.valores)
     clave = (ubicacion.x, ubicacion.y, especie.lower()) if ubicacion and especie else None
     otro = por_ubicacion.get(clave) or buscar_duplicado_por_ubicacion(
         fila.codigo, ubicacion, especie
@@ -349,7 +268,7 @@ def _guardar_fila(fila, catalogo, resultado, conservar_existentes=False):
     existente = Arbol.todos.filter(codigo=codigo).first()
     valores = fila.valores
     if conservar_existentes and existente is not None and not existente.demo:
-        valores = _valores_sobre_existente(existente, fila.valores)
+        valores = valores_sobre_existente(existente, fila.valores)
     candidato = Arbol(codigo=codigo, **valores)
     motivos = aplicar(candidato, catalogo, fila.valores["sector"].geom, fila.textos_no_numericos)
     if fila.duplicado_por_ubicacion:
@@ -375,23 +294,3 @@ def _guardar_fila(fila, catalogo, resultado, conservar_existentes=False):
         resultado.en_revision.append(RegistroEnRevision(codigo, [str(m) for m in motivos]))
     else:
         resultado.publicados.append(codigo)
-
-
-def _valores_sobre_existente(existente, valores):
-    """El árbol que ya existe más los campos que la fila trae con valor; los vacíos no pisan."""
-    con_valor = {campo: v for campo, v in valores.items() if v is not None and v != ""}
-    resultado = {
-        campo.name: getattr(existente, campo.name)
-        for campo in Arbol._meta.concrete_fields
-        if campo.name in valores
-    }
-    return {**resultado, **con_valor}
-
-
-def valores_activos_del_catalogo():
-    """`{campo: [valores activos]}` en el orden del catálogo, para las listas de la revisión."""
-    activos = {campo: [] for campo in CAMPOS_CATALOGADOS}
-    filas = ValorCatalogo.objects.filter(activo=True).order_by("campo", "orden", "valor")
-    for campo, valor in filas.values_list("campo", "valor"):
-        activos.setdefault(campo, []).append(valor)
-    return activos
