@@ -12,6 +12,7 @@ from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from django.utils.decorators import method_decorator
 from django.views.decorators.http import require_POST
+from unfold.admin import ModelAdmin
 
 from apps.censo.admin_listas import chip_de_lote
 from apps.censo.models import LoteCarga
@@ -73,7 +74,7 @@ RUTAS = (
 
 
 @admin.register(LoteCarga)
-class CargaPlanillaAdmin(admin.ModelAdmin):
+class CargaPlanillaAdmin(ModelAdmin):
     """«Cargar planilla» en el índice del panel; la lista de lotes es la pantalla de subida."""
 
     list_display = ("nombre_archivo", "fecha", "chip_estado", "filas_leidas")

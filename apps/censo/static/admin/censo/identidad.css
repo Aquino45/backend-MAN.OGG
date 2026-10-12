@@ -1,0 +1,196 @@
+/* Identidad del panel de administración (se suma a Unfold).
+   Los colores salen de un solo bloque :root; debajo solo hay var() y color-mix(). */
+
+/* misma paleta que el sitio público (src/styles/tokens.css del front) */
+:root {
+  --copa-carmin: #e02040;
+  --copa-magenta-oscuro: #a00080;
+  --copa-magenta: #c00080;
+  --tronco-noche: #202040;
+  --sombra-violeta: #413e59;
+  --texto-lectura: #f6eef2;
+  --superficie-clara: color-mix(in srgb, var(--copa-magenta) 12%, var(--texto-lectura));
+  --superficie-tarjeta: #2b2a52;
+  --texto-tenue: #d9cfe3;
+  --texto-suave: #e7dcee;
+  --blanco: #ffffff;
+  --punto-destacado: #ffd166;
+}
+
+/* Escalas que Unfold lee (se las pasa la configuración UNFOLD.COLORS).
+   Base: neutros de lectura (50 claro, 900 noche). Primario: magenta oscuro, con carmín claro
+   para el texto sobre fondo oscuro. */
+:root {
+  --marca-base-50: var(--texto-lectura);
+  --marca-base-100: color-mix(in srgb, var(--sombra-violeta) 5%, var(--texto-lectura));
+  --marca-base-200: color-mix(in srgb, var(--sombra-violeta) 12%, var(--texto-lectura));
+  --marca-base-300: var(--texto-tenue);
+  --marca-base-400: color-mix(in srgb, var(--texto-tenue) 55%, var(--sombra-violeta));
+  --marca-base-500: var(--sombra-violeta);
+  --marca-base-600: color-mix(in srgb, var(--sombra-violeta) 60%, var(--tronco-noche));
+  --marca-base-700: var(--superficie-tarjeta);
+  --marca-base-800: color-mix(in srgb, var(--superficie-tarjeta) 55%, var(--tronco-noche));
+  --marca-base-900: var(--tronco-noche);
+  --marca-base-950: color-mix(in srgb, var(--tronco-noche) 85%, black);
+
+  --marca-primario-50: color-mix(in srgb, var(--copa-magenta) 6%, var(--blanco));
+  --marca-primario-100: var(--superficie-clara);
+  --marca-primario-200: color-mix(in srgb, var(--copa-magenta) 25%, var(--texto-lectura));
+  --marca-primario-300: color-mix(in srgb, var(--copa-magenta) 45%, var(--texto-lectura));
+  --marca-primario-400: color-mix(in srgb, var(--copa-carmin) 30%, var(--texto-lectura));
+  --marca-primario-500: color-mix(in srgb, var(--copa-carmin) 45%, var(--texto-lectura));
+  --marca-primario-600: var(--copa-magenta-oscuro);
+  --marca-primario-700: color-mix(in srgb, var(--copa-magenta-oscuro) 85%, var(--tronco-noche));
+  --marca-primario-800: color-mix(in srgb, var(--copa-magenta-oscuro) 70%, var(--tronco-noche));
+  --marca-primario-900: color-mix(in srgb, var(--copa-magenta-oscuro) 55%, var(--tronco-noche));
+  --marca-primario-950: color-mix(in srgb, var(--copa-magenta-oscuro) 35%, var(--tronco-noche));
+
+  /* Variables del admin de Django que el widget del mapa también usa */
+  --body-bg: var(--marca-base-50);
+  --body-fg: var(--tronco-noche);
+  --error-fg: color-mix(in srgb, var(--copa-carmin) 70%, var(--tronco-noche));
+
+  /* Fuente, radios y bordes como los del sitio */
+  --font-sans: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --default-font-family: var(--font-sans);
+  --radio-chip: 0.25rem;
+  --radio-control: 0.5rem;
+  --radio-tarjeta: 1rem;
+  --radius-sm: var(--radio-chip);
+  --radius-md: var(--radio-control);
+  --radius-lg: var(--radio-tarjeta);
+  --grosor-borde-ui: 1px;
+
+  /* Chips de las listas: cada par texto/fondo cumple 4.5:1 */
+  --chip-publicado-bg: var(--copa-magenta-oscuro);
+  --chip-publicado-fg: var(--blanco);
+  --chip-revision-bg: var(--punto-destacado);
+  --chip-revision-fg: var(--tronco-noche);
+  --chip-ejemplo-bg: var(--sombra-violeta);
+  --chip-ejemplo-fg: var(--texto-lectura);
+  --chip-censo-bg: var(--texto-tenue);
+  --chip-censo-fg: var(--tronco-noche);
+  --chip-destacado-bg: var(--tronco-noche);
+  --chip-destacado-fg: var(--punto-destacado);
+  --chip-activo-bg: var(--superficie-clara);
+  --chip-activo-fg: var(--tronco-noche);
+  --chip-inactivo-bg: var(--superficie-tarjeta);
+  --chip-inactivo-fg: var(--texto-tenue);
+
+  /* Árbol pixel de las miniaturas */
+  --glifo-copa-alta: var(--copa-carmin);
+  --glifo-copa-media: var(--copa-magenta);
+  --glifo-copa-baja: var(--copa-magenta-oscuro);
+  --glifo-tronco: var(--tronco-noche);
+}
+
+/* Tema oscuro de Unfold (clase dark en <html>) */
+html.dark {
+  --body-bg: var(--marca-base-900);
+  --body-fg: var(--texto-lectura);
+  --error-fg: color-mix(in srgb, var(--copa-carmin) 60%, var(--texto-lectura));
+  --glifo-tronco: var(--texto-tenue);
+}
+
+body {
+  font-family: var(--font-sans);
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radio-chip);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  white-space: nowrap;
+}
+
+.chip--publicado {
+  background: var(--chip-publicado-bg);
+  color: var(--chip-publicado-fg);
+}
+
+.chip--revision {
+  background: var(--chip-revision-bg);
+  color: var(--chip-revision-fg);
+}
+
+.chip--ejemplo {
+  background: var(--chip-ejemplo-bg);
+  color: var(--chip-ejemplo-fg);
+}
+
+.chip--censo {
+  background: var(--chip-censo-bg);
+  color: var(--chip-censo-fg);
+}
+
+.chip--destacado {
+  background: var(--chip-destacado-bg);
+  color: var(--chip-destacado-fg);
+  box-shadow: inset 0 0 0 var(--grosor-borde-ui) var(--punto-destacado);
+}
+
+.chip--activo {
+  background: var(--chip-activo-bg);
+  color: var(--chip-activo-fg);
+  box-shadow: inset 0 0 0 var(--grosor-borde-ui) var(--copa-magenta-oscuro);
+}
+
+.chip--inactivo {
+  background: var(--chip-inactivo-bg);
+  color: var(--chip-inactivo-fg);
+}
+
+.miniatura {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.glifo-pixel {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+}
+
+.glifo-pixel__copa-alta {
+  fill: var(--glifo-copa-alta);
+}
+
+.glifo-pixel__copa-media {
+  fill: var(--glifo-copa-media);
+}
+
+.glifo-pixel__copa-baja {
+  fill: var(--glifo-copa-baja);
+}
+
+.glifo-pixel__tronco {
+  fill: var(--glifo-tronco);
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fuentes/bricolage-grotesque-latin-400-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("fuentes/bricolage-grotesque-latin-600-normal.woff2") format("woff2");
+}
+
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url("fuentes/bricolage-grotesque-latin-800-normal.woff2") format("woff2");
+}

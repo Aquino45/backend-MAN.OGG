@@ -1,6 +1,6 @@
 # ESTADO — backend-MAN.OGG
 
-Actualizado: 12/10/2026 (ticket BE-017).
+Actualizado: 12/10/2026 (ticket BE-018).
 
 ## Dónde estamos
 - El repo levanta con `docker compose up -d --build`: BD PostgreSQL 16 + PostGIS 3.4 (`db`) y API Django 5.2 + DRF + GeoDjango (`api`).
@@ -25,6 +25,7 @@ Actualizado: 12/10/2026 (ticket BE-017).
 - Hito M0 (disciplina) en curso.
 
 ## Último ticket
+- BE-018 — Panel con Unfold: identidad visual (hoja `identidad.css`, logo y favicon, Bricolage Grotesque), listas con chips, miniatura, filtros, búsqueda y paginación (`PAGINA_ADMIN`), y textos con tilde (EN REVISIÓN; Issue #39). Migración `0015` solo de estado. No cambia el contrato ni la API. Ficha en `docs/tickets/BE-018.md`.
 - BE-017 — Editar en el panel la ubicación de los árboles y las fronteras de los sectores (EN REVISIÓN; Issue #36). Ficha en `docs/tickets/BE-017.md`.
 - Antes: BE-014 — Especies, estados del catálogo y brigadas, PR 1 (EN REVISIÓN; Issue #34). Ficha en `docs/tickets/BE-014.md`.
 - Antes: BE-016 — Carga web: los vacíos son un problema y una celda vacía no borra un dato existente (mergeado, #33; Issue #32). Ficha en `docs/tickets/BE-016.md`.

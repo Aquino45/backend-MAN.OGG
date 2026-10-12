@@ -902,6 +902,14 @@ mayúsculas."""
 NOMBRE_PUBLICO_ADMIN = "Censo arbóreo UPeU Lima"
 """Nombre del sitio junto al logo del panel."""
 
+HOJA_IDENTIDAD_ADMIN = "admin/censo/identidad.css"
+LOGO_ADMIN = "admin/censo/marca/logo-vivero.svg"
+FAVICON_ADMIN = "admin/censo/marca/favicon.svg"
+"""Archivos estáticos de la identidad del panel (hoja de estilos, logo y favicon)."""
+
+PESOS_ESCALA_COLOR_ADMIN = (50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950)
+"""Los 11 tonos de cada escala de color que lee el panel."""
+
 PAGINA_ADMIN = 50
 """Filas por página en las listas del panel."""
 

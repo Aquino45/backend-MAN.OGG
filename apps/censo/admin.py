@@ -12,6 +12,7 @@ from django.http import HttpResponseRedirect
 from django.urls import reverse
 from django.utils.html import format_html
 from simple_history.admin import SimpleHistoryAdmin
+from unfold.admin import ModelAdmin
 
 from apps.censo import (
     admin_capsulas,  # noqa: F401  (registra las cápsulas en el panel)
@@ -64,6 +65,7 @@ class ArbolAdmin(
     UbicacionDelArbolAdmin,
     CalidadDelRegistroAdmin,
     SimpleHistoryAdmin,
+    ModelAdmin,
 ):
     """Árboles vigentes. «Eliminar» manda a la papelera: nunca borra la fila."""
 
@@ -259,7 +261,7 @@ class ArbolAdmin(
 
 
 @admin.register(ArbolEnPapelera)
-class PapeleraAdmin(ChipsDeEstado, ColumnasDeEspecie, admin.ModelAdmin):
+class PapeleraAdmin(ChipsDeEstado, ColumnasDeEspecie, ModelAdmin):
     """Los árboles eliminados: quién, cuándo y por qué. Se restauran o se eliminan en definitiva."""
 
     list_display = (

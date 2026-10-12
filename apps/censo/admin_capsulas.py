@@ -12,6 +12,7 @@ from django.core.exceptions import PermissionDenied
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from simple_history.admin import SimpleHistoryAdmin
+from unfold.admin import ModelAdmin
 
 from apps.censo.admin_listas import chip_activo
 from apps.censo.models import AyudaCampo, ValorCatalogo
@@ -24,7 +25,7 @@ from config.constantes import (
 )
 
 
-class _AdminDeCapsulas(SimpleHistoryAdmin):
+class _AdminDeCapsulas(SimpleHistoryAdmin, ModelAdmin):
     """Base: valida el modelo entero al guardar, además del formulario."""
 
     @admin.display(description=ETIQUETAS_COLUMNAS_ADMIN["activo"], ordering="activo")

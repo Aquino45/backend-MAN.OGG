@@ -9,6 +9,7 @@ columnas que el árbol toma de su especie.
 from django import forms
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
+from unfold.admin import ModelAdmin, TabularInline
 
 from apps.censo.admin_geometrias import FronterasDelSectorAdmin
 from apps.censo.admin_listas import chip_activo, chip_de_ficha, chip_de_revision
@@ -36,7 +37,7 @@ class ColumnasDeEspecie:
 
 
 @admin.register(Sector)
-class SectorAdmin(FronterasDelSectorAdmin, SimpleHistoryAdmin):
+class SectorAdmin(FronterasDelSectorAdmin, SimpleHistoryAdmin, ModelAdmin):
     """Los sectores se editan (con su geometría) pero no se borran desde el panel."""
 
     list_display = ("id", "nombre", "provisional")
@@ -45,7 +46,7 @@ class SectorAdmin(FronterasDelSectorAdmin, SimpleHistoryAdmin):
         return False
 
 
-class _ValidaAlGuardar(SimpleHistoryAdmin):
+class _ValidaAlGuardar(SimpleHistoryAdmin, ModelAdmin):
     """Base: valida el modelo entero al guardar, además del formulario."""
 
     def save_model(self, request, obj, form, change):
@@ -101,7 +102,7 @@ class EspecieAdmin(_ValidaAlGuardar):
         return chip_de_revision(especie.revisada)
 
 
-class GrupoBrigadaInline(admin.TabularInline):
+class GrupoBrigadaInline(TabularInline):
     model = GrupoBrigada
     extra = 0
 
