@@ -10,7 +10,7 @@
 {% endblock %}
 {% block breadcrumbs %}
 <div class="breadcrumbs">
-  <a href="{% url 'admin:index' %}">Inicio</a> &rsaquo;
-  {% if request.resolver_match.url_name == 'censo_lotecarga_changelist' %}{{ title }}{% else %}<a href="{{ url_de_subida }}">{{ title }}</a>{% endif %}
+  <a href="{% url 'admin:index' %}">{{ textos.migas_inicio }}</a> &rsaquo;
+  {% if es_subida %}{{ title }}{% else %}<a href="{{ url_de_subida }}">{{ title }}</a>{% endif %}
 </div>
 {% endblock %}

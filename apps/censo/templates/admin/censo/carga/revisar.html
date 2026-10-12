@@ -16,7 +16,7 @@
     <tbody>
       {% for revisada in revisadas %}
       <tr>
-        <td>{{ revisada.fila.codigo }}<br><small>fila {{ revisada.fila.numero_fila }}</small></td>
+        <td>{{ revisada.fila.codigo }}<br><small>{{ textos.etiqueta_fila }} {{ revisada.fila.numero_fila }}</small></td>
         <td><ul>{% for motivo in revisada.motivos %}<li>{{ motivo }}</li>{% endfor %}</ul></td>
         <td>
           {% for campo in revisada.campos %}

@@ -27,6 +27,7 @@ from apps.censo.servicios.lote_carga import (
     registrar_lote,
 )
 from config.constantes import (
+    BYTES_POR_MB,
     CAMPO_ARCHIVO_CARGA,
     ESTADO_LOTE_CONFIRMADO,
     ESTADO_LOTE_VALIDADO,
@@ -35,6 +36,7 @@ from config.constantes import (
     FILAS_MAXIMAS_PLANILLA,
     FORMATO_ALERTA_PROBLEMAS,
     FORMATO_ALERTA_UN_PROBLEMA,
+    FORMATO_FECHA_LOTE_CARGA,
     FORMATO_RESULTADO_CARGA,
     FORMATO_RESUMEN_CARGA,
     FORMATO_SIN_PROBLEMAS,
@@ -55,7 +57,6 @@ from config.constantes import (
     TIPO_CAMPO_LISTA,
 )
 
-BYTES_POR_MB = 1024 * 1024
 RUTAS = (
     ("resumen", "<int:lote_id>/"),
     ("revisar", "<int:lote_id>/revisar/"),
@@ -117,6 +118,8 @@ class CargaPlanillaAdmin(admin.ModelAdmin):
             extension=EXTENSION_PLANILLA,
             lotes=recientes,
             estado_validado=ESTADO_LOTE_VALIDADO,
+            formato_fecha=FORMATO_FECHA_LOTE_CARGA,
+            es_subida=True,
         )
 
     def resumen(self, request, lote_id):

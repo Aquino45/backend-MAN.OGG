@@ -13,12 +13,12 @@
 {% if lotes %}
 <table>
   <thead>
-    <tr><th>Fecha</th><th>Archivo</th><th>Estado</th><th>Filas</th></tr>
+    <tr><th>{{ textos.columna_fecha }}</th><th>{{ textos.columna_archivo }}</th><th>{{ textos.columna_estado }}</th><th>{{ textos.columna_filas }}</th></tr>
   </thead>
   <tbody>
     {% for lote in lotes %}
     <tr>
-      <td>{{ lote.fecha|date:"d/m/Y H:i" }}</td>
+      <td>{{ lote.fecha|date:formato_fecha }}</td>
       <td>{% if lote.estado == estado_validado %}<a href="{% url 'admin:censo_lotecarga_resumen' lote.pk %}">{{ lote.nombre_archivo }}</a>{% else %}{{ lote.nombre_archivo }}{% endif %}</td>
       <td>{{ lote.get_estado_display }}</td>
       <td>{{ lote.filas_leidas }}</td>

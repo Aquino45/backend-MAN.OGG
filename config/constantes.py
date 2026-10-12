@@ -547,6 +547,12 @@ TEXTOS_CARGA_PLANILLA = {
     "etiqueta_codigos_ejemplo": "De ejemplo sin cambios",
     "texto_sin_registros": "Ninguno",
     "enlace_a_revision": "Ver los registros en revisión",
+    "migas_inicio": "Inicio",
+    "columna_fecha": "Fecha",
+    "columna_archivo": "Archivo",
+    "columna_estado": "Estado",
+    "columna_filas": "Filas",
+    "etiqueta_fila": "fila",
 }
 """Textos de las pantallas de «Cargar planilla»."""
 
@@ -575,3 +581,9 @@ MENSAJE_CARGA_LOTE_CERRADO = "Esa carga ya no está pendiente: sube la planilla 
 MENSAJE_CARGA_UN_SOLO_CODIGO = "Conserva solo un registro del código {codigo}."
 MENSAJE_CARGA_CANCELADA = "Carga cancelada: no se guardó nada."
 """Errores y avisos de la carga desde el panel."""
+
+BYTES_POR_MB = 1024 * 1024
+"""Para mostrar el tope de tamaño de la planilla en megabytes."""
+
+FORMATO_FECHA_LOTE_CARGA = "d/m/Y H:i"
+"""Cómo se muestra la fecha de una carga en la lista de cargas anteriores."""
