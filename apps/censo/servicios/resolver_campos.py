@@ -283,10 +283,30 @@ def aplicar_textos(arbol, textos, resolutor=None):
     arbol.valores_originales = fusionar_originales(arbol.valores_originales, resueltos)
 
 
+def _referencias_con_texto_sin_resolver(valores):
+    """Las referencias (especie y estados) cuya celda trae texto que no se pudo resolver.
+
+    El grupo no cuenta: es opcional y un texto de brigada sin grupo no lo borra.
+    """
+    originales = valores.get("valores_originales") or {}
+    textos_de_referencia = {
+        **{campo: (campo,) for campo in CAMPOS_ESTADO_ARBOL},
+        "especie": CAMPOS_DE_NOMBRE,
+    }
+    return [
+        referencia
+        for referencia, campos in textos_de_referencia.items()
+        if valores.get(referencia) is None
+        and any(not _vacio(originales.get(campo)) for campo in campos)
+    ]
+
+
 def valores_sobre_existente(existente, valores):
     """El árbol que ya existe más los campos que la fila trae con valor; los vacíos no pisan.
 
-    Lo que la planilla no pudo resolver se suma a lo que el árbol ya tenía anotado.
+    Un texto con contenido que no se resuelve sí quita la referencia vieja: queda en
+    `valores_originales` y la regla de calidad manda el árbol a revisión. Lo que la planilla no
+    pudo resolver se suma a lo que el árbol ya tenía anotado.
     """
     con_valor = {campo: v for campo, v in valores.items() if v not in (None, "", {})}
     resultado = {
@@ -295,5 +315,7 @@ def valores_sobre_existente(existente, valores):
         if campo.name in valores
     }
     resultado = {**resultado, **con_valor}
+    for referencia in _referencias_con_texto_sin_resolver(valores):
+        resultado[referencia] = None
     resultado["valores_originales"] = fusionar_originales(existente.valores_originales, valores)
     return resultado

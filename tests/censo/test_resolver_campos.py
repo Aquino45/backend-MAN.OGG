@@ -14,6 +14,7 @@ from apps.censo.servicios.resolver_campos import (
     resolver_valor,
     resolver_valores,
     texto_de,
+    valores_sobre_existente,
 )
 from config.constantes import MOTIVO_ESPECIE_NO_REGISTRADA
 from tests.censo.conftest import arbol_evaluado
@@ -283,3 +284,70 @@ def test_sin_grupo_ni_brigada_un_arbol_real_se_publica(sectores):
     assert arbol.demo is False
     assert arbol.grupo is None
     assert aplicar(arbol) == []
+
+
+# --- una fila sobre un árbol que ya existe ----------------------------------------------------
+
+
+@pytest.fixture
+def catalogo_de_estados():
+    """Con el catálogo de estado general cargado, un árbol con «Bueno» queda con su referencia."""
+    return [crear_valor("estado_general", valor) for valor in ("Bueno", "Regular")]
+
+
+def _con_la_fila(existente, textos):
+    """El árbol existente con la fila de `textos` encima, como la carga web con «conservar»."""
+    resueltos = Resolutor.desde_bd().resolver(textos)
+    for campo, valor in valores_sobre_existente(existente, resueltos).items():
+        setattr(existente, campo, valor)
+    return existente
+
+
+def test_un_estado_nuevo_que_no_resuelve_quita_el_viejo_y_manda_a_revision(
+    sectores, catalogo_de_estados
+):
+    existente = arbol_evaluado("S01-A001")
+    assert existente.estado_general is not None and aplicar(existente) == []
+
+    arbol = _con_la_fila(existente, {"estado_general": "Excelente"})
+
+    assert arbol.estado_general is None
+    assert arbol.valores_originales["estado_general"] == "Excelente"
+    assert [m.porque for m in aplicar(arbol)] == [
+        "Valor fuera del catálogo en Estado general: «Excelente»"
+    ]
+
+
+def test_una_especie_nueva_que_no_resuelve_quita_la_vieja_y_manda_a_revision(
+    sectores, catalogo_de_estados
+):
+    existente = arbol_evaluado("S01-A001")
+    assert existente.especie is not None
+
+    arbol = _con_la_fila(existente, {"nombre_cientifico": "Quercus"})
+
+    assert arbol.especie is None
+    assert arbol.valores_originales["nombre_cientifico"] == "Quercus"
+    assert MOTIVO_ESPECIE_NO_REGISTRADA.format(texto="Quercus") in [
+        m.porque for m in aplicar(arbol)
+    ]
+
+
+def test_una_celda_vacia_sigue_conservando_el_estado_y_la_especie(sectores, catalogo_de_estados):
+    existente = arbol_evaluado("S01-A001")
+    especie, estado = existente.especie, existente.estado_general
+
+    arbol = _con_la_fila(existente, {"estado_general": "  ", "nombre_cientifico": None})
+
+    assert (arbol.especie, arbol.estado_general) == (especie, estado)
+    assert aplicar(arbol) == []
+
+
+def test_un_estado_nuevo_que_si_resuelve_reemplaza_al_viejo(sectores, catalogo_de_estados):
+    existente = arbol_evaluado("S01-A001")
+    otro = next(v for v in catalogo_de_estados if v != existente.estado_general)
+
+    arbol = _con_la_fila(existente, {"estado_general": otro.valor})
+
+    assert arbol.estado_general == otro
+    assert "estado_general" not in arbol.valores_originales
