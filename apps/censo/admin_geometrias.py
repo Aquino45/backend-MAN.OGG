@@ -10,7 +10,7 @@ from decimal import Decimal
 
 from django import forms
 from django.conf import settings
-from django.contrib import admin, messages
+from django.contrib import messages
 from django.contrib.gis.admin.options import GeoModelAdminMixin
 from django.contrib.gis.forms import OpenLayersWidget
 from django.contrib.gis.geos import Point
@@ -19,8 +19,6 @@ from django.http import JsonResponse
 from django.urls import path, reverse
 from django.utils import timezone
 
-from apps.censo.admin_catalogos import SectorAdmin
-from apps.censo.models import Sector
 from apps.censo.servicios import geometrias
 from config import constantes
 
@@ -272,7 +270,7 @@ class FormularioDeSector(forms.ModelForm):
         return datos
 
 
-class SectorConMapaAdmin(MapaEditableAdmin, SectorAdmin):
+class FronterasDelSectorAdmin(MapaEditableAdmin):
     """Los sectores con su frontera editable en el mapa; al guardarla se recalcula su calidad."""
 
     campo_del_mapa = "geom"
@@ -297,7 +295,3 @@ class SectorConMapaAdmin(MapaEditableAdmin, SectorAdmin):
         if resultado.a_revision:
             aviso = geometrias.mensaje_a_revision(resultado.a_revision)
             self.message_user(request, aviso, messages.WARNING)
-
-
-admin.site.unregister(Sector)
-admin.site.register(Sector, SectorConMapaAdmin)

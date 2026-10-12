@@ -3,9 +3,7 @@
 Las planillas se arman en el test con openpyxl; nunca se usa el archivo real.
 """
 
-import os
 from io import StringIO
-from pathlib import Path
 
 import pytest
 from django.contrib.gis.geos import Point
@@ -13,7 +11,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.urls import reverse
 
-from apps.censo.models import Arbol, LoteCarga
+from apps.censo.models import Arbol, GrupoBrigada, LoteCarga
 from apps.censo.servicios.carga_planilla import aplicar_decisiones, evaluar
 from apps.censo.servicios.importar_planilla import importar_planilla
 from apps.censo.servicios.lectura_planilla import entero_sector, leer
@@ -278,19 +276,58 @@ def test_entero_sector_rechaza_cualquier_otra_cosa_con_un_mensaje_claro(valor):
         entero_sector(valor)
 
 
-RUTA_PLANILLA_REAL = Path(os.environ.get("PLANILLA_REAL_RUTA", "/planilla/real.xlsx"))
+GRUPOS_DE_LA_BRIGADA = ("Sopita", "zapatito", "zapato")
+ROTULOS_DE_SECTOR = ("S01", "s1", "S 01", "S01", "s1", "S 01")
 
 
-@pytest.mark.skipif(not RUTA_PLANILLA_REAL.is_file(), reason="la planilla real no se monta en CI")
-def test_la_planilla_real_del_stakeholder_se_lee_se_evalua_y_se_carga_entera(sectores):
-    planilla = leer(RUTA_PLANILLA_REAL)
+@pytest.fixture
+def grupos(db):
+    """Los grupos de la brigada que siembra la migración."""
+    return {g.nombre: g for g in GrupoBrigada.objects.select_related("brigada")}
+
+
+@pytest.fixture
+def planilla_del_stakeholder(ruta_planilla, punto_dentro, grupos):
+    """Una planilla sintética con la forma de la original: sector «S01», sin código, Latitud y
+    Longitud con valores UTM, y la columna «Brigada» con el nombre del grupo."""
+    este, norte = punto_dentro
+    filas = []
+    for orden, rotulo in enumerate(ROTULOS_DE_SECTOR):
+        datos = fila_en(int(este) + orden, int(norte) + orden)
+        del datos["codigo"]
+        datos.update(sector=rotulo, brigada=GRUPOS_DE_LA_BRIGADA[orden % 3])
+        filas.append(datos)
+    crear_planilla(ruta_planilla, filas, renombrar=COLUMNAS_EN_GRADOS)
+    return ruta_planilla
+
+
+def test_una_planilla_con_la_forma_de_la_del_stakeholder_se_lee_se_evalua_y_se_carga(
+    planilla_del_stakeholder, punto_dentro
+):
+    planilla = leer(planilla_del_stakeholder)
 
     evaluacion = evaluar(planilla)
     resultado = aplicar_decisiones(
         evaluacion, {fila.numero_fila: DECISION_CONSERVAR for fila in evaluacion.filas}
     )
 
-    assert len(planilla.filas) == len(evaluacion.filas) == 34
+    total = len(ROTULOS_DE_SECTOR)
+    assert len(planilla.filas) == len(evaluacion.filas) == total
     assert planilla.avisos == [AVISO_COLUMNAS_COORDENADAS_CON_UTM]
-    assert resultado.creados + resultado.actualizados == 34
-    assert Arbol.todos.filter(ubicacion__isnull=False).count() == 34
+    assert resultado.creados == total
+    assert [a.codigo for a in Arbol.objects.order_by("codigo")] == [
+        f"S01-A{orden:03d}" for orden in range(1, total + 1)
+    ]
+    for arbol in Arbol.todos.all():
+        assert arbol.sector_id == 1
+        assert arbol.ubicacion.srid == SRID_UTM_CENSO
+        assert arbol.ubicacion.x == pytest.approx(punto_dentro[0], abs=total + 1)
+
+
+def test_el_grupo_se_resuelve_desde_la_columna_de_brigada(planilla_del_stakeholder, grupos):
+    evaluacion = evaluar(leer(planilla_del_stakeholder))
+    aplicar_decisiones(evaluacion, {f.numero_fila: DECISION_CONSERVAR for f in evaluacion.filas})
+
+    nombres = [a.grupo.nombre for a in Arbol.todos.order_by("codigo")]
+    assert nombres == [GRUPOS_DE_LA_BRIGADA[i % 3] for i in range(len(ROTULOS_DE_SECTOR))]
+    assert {a.grupo.brigada.nombre for a in Arbol.todos.all()} == {"Brigada A"}
