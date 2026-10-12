@@ -28,6 +28,7 @@ from config.constantes import (
     COLUMNAS_PLANILLA,
     DECISION_CONSERVAR,
     DECISION_DESCARTAR,
+    ESTADO_LOTE_CANCELADO,
     ESTADO_LOTE_CONFIRMADO,
     ESTADO_LOTE_VALIDADO,
     FORMATO_CODIGO_EXISTENTE_NO_ACTUALIZADO,
@@ -189,3 +190,12 @@ def confirmar_lote(lote, conservadas=None, ediciones=None):
         resultado = aplicar_decisiones(evaluacion, decisiones)
         lote.cerrar(ESTADO_LOTE_CONFIRMADO, resultado.como_dict())
     return resultado
+
+
+def cancelar_lote(lote):
+    """Descarta el lote sin guardar nada. Lanza ValueError si el lote ya no está pendiente."""
+    with transaction.atomic():
+        lote = LoteCarga.objects.select_for_update().get(pk=lote.pk)
+        if lote.estado != ESTADO_LOTE_VALIDADO:
+            raise ValueError(MENSAJE_CARGA_LOTE_CERRADO)
+        lote.cerrar(ESTADO_LOTE_CANCELADO)

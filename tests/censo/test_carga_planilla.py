@@ -616,3 +616,26 @@ def test_el_selector_de_catalogo_trae_solo_los_valores_activos_por_campo(db):
 
     assert activos["origen"] == ["Nativa", "Introducida"]
     assert activos["estado_copa"] == []
+
+
+def test_cancelar_un_lote_ya_confirmado_no_lo_pisa_y_avisa(lote_mixto, cliente_administrador):
+    cliente_administrador.post(url("confirmar", lote_mixto))
+    resultado = LoteCarga.objects.get(pk=lote_mixto.pk).resultado
+
+    respuesta = cliente_administrador.post(url("cancelar", lote_mixto), follow=True)
+
+    assert "Esa carga ya no está pendiente" in texto(respuesta)
+    lote_mixto.refresh_from_db()
+    assert lote_mixto.estado == ESTADO_LOTE_CONFIRMADO
+    assert lote_mixto.resultado == resultado
+
+
+def test_confirmar_un_lote_ya_cancelado_no_lo_pisa_y_avisa(lote_mixto, cliente_administrador):
+    cliente_administrador.post(url("cancelar", lote_mixto))
+
+    respuesta = cliente_administrador.post(url("confirmar", lote_mixto), follow=True)
+
+    assert "Esa carga ya no está pendiente" in texto(respuesta)
+    lote_mixto.refresh_from_db()
+    assert lote_mixto.estado == ESTADO_LOTE_CANCELADO
+    assert list(Arbol.todos.values_list("codigo", flat=True)) == ["S01-A004"]

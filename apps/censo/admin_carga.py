@@ -18,6 +18,7 @@ from apps.censo.servicios.carga_planilla import evaluar, valores_activos_del_cat
 from apps.censo.servicios.lectura_planilla import leer
 from apps.censo.servicios.lote_carga import (
     campos_a_corregir,
+    cancelar_lote,
     codigo_con_varias_conservadas,
     confirmar_lote,
     ediciones_del_formulario,
@@ -27,7 +28,6 @@ from apps.censo.servicios.lote_carga import (
 )
 from config.constantes import (
     CAMPO_ARCHIVO_CARGA,
-    ESTADO_LOTE_CANCELADO,
     ESTADO_LOTE_CONFIRMADO,
     ESTADO_LOTE_VALIDADO,
     ESTADO_REGISTRO_EN_REVISION,
@@ -181,8 +181,11 @@ class CargaPlanillaAdmin(admin.ModelAdmin):
     def cancelar(self, request, lote_id):
         """Descarta el lote sin guardar nada."""
         lote = self._lote_propio(request, lote_id)
-        if lote.estado == ESTADO_LOTE_VALIDADO:
-            lote.cerrar(ESTADO_LOTE_CANCELADO)
+        try:
+            cancelar_lote(lote)
+        except ValueError as error:
+            messages.error(request, str(error))
+        else:
             messages.info(request, MENSAJE_CARGA_CANCELADA)
         return redirect(self._url_de_subida())
 
