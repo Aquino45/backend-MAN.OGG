@@ -9,7 +9,7 @@
 <div class="carga-acciones">
   <form method="post" action="{% url 'admin:censo_lotecarga_confirmar' lote.pk %}">
     {% csrf_token %}
-    <input type="submit" class="default" value="{{ textos.boton_confirmar }}">
+    <input type="submit" class="button default" value="{{ textos.boton_confirmar }}">
   </form>
   <a class="button" href="{% url 'admin:censo_lotecarga_resumen' lote.pk %}">{{ textos.boton_volver }}</a>
 </div>

@@ -53,6 +53,7 @@ PARES_CLARO = [
     ("--blanco", "--marca-primario-600"),
     ("--blanco", "--marca-primario-700"),
     ("--marca-base-600", "--blanco"),
+    ("--marca-primario-700", "--marca-primario-100"),
     ("--body-fg", "--body-bg"),
     ("--error-fg", "--body-bg"),
 ]
@@ -63,6 +64,7 @@ PARES_OSCURO = [
     ("--marca-primario-500", "--marca-base-900"),
     ("--marca-base-300", "--marca-base-800"),
     ("--blanco", "--marca-primario-600"),
+    ("--marca-primario-300", "--marca-base-800"),
     ("--body-fg", "--body-bg"),
     ("--error-fg", "--body-bg"),
 ]
@@ -218,3 +220,25 @@ def test_el_historial_y_la_vuelta_a_una_version_responden_200(cliente_administra
 
     assert cliente_administrador.get(historial).status_code == 200
     assert cliente_administrador.get(revertir).status_code == 200
+
+
+def test_los_botones_de_la_carga_llevan_las_clases_de_boton(cliente_administrador):
+    html = cliente_administrador.get(reverse("admin:censo_lotecarga_changelist")).content.decode()
+
+    assert "carga-planilla" in html
+    boton = re.search(r'<input type="submit"[^>]*>', html).group(0)
+    assert 'class="button default"' in boton
+
+
+@pytest.mark.parametrize("nombre", ["resumen", "revisar", "no"])
+def test_las_pantallas_de_un_lote_real_estan_dentro_de_la_carga_con_botones(
+    nombre,
+    lote_mixto,  # noqa: F811
+    cliente_administrador,
+):
+    html = cliente_administrador.get(
+        reverse(f"admin:censo_lotecarga_{nombre}", args=[lote_mixto.pk])
+    ).content.decode()
+
+    assert "carga-planilla" in html
+    assert re.search(r'class="button[^"]*"', html)

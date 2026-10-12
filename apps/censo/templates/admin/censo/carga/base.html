@@ -8,6 +8,7 @@
   .carga-acciones form { display: inline-block; margin-right: 8px; }
 </style>
 {% endblock %}
+{% block bodyclass %}{{ block.super }} carga-planilla{% endblock %}
 {% block breadcrumbs %}
 <div class="breadcrumbs">
   <a href="{% url 'admin:index' %}">{{ textos.migas_inicio }}</a> &rsaquo;
