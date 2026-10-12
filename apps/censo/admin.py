@@ -22,7 +22,8 @@ from apps.censo.admin_calidad import (
     CalidadDelRegistroAdmin,
     FiltroEstadoRegistro,
 )
-from apps.censo.admin_catalogos import ColumnasDeEspecie, MapaDelCampus
+from apps.censo.admin_catalogos import ColumnasDeEspecie
+from apps.censo.admin_geometrias import FIELDSET_UBICACION, UbicacionDelArbolAdmin
 from apps.censo.models import Arbol, ArbolEnPapelera
 from apps.censo.servicios import papelera
 from config.constantes import (
@@ -55,7 +56,9 @@ FormularioDeAcciones = type(
 
 
 @admin.register(Arbol)
-class ArbolAdmin(ColumnasDeEspecie, CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
+class ArbolAdmin(
+    ColumnasDeEspecie, UbicacionDelArbolAdmin, CalidadDelRegistroAdmin, SimpleHistoryAdmin
+):
     """Árboles vigentes. «Eliminar» manda a la papelera: nunca borra la fila."""
 
     list_display = (
@@ -113,7 +116,7 @@ class ArbolAdmin(ColumnasDeEspecie, CalidadDelRegistroAdmin, MapaDelCampus, Simp
                 )
             },
         ),
-        ("Ubicación", {"fields": ("ubicacion",)}),
+        FIELDSET_UBICACION,
         ("Medidas", {"fields": ("altura_total_m", "dap_cm", "copa_ns_m", "copa_eo_m")}),
         (
             "Estado",

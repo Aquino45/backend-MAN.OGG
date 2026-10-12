@@ -19,6 +19,10 @@ CSRF_COOKIE_SECURE = env.bool("DJANGO_CSRF_COOKIE_SECURE")
 
 ADMIN_RUTA = env.str("ADMIN_RUTA")
 
+ESRI_CLAVE = env.str("ESRI_CLAVE", default="")
+"""Clave de ArcGIS Location Platform para la capa satelital del mapa del panel; sin ella el mapa
+usa OpenStreetMap. Es un secreto: vive solo en el entorno."""
+
 DB_ESQUEMA = env.str("DB_ESQUEMA")
 
 INSTALLED_APPS = [

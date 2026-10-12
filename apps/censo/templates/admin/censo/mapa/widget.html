@@ -1,0 +1,186 @@
+{% load i18n l10n %}
+<div id="{{ id }}_div_map" class="dj_map_wrapper mapa-editable">
+  <div id="{{ id }}_map" class="dj_map" style="width: {{ ancho_px }}px; height: {{ alto_px }}px; max-width: 100%;"></div>
+  {% if not disabled %}<span class="clear_features"><a href="">{% translate "Delete all Features" %}</a></span>{% endif %}
+  <div class="mapa-selector" id="{{ id }}_selector" role="radiogroup" aria-label="{{ configuracion.textos.selector }}">
+    {% for capa in capas %}
+    <label><input type="radio" name="{{ id }}_capa" value="{{ capa.id }}"{% if capa.id == configuracion.capa_inicial %} checked{% endif %}> {{ capa.nombre }}</label>
+    {% endfor %}
+  </div>
+  <div class="mapa-atribucion" id="{{ id }}_atribucion"></div>
+  <p class="mapa-aviso" id="{{ id }}_aviso" role="status"></p>
+  {% if display_raw %}<p>{% translate "Debugging window (serialized value)" %}</p>{% endif %}
+  <textarea id="{{ id }}" class="vSerializedField required" cols="150" rows="10" name="{{ name }}"
+            {% if not display_raw %} hidden{% endif %}>{{ serialized }}</textarea>
+  {{ configuracion|json_script:id_configuracion }}
+  <style>
+    .mapa-editable { position: relative; }
+    .mapa-editable .mapa-selector { position: absolute; top: .5em; right: .5em; z-index: 5; padding: 4px 8px; background: var(--body-bg); color: var(--body-fg); border-radius: 4px; opacity: .92; }
+    .mapa-editable .mapa-selector label { margin-right: .75em; }
+    .mapa-editable .mapa-atribucion { position: absolute; left: 0; bottom: 2.4em; z-index: 5; padding: 2px 6px; font-size: 11px; background: var(--body-bg); color: var(--body-fg); opacity: .85; }
+    .mapa-editable .mapa-atribucion a { color: inherit; }
+    .mapa-editable .mapa-aviso { margin: .5em 0 0; color: var(--error-fg); }
+  </style>
+  <script>
+  (function () {
+    'use strict';
+    var configuracion = JSON.parse(document.getElementById('{{ id_configuracion }}').textContent);
+    var estilos = configuracion.estilos;
+    var textos = configuracion.textos;
+    var capas = {};
+    var definiciones = {};
+
+    function crearCapa(definicion) {
+      definiciones[definicion.id] = definicion;
+      return new ol.layer.Tile({
+        visible: definicion.id === configuracion.capa_inicial,
+        source: new ol.source.XYZ({url: definicion.url, maxZoom: configuracion.zoom_maximo})
+      });
+    }
+    configuracion.capas.forEach(function (definicion) { capas[definicion.id] = crearCapa(definicion); });
+
+    var widget = new MapWidget({
+      base_layer: capas[configuracion.capa_inicial],
+      geom_name: '{{ geom_type }}',
+      id: '{{ id }}',
+      map_id: '{{ id }}_map',
+      map_srid: {{ map_srid|unlocalize }},
+      name: '{{ name }}',
+      default_lon: {{ default_lon|unlocalize }},
+      default_lat: {{ default_lat|unlocalize }},
+      default_zoom: {{ default_zoom|unlocalize }}
+    });
+    window['{{ module }}'] = widget;
+    var proyeccion = widget.map.getView().getProjection();
+
+    // --- capas de fondo, selector y atribución
+    configuracion.capas.forEach(function (definicion) {
+      if (definicion.id !== configuracion.capa_inicial) { widget.map.getLayers().insertAt(0, capas[definicion.id]); }
+    });
+    var cajaAtribucion = document.getElementById('{{ id }}_atribucion');
+    function mostrarAtribucion(identificador) {
+      var definicion = definiciones[identificador];
+      var enlace = document.createElement('a');
+      enlace.href = definicion.atribucion_url;
+      enlace.target = '_blank';
+      enlace.rel = 'noopener';
+      enlace.textContent = definicion.atribucion;
+      cajaAtribucion.textContent = '';
+      cajaAtribucion.appendChild(enlace);
+    }
+    mostrarAtribucion(configuracion.capa_inicial);
+    document.querySelectorAll('#{{ id }}_selector input').forEach(function (opcion) {
+      opcion.addEventListener('change', function () {
+        Object.keys(capas).forEach(function (identificador) { capas[identificador].setVisible(identificador === opcion.value); });
+        mostrarAtribucion(opcion.value);
+      });
+    });
+
+    // --- estilo de lo que se edita
+    var relleno = function (color) { return new ol.style.Fill({color: color}); };
+    var trazo = function (color, ancho) { return new ol.style.Stroke({color: color, width: ancho}); };
+    widget.featureOverlay.setStyle(new ol.style.Style({
+      fill: relleno(estilos.editable_relleno),
+      stroke: trazo(estilos.editable_borde, estilos.editable_grosor_px),
+      image: new ol.style.Circle({
+        radius: estilos.pin_radio_px,
+        fill: relleno(estilos.pin_relleno),
+        stroke: trazo(estilos.pin_borde, 2)
+      })
+    }));
+    widget.featureOverlay.setZIndex(2);
+
+    // --- contexto de solo lectura: sectores y demás árboles
+    var aviso = document.getElementById('{{ id }}_aviso');
+    function decir(mensaje) { aviso.textContent = mensaje || ''; }
+    function estiloDeContexto(elemento) {
+      if (elemento.get('tipo') === 'sector') {
+        return new ol.style.Style({
+          stroke: trazo(estilos.sector_contorno, estilos.sector_grosor_px),
+          text: new ol.style.Text({
+            text: elemento.get('nombre'),
+            font: estilos.texto_tamano_px + 'px sans-serif',
+            fill: relleno(estilos.sector_texto),
+            stroke: trazo(estilos.sector_texto_borde, 3),
+            overflow: true
+          })
+        });
+      }
+      return new ol.style.Style({image: new ol.style.Circle({
+        radius: estilos.arbol_contexto_radio_px,
+        fill: relleno(estilos.arbol_contexto_relleno),
+        stroke: trazo(estilos.arbol_contexto_borde, 1)
+      })});
+    }
+    function consultar(url, parametros) {
+      var consulta = new URLSearchParams(parametros).toString();
+      return fetch(url + (consulta ? '?' + consulta : ''), {credentials: 'same-origin'}).then(function (respuesta) {
+        return respuesta.json().then(function (cuerpo) { return {ok: respuesta.ok, cuerpo: cuerpo}; });
+      });
+    }
+    if (configuracion.url_contexto) {
+      consultar(configuracion.url_contexto, configuracion.parametros_contexto).then(function (resultado) {
+        if (!resultado.ok) { throw new Error(textos.error_contexto); }
+        var elementos = new ol.format.GeoJSON().readFeatures(resultado.cuerpo, {
+          dataProjection: 'EPSG:4326', featureProjection: proyeccion
+        });
+        widget.map.addLayer(new ol.layer.Vector({
+          source: new ol.source.Vector({features: elementos}), style: estiloDeContexto, zIndex: 1
+        }));
+      }).catch(function () { decir(textos.error_contexto); });
+    }
+
+    // --- el pin y las coordenadas, en las dos direcciones
+    var campos = configuracion.campos;
+    if (!campos || !configuracion.url_convertir) { return; }
+    var entradas = {};
+    Object.keys(campos).forEach(function (clave) { entradas[clave] = document.getElementById(campos[clave]); });
+    var moviendoDesdeLosCampos = false;
+    var fuente = widget.featureOverlay.getSource();
+
+    function llenar(cuerpo) {
+      entradas.utm_este_m.value = cuerpo.utm_este_m;
+      entradas.utm_norte_m.value = cuerpo.utm_norte_m;
+      entradas.latitud.value = cuerpo.latitud;
+      entradas.longitud.value = cuerpo.longitud;
+      decir(cuerpo.mensaje);
+    }
+    function convertir(parametros, alTerminar) {
+      decir(textos.convirtiendo);
+      consultar(configuracion.url_convertir, parametros).then(function (resultado) {
+        if (!resultado.ok) { decir(resultado.cuerpo.mensaje || textos.error_conversion); return; }
+        llenar(resultado.cuerpo);
+        if (alTerminar) { alTerminar(resultado.cuerpo); }
+      }).catch(function () { decir(textos.error_conversion); });
+    }
+    function delPinALosCampos() {
+      if (moviendoDesdeLosCampos) { return; }
+      var elemento = fuente.getFeatures()[0];
+      if (!elemento) { return; }
+      var grados = ol.proj.toLonLat(elemento.getGeometry().getCoordinates(), proyeccion);
+      convertir({latitud: grados[1], longitud: grados[0]});
+    }
+    function deLosCamposAlPin() {
+      var este = entradas.utm_este_m.value.trim();
+      var norte = entradas.utm_norte_m.value.trim();
+      if (!este || !norte) { return; }
+      convertir({utm_este_m: este, utm_norte_m: norte}, function (cuerpo) {
+        var coordenadas = ol.proj.fromLonLat([cuerpo.longitud, cuerpo.latitud], proyeccion);
+        moviendoDesdeLosCampos = true;
+        var elemento = fuente.getFeatures()[0];
+        if (elemento) {
+          elemento.getGeometry().setCoordinates(coordenadas);
+        } else {
+          widget.featureCollection.push(new ol.Feature(new ol.geom.Point(coordenadas)));
+        }
+        moviendoDesdeLosCampos = false;
+        widget.map.getView().setCenter(coordenadas);
+      });
+    }
+    widget.interactions.modify.on('modifyend', delPinALosCampos);
+    widget.featureCollection.on('add', delPinALosCampos);
+    entradas.utm_este_m.addEventListener('change', deLosCamposAlPin);
+    entradas.utm_norte_m.addEventListener('change', deLosCamposAlPin);
+  })();
+  </script>
+</div>
