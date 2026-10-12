@@ -8,6 +8,7 @@ from django.templatetags.static import static
 
 from config.constantes import (
     FAVICON_ADMIN,
+    HOJA_COMPONENTES_ADMIN,
     HOJA_IDENTIDAD_ADMIN,
     LOGO_ADMIN,
     NOMBRE_PUBLICO_ADMIN,
@@ -29,6 +30,9 @@ UNFOLD = {
     "SITE_FAVICONS": [
         {"rel": "icon", "type": "image/svg+xml", "href": lambda request: static(FAVICON_ADMIN)}
     ],
-    "STYLES": [lambda request: static(HOJA_IDENTIDAD_ADMIN)],
+    "STYLES": [
+        lambda request: static(HOJA_IDENTIDAD_ADMIN),
+        lambda request: static(HOJA_COMPONENTES_ADMIN),
+    ],
     "COLORS": {"base": _escala("base"), "primary": _escala("primario")},
 }

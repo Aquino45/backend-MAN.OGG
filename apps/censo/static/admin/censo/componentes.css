@@ -1,0 +1,245 @@
+/* Componentes del panel: chips, árbol pixel y pantallas de «Cargar planilla».
+   Solo usan las variables de identidad.css. */
+
+.chip {
+  display: inline-block;
+  padding: 0.125rem 0.5rem;
+  border-radius: var(--radio-chip);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  white-space: nowrap;
+}
+
+.chip--publicado {
+  background: var(--chip-publicado-bg);
+  color: var(--chip-publicado-fg);
+}
+
+.chip--revision {
+  background: var(--chip-revision-bg);
+  color: var(--chip-revision-fg);
+}
+
+.chip--ejemplo {
+  background: var(--chip-ejemplo-bg);
+  color: var(--chip-ejemplo-fg);
+}
+
+.chip--censo {
+  background: var(--chip-censo-bg);
+  color: var(--chip-censo-fg);
+}
+
+.chip--destacado {
+  background: var(--chip-destacado-bg);
+  color: var(--chip-destacado-fg);
+  box-shadow: inset 0 0 0 var(--grosor-borde-ui) var(--punto-destacado);
+}
+
+.chip--activo {
+  background: var(--chip-activo-bg);
+  color: var(--chip-activo-fg);
+  box-shadow: inset 0 0 0 var(--grosor-borde-ui) var(--copa-magenta-oscuro);
+}
+
+.chip--inactivo {
+  background: var(--chip-inactivo-bg);
+  color: var(--chip-inactivo-fg);
+}
+
+.miniatura {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.glifo-pixel {
+  width: 1.5rem;
+  height: 1.5rem;
+  flex: none;
+}
+
+.glifo-pixel__copa-alta {
+  fill: var(--glifo-copa-alta);
+}
+
+.glifo-pixel__copa-media {
+  fill: var(--glifo-copa-media);
+}
+
+.glifo-pixel__copa-baja {
+  fill: var(--glifo-copa-baja);
+}
+
+.glifo-pixel__tronco {
+  fill: var(--glifo-tronco);
+}
+
+/* Pantallas de «Cargar planilla» (botones, campos, tablas y avisos) */
+.carga-planilla input[type="submit"],
+.carga-planilla a.button {
+  display: inline-block;
+  padding: 0.5rem 1rem;
+  border: var(--grosor-borde-ui) solid var(--marca-primario-600);
+  border-radius: var(--radio-control);
+  background: transparent;
+  color: var(--marca-primario-600);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.carga-planilla input[type="submit"].default {
+  background: var(--marca-primario-600);
+  color: var(--blanco);
+}
+
+.carga-planilla input[type="submit"]:hover,
+.carga-planilla a.button:hover {
+  background: var(--marca-primario-100);
+  color: var(--marca-primario-700);
+}
+
+.carga-planilla input[type="submit"].default:hover {
+  background: var(--marca-primario-700);
+  color: var(--blanco);
+}
+
+.carga-planilla input[type="text"],
+.carga-planilla input[type="number"],
+.carga-planilla input[type="file"],
+.carga-planilla select {
+  max-width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: var(--grosor-borde-ui) solid var(--marca-base-400);
+  border-radius: var(--radio-control);
+  background: var(--body-bg);
+  color: var(--body-fg);
+  font: inherit;
+}
+
+.carga-planilla input[type="file"]::file-selector-button {
+  margin-right: 0.75rem;
+  padding: 0.25rem 0.75rem;
+  border: var(--grosor-borde-ui) solid var(--marca-primario-600);
+  border-radius: var(--radio-chip);
+  background: var(--marca-primario-600);
+  color: var(--blanco);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.carga-planilla label {
+  display: block;
+  margin-bottom: 0.25rem;
+  font-weight: 600;
+}
+
+.carga-planilla label.vCheckboxLabel {
+  display: inline;
+  margin-left: 0.25rem;
+}
+
+.carga-planilla h2 {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.125rem;
+  font-weight: 800;
+}
+
+.carga-planilla h3 {
+  margin: 1rem 0 0.5rem;
+  font-weight: 600;
+}
+
+.carga-planilla table {
+  width: 100%;
+  border-collapse: collapse;
+  border: var(--grosor-borde-ui) solid var(--marca-base-200);
+  border-radius: var(--radio-control);
+}
+
+.carga-planilla th {
+  padding: 0.5rem 0.75rem;
+  background: var(--marca-base-100);
+  text-align: left;
+  font-weight: 600;
+}
+
+.carga-planilla td {
+  padding: 0.5rem 0.75rem;
+  border-top: var(--grosor-borde-ui) solid var(--marca-base-200);
+  vertical-align: top;
+}
+
+.carga-planilla td ul {
+  margin: 0;
+  padding-left: 1rem;
+}
+
+.carga-planilla .carga-alerta,
+.carga-planilla .carga-avisos {
+  padding: 0.75rem 1rem;
+  border: var(--grosor-borde-ui) solid var(--marca-base-400);
+  border-radius: var(--radio-tarjeta);
+  background: var(--marca-base-100);
+}
+
+.carga-planilla .carga-alerta {
+  border: 2px solid var(--error-fg);
+}
+
+.carga-planilla .carga-problema {
+  padding: 0.5rem;
+  border-radius: var(--radio-control);
+  outline: 2px solid var(--error-fg);
+}
+
+.carga-planilla .carga-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 1rem 0;
+}
+
+html.dark .carga-planilla input[type="submit"],
+html.dark .carga-planilla a.button {
+  border-color: var(--marca-primario-500);
+  color: var(--marca-primario-500);
+}
+
+html.dark .carga-planilla input[type="submit"].default {
+  background: var(--marca-primario-600);
+  color: var(--blanco);
+}
+
+html.dark .carga-planilla input[type="submit"]:hover,
+html.dark .carga-planilla a.button:hover {
+  background: var(--marca-base-800);
+  color: var(--marca-primario-300);
+}
+
+html.dark .carga-planilla input[type="submit"].default:hover {
+  background: var(--marca-primario-700);
+  color: var(--blanco);
+}
+
+html.dark .carga-planilla input[type="text"],
+html.dark .carga-planilla input[type="number"],
+html.dark .carga-planilla input[type="file"],
+html.dark .carga-planilla select {
+  border-color: var(--marca-base-500);
+}
+
+html.dark .carga-planilla th,
+html.dark .carga-planilla .carga-alerta,
+html.dark .carga-planilla .carga-avisos {
+  background: var(--marca-base-800);
+}
+
+html.dark .carga-planilla table,
+html.dark .carga-planilla td {
+  border-color: var(--marca-base-700);
+}

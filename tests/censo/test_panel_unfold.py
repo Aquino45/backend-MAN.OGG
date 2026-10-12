@@ -5,13 +5,16 @@ from pathlib import Path
 
 import pytest
 from django.conf import settings
+from django.contrib.auth.models import Permission, User
 from django.contrib.staticfiles import finders
 from django.urls import reverse
 
 from apps.censo.models import Arbol
+from apps.censo.servicios.papelera import mover_a_papelera
 from config.constantes import (
     CAMPO_MOTIVO_ELIMINACION,
     FAVICON_ADMIN,
+    HOJA_COMPONENTES_ADMIN,
     HOJA_IDENTIDAD_ADMIN,
     LOGO_ADMIN,
     NOMBRE_PUBLICO_ADMIN,
@@ -26,8 +29,10 @@ from tests.censo.ayuda_css import (
     sin_comentarios,
     variables_del_tema,
 )
-from tests.censo.conftest import arbol_de_ejemplo
+from tests.censo.conftest import CLAVE_PRUEBA, arbol_de_ejemplo, cliente_de
+from tests.censo.test_admin import datos_de_alta
 from tests.censo.test_carga_planilla import lote_mixto, punto  # noqa: F401
+from tests.censo.test_panel_geometrias import configuracion_del_mapa
 
 PALETA = {
     "#e02040",
@@ -71,9 +76,9 @@ PARES_OSCURO = [
 PARES_DE_CHIPS = [(f"--chip-{v}-fg", f"--chip-{v}-bg") for v in VARIANTES_CHIP]
 
 
-def texto_de_la_hoja():
-    ruta = finders.find(HOJA_IDENTIDAD_ADMIN)
-    assert ruta, "La hoja de identidad no se sirve por staticfiles"
+def texto_de_la_hoja(hoja=HOJA_IDENTIDAD_ADMIN):
+    ruta = finders.find(hoja)
+    assert ruta, f"{hoja} no se sirve por staticfiles"
     return Path(ruta).read_text(encoding="utf8")
 
 
@@ -83,7 +88,7 @@ def texto_de_la_hoja():
 def test_el_panel_carga_con_la_hoja_el_logo_y_el_favicon(cliente_administrador):
     html = cliente_administrador.get(reverse("admin:index")).content.decode()
 
-    assert HOJA_IDENTIDAD_ADMIN in html
+    assert HOJA_IDENTIDAD_ADMIN in html and HOJA_COMPONENTES_ADMIN in html
     assert LOGO_ADMIN in html
     assert FAVICON_ADMIN in html
     assert NOMBRE_PUBLICO_ADMIN in html
@@ -104,13 +109,15 @@ def test_la_marca_y_la_fuente_se_sirven_desde_el_back():
         assert nombre in texto_de_la_hoja()
 
 
-def test_los_colores_viven_solo_en_el_primer_bloque_root():
+def test_los_colores_viven_solo_en_el_unico_bloque_root():
     texto = sin_comentarios(texto_de_la_hoja())
     selector, declaraciones = bloques(texto)[0]
     en_el_bloque = " ".join(declaraciones.values())
     resto = texto[texto.index("}") + 1 :]
 
     assert selector == ":root"
+    assert [s for s, _ in bloques(texto) if s == ":root"] == [":root"]
+    assert not COLOR_HEX.findall(sin_comentarios(texto_de_la_hoja(HOJA_COMPONENTES_ADMIN)))
     assert set(COLOR_HEX.findall(en_el_bloque.lower())) <= PALETA
     assert not COLOR_HEX.findall(resto)
     assert "misma paleta que el sitio público" in texto_de_la_hoja()
@@ -242,3 +249,57 @@ def test_las_pantallas_de_un_lote_real_estan_dentro_de_la_carga_con_botones(
 
     assert "carga-planilla" in html
     assert re.search(r'class="button[^"]*"', html)
+
+
+def test_el_formulario_del_arbol_trae_las_coordenadas_iniciales_y_el_js_del_mapa(
+    cliente_administrador, sectores
+):
+    arbol = arbol_de_ejemplo("S01-A001")
+
+    respuesta = cliente_administrador.get(reverse("admin:censo_arbol_change", args=[arbol.pk]))
+
+    formulario = respuesta.context["adminform"].form
+    assert float(formulario.initial["utm_este_m"]) == pytest.approx(arbol.ubicacion.x, abs=0.01)
+    assert float(formulario.initial["utm_norte_m"]) == pytest.approx(arbol.ubicacion.y, abs=0.01)
+    assert configuracion_del_mapa(respuesta)["capas"]
+    assert "ol.layer.Tile" in respuesta.content.decode()
+
+
+def test_el_historial_revierte_de_verdad_el_valor(cliente_administrador, sectores):
+    arbol = arbol_de_ejemplo("S01-A010", observaciones="Molle")
+    arbol.observaciones = "Palma real"
+    arbol.save()
+    version = arbol.history.filter(observaciones="Molle").get()
+    ruta = reverse("admin:censo_arbol_simple_history", args=[arbol.pk, version.pk])
+
+    respuesta = cliente_administrador.post(ruta, datos_de_alta(observaciones="Molle"))
+
+    assert respuesta.status_code == 302
+    assert Arbol.objects.get(pk=arbol.pk).observaciones == "Molle"
+
+
+def test_el_editor_no_ve_ni_hace_lo_que_no_le_toca(cliente_editor, sectores):
+    arbol = arbol_de_ejemplo("S01-A001")
+    mover_a_papelera(arbol, User.objects.create(username="otra-persona"), "Duplicado")
+
+    lista = cliente_editor.get(reverse("admin:censo_arbolenpapelera_changelist"))
+    acciones = lista.context["cl"].model_admin.get_actions(lista.wsgi_request)
+
+    assert "delete_selected" not in acciones and "restaurar" in acciones
+    borrar = reverse("admin:censo_arbolenpapelera_delete", args=[arbol.pk])
+    assert cliente_editor.post(borrar, {"post": "yes"}).status_code == 403
+    assert cliente_editor.get(reverse("admin:censo_sector_add")).status_code == 403
+    assert Arbol.todos.filter(pk=arbol.pk).exists()
+
+
+def test_sin_el_permiso_de_cargar_el_indice_no_enlaza_la_carga_y_la_url_da_403(db, sectores):
+    usuario = User.objects.create_user("sin-carga", password=CLAVE_PRUEBA, is_staff=True)
+    usuario.user_permissions.add(Permission.objects.get(codename="view_arbol"))
+    cliente = cliente_de(usuario)
+    carga = reverse("admin:censo_lotecarga_changelist")
+
+    indice = cliente.get(reverse("admin:index")).content.decode()
+
+    assert carga not in indice
+    assert cliente.get(carga).status_code == 403
+    assert cliente.get(reverse("admin:censo_arbol_changelist")).status_code == 200
