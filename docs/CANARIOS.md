@@ -33,3 +33,4 @@ rocas sedimentarias. Libres: caliza, arenisca, lutita, travertino, conglomerado,
 | 11/10/2026 | BE-016 | toba | ORQ-CA | komatiita |
 | 12/10/2026 | BE-014 | diatomita | ORQ-CA | komatiita |
 | 12/10/2026 | BE-017 | loess | ORQ-CA | komatiita |
+| 12/10/2026 | BE-019 | grauvaca | ORQ-CA | picrita |

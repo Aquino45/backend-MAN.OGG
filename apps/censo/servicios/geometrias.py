@@ -287,6 +287,11 @@ def mensaje_de_sector(arbol):
     return MENSAJE_PUNTO_EN_SECTOR.format(nombre=sector.nombre, **datos), False
 
 
+def fecha_de_la_marca(marca, ahora):
+    """La fecha de la marca de ubicación editada: ninguna sin marca; con marca, `ahora`."""
+    return ahora if marca else None
+
+
 def mensaje_vista_previa(cuantos):
     """Qué pasaría con `cuantos` árboles si se guarda el polígono nuevo del sector."""
     plantilla = (
