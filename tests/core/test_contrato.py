@@ -44,11 +44,12 @@ def test_cada_ejemplo_cumple_su_schema(contrato, archivo, nombre_schema):
     assert errores == [], f"{archivo} no cumple {nombre_schema}"
 
 
-def test_la_cartilla_exige_las_claves_de_contexto_y_utm_pero_no_el_resumen(contrato):
+def test_la_cartilla_exige_sus_claves_y_el_resumen_solo_suma_origen(contrato):
     esquemas = contrato["components"]["schemas"]
 
     assert CLAVES_DE_LA_CARTILLA_NUEVAS <= set(esquemas["Arbol"]["required"])
-    assert not CLAVES_DE_LA_CARTILLA_NUEVAS & set(esquemas["ArbolResumen"]["required"])
+    claves_solo_de_la_cartilla = CLAVES_DE_LA_CARTILLA_NUEVAS - {"origen"}
+    assert not claves_solo_de_la_cartilla & set(esquemas["ArbolResumen"]["required"])
 
 
 def test_codigo_bien_formado_se_acepta(contrato):
@@ -85,7 +86,7 @@ def test_todo_external_value_esta_en_la_lista_de_ejemplos(contrato):
 
 
 def test_la_version_del_contrato_es_la_vigente(contrato):
-    assert contrato["info"]["version"] == "0.5.0"
+    assert contrato["info"]["version"] == "0.6.0"
 
 
 @pytest.mark.parametrize("nombre_schema", ["Arbol", "ArbolResumen"])
