@@ -61,6 +61,12 @@ COLUMNAS_PLANILLA = {
 `control_registro` se lee pero no se guarda: es una fórmula de control, no un dato del árbol.
 """
 
+COLUMNAS_OPCIONALES_PLANILLA = {
+    "Grupo": "grupo",
+}
+"""Columnas que la planilla puede traer o no: sin ellas se lee igual. Las demás columnas que no
+están aquí ni en `COLUMNAS_PLANILLA` se ignoran."""
+
 CAMPOS_NUMERICOS_PLANILLA = frozenset(
     {"altura_total_m", "dap_cm", "copa_ns_m", "copa_eo_m", "co2_almacenado_kg"}
     | {"co2_captura_anual_kg", "utm_este_m", "utm_norte_m"}
@@ -609,6 +615,13 @@ CAMPOS_DE_ESPECIE = ("nombre_comun", "nombre_cientifico", CAMPO_ORIGEN)
 
 CAMPO_BRIGADA = "brigada"
 """Columna de la planilla con la brigada (o con el nombre de un grupo)."""
+
+CAMPO_GRUPO = "grupo"
+"""Columna opcional de la planilla con el grupo de la brigada; el árbol guarda una referencia."""
+
+TITULO_SIN_RESOLVER_CATALOGO = "Textos sin resolver (quedan en valores_originales)"
+TITULO_SIN_RESOLVER_BRIGADA = "Brigada o grupo sin resolver (solo informativo, no manda a revisión)"
+"""Títulos del reporte de la consola para lo que la planilla trae y no coincide con una tabla."""
 
 CAMPOS_TEXTO_RESUELTOS = (*CAMPOS_DE_ESPECIE, *CAMPOS_ESTADO_ARBOL, CAMPO_BRIGADA)
 """Datos que la planilla trae como texto y el árbol guarda como referencia a otra tabla."""

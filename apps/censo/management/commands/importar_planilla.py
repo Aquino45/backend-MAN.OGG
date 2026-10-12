@@ -3,6 +3,13 @@
 from django.core.management.base import BaseCommand, CommandError
 
 from apps.censo.servicios.importar_planilla import importar_planilla
+from apps.censo.servicios.lectura_planilla import ENCABEZADO_POR_CAMPO
+from config.constantes import (
+    CAMPO_BRIGADA,
+    CAMPO_GRUPO,
+    TITULO_SIN_RESOLVER_BRIGADA,
+    TITULO_SIN_RESOLVER_CATALOGO,
+)
 
 
 def lineas_del_reporte(reporte):
@@ -28,7 +35,27 @@ def lineas_del_reporte(reporte):
         f"  {a.codigo} (sector {a.sector}): a {a.distancia_m:.2f} m de su polígono"
         for a in reporte.fuera_de_sector
     ]
+    lineas += _lineas_sin_resolver(reporte)
     lineas += _lineas_de_calidad(reporte)
+    return lineas
+
+
+def _lineas_sin_resolver(reporte):
+    """Los textos que no coinciden con una especie, un valor del catálogo, una brigada o un grupo.
+
+    Los de brigada y grupo solo se informan: el grupo es opcional y no manda a revisión.
+    """
+    encabezados_brigada = {ENCABEZADO_POR_CAMPO[CAMPO_BRIGADA], ENCABEZADO_POR_CAMPO[CAMPO_GRUPO]}
+    lineas = []
+    for titulo, es_de_brigada in (
+        (TITULO_SIN_RESOLVER_CATALOGO, False),
+        (TITULO_SIN_RESOLVER_BRIGADA, True),
+    ):
+        textos = [
+            v for v in reporte.sin_resolver if (v.columna in encabezados_brigada) == es_de_brigada
+        ]
+        lineas.append(f"{titulo}: {len(textos)}")
+        lineas += [f"  {v.codigo} · {v.columna}: «{v.texto}»" for v in textos]
     return lineas
 
 

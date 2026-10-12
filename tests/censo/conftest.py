@@ -24,6 +24,7 @@ from config.constantes import (
     CAMPO_ORIGEN,
     CAMPOS_ESTADO_ARBOL,
     CAMPOS_TEXTO_RESUELTOS,
+    COLUMNAS_OPCIONALES_PLANILLA,
     COLUMNAS_PLANILLA,
     HOJA_PLANILLA,
     NOMBRE_ROL_ADMINISTRADOR,
@@ -69,19 +70,20 @@ MEDIDAS_FILA_COMPLETA = {
 }
 
 
-def crear_planilla(ruta, filas, sin_columnas=()):
+def crear_planilla(ruta, filas, sin_columnas=(), columnas_ajenas=()):
     """Escribe una planilla de prueba; cada fila es {campo: valor}.
 
-    Sin `codigo` en la fila se escribe la fórmula de la planilla real (sin valor guardado).
+    Sin `codigo` en la fila se escribe la fórmula de la planilla real (sin valor guardado). Trae
+    las columnas opcionales (salvo las de `sin_columnas`) y, al final, las `columnas_ajenas`:
+    títulos que la planilla no usa y que se deben ignorar.
     """
     libro = Workbook()
     hoja = libro.active
     hoja.title = HOJA_PLANILLA
-    encabezados = [enc for enc in COLUMNAS_PLANILLA if enc not in sin_columnas]
-    hoja.append(encabezados)
-    columna_por_campo = {
-        COLUMNAS_PLANILLA[enc]: indice for indice, enc in enumerate(encabezados, start=1)
-    }
+    columnas = {**COLUMNAS_PLANILLA, **COLUMNAS_OPCIONALES_PLANILLA}
+    encabezados = [enc for enc in columnas if enc not in sin_columnas]
+    hoja.append([*encabezados, *columnas_ajenas])
+    columna_por_campo = {columnas[enc]: indice for indice, enc in enumerate(encabezados, start=1)}
     for numero_fila, fila in enumerate(filas, start=2):
         for campo, valor in fila.items():
             if campo in columna_por_campo:
