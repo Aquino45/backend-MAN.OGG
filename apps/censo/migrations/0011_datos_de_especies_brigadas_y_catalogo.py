@@ -16,21 +16,59 @@ Cada texto que no coincide con lo que quedó en las tablas se guarda en `valores
 la reversa reescribe los textos tal como estaban.
 """
 
+import unicodedata
 from collections import defaultdict
 
 from django.db import migrations
 
-from apps.censo.servicios.normalizacion import lineas_de, normalizar
-from config.constantes import (
-    ALIAS_INICIALES_DE_ESPECIES,
-    CAMPO_ORIGEN,
-    CAMPOS_ESTADO_ARBOL,
-    GRUPOS_INICIALES_DE_BRIGADA,
-    NOMBRE_BRIGADA_INICIAL,
-    SEPARADOR_DE_LINEAS,
+# Copia fija a propósito: esta migración no importa código de la app, para que siga dando el mismo
+# resultado aunque `normalizar`, las constantes o el resolver cambien después.
+SEPARADOR_DE_LINEAS = "\n"
+CAMPO_ORIGEN = "origen"
+CAMPOS_ESTADO_ARBOL = (
+    "tipo_individuo",
+    "identificacion",
+    "condicion_conservacion",
+    "estado_general",
+    "estado_copa",
+    "tronco_danos",
+    "raices_base",
+    "interferencia_entorno",
 )
+ALIAS_INICIALES_DE_ESPECIES = {
+    "Schinus molle": ("Schinus", "Schinus Molle"),
+    "Roystonea regia": ("Roystonea",),
+    "Prosopis pallida": ("Prosopis Pallida",),
+}
+NOMBRE_BRIGADA_INICIAL = "Brigada A"
+GRUPOS_INICIALES_DE_BRIGADA = ("Sopita", "zapatito", "zapato")
 
-CAMPOS_FICHA = ("nombre_cientifico", "nombre_comun", "alias", "beneficios", "dato_curioso", "cuidados")
+
+def normalizar(texto):
+    """Minúsculas, sin acentos de más y con los espacios colapsados (copia fija a propósito)."""
+    if texto is None:
+        return ""
+    sin_marcas = "".join(
+        letra
+        for letra in unicodedata.normalize("NFKD", str(texto))
+        if not unicodedata.combining(letra)
+    )
+    return " ".join(sin_marcas.casefold().split())
+
+
+def lineas_de(texto):
+    """Las líneas con contenido de un texto «uno por línea» (copia fija a propósito)."""
+    return [linea.strip() for linea in (texto or "").split(SEPARADOR_DE_LINEAS) if linea.strip()]
+
+
+CAMPOS_FICHA = (
+    "nombre_cientifico",
+    "nombre_comun",
+    "alias",
+    "beneficios",
+    "dato_curioso",
+    "cuidados",
+)
 CAMPOS_HISTORIAL = ("history_date", "history_change_reason", "history_type", "history_user_id")
 
 
@@ -255,7 +293,10 @@ def _especies_a_fichas(apps):
     ficha_de_especie = {}
     for especie in Especie.objects.exclude(fuente_ficha="").order_by("pk"):
         ficha_de_especie[especie.pk] = FichaEspecie.objects.create(
-            **{**{campo: getattr(especie, campo) for campo in CAMPOS_FICHA}, "nombre_comun": especie.nombre_comun or ""},
+            **{
+                **{campo: getattr(especie, campo) for campo in CAMPOS_FICHA},
+                "nombre_comun": especie.nombre_comun or "",
+            },
             fuente=especie.fuente_ficha,
             publicada=especie.ficha_publicada,
         )
@@ -273,7 +314,6 @@ def _especies_a_fichas(apps):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("censo", "0010_especies_brigadas_y_catalogo"),
     ]

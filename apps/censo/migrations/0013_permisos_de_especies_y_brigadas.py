@@ -9,7 +9,20 @@ sus permisos.
 from django.contrib.auth.management import create_permissions
 from django.db import migrations
 
-from config.constantes import PERMISOS_CATALOGOS_POR_ROL
+# Copia fija a propósito: esta migración no importa código de la app.
+_MODELOS_CON_PERMISOS = ("especie", "brigada", "grupobrigada")
+PERMISOS_CATALOGOS_POR_ROL = {
+    "Administrador": tuple(
+        f"{accion}_{modelo}"
+        for modelo in _MODELOS_CON_PERMISOS
+        for accion in ("add", "change", "delete", "view")
+    ),
+    "Editor": tuple(
+        f"{accion}_{modelo}"
+        for modelo in _MODELOS_CON_PERMISOS
+        for accion in ("add", "change", "view")
+    ),
+}
 
 MODELOS_QUE_YA_NO_EXISTEN = ("fichaespecie", "historicalfichaespecie")
 
@@ -37,7 +50,6 @@ def sumar_permisos(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("auth", "0012_alter_user_first_name_max_length"),
         ("contenttypes", "0002_remove_content_type_name"),
