@@ -287,12 +287,9 @@ def mensaje_de_sector(arbol):
     return MENSAJE_PUNTO_EN_SECTOR.format(nombre=sector.nombre, **datos), False
 
 
-def fecha_de_la_marca(marca, fecha_actual, ahora):
-    """La fecha que acompaña a la marca de ubicación editada: ninguna sin marca; con marca, la que
-    ya tenía o `ahora`."""
-    if not marca:
-        return None
-    return fecha_actual or ahora
+def fecha_de_la_marca(marca, ahora):
+    """La fecha de la marca de ubicación editada: ninguna sin marca; con marca, `ahora`."""
+    return ahora if marca else None
 
 
 def mensaje_vista_previa(cuantos):

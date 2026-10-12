@@ -251,7 +251,7 @@ class UbicacionDelArbolAdmin(MapaEditableAdmin):
             obj.fecha_ubicacion_editada = timezone.now()
         if "ubicacion_editada_en_panel" in form.changed_data:
             obj.fecha_ubicacion_editada = geometrias.fecha_de_la_marca(
-                obj.ubicacion_editada_en_panel, obj.fecha_ubicacion_editada, timezone.now()
+                obj.ubicacion_editada_en_panel, timezone.now()
             )
         super().save_model(request, obj, form, change)
         if cambio and obj.ubicacion is not None:

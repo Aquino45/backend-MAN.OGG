@@ -83,12 +83,58 @@ def test_el_administrador_que_pone_la_marca_llena_la_fecha(cliente_administrador
 
 
 def test_sin_marca_no_hay_fecha():
-    assert geometrias.fecha_de_la_marca(False, ANTES, AHORA) is None
+    assert geometrias.fecha_de_la_marca(False, AHORA) is None
 
 
-def test_con_marca_y_sin_fecha_se_usa_la_actual():
-    assert geometrias.fecha_de_la_marca(True, None, AHORA) == AHORA
+def test_con_marca_la_fecha_es_la_de_ahora():
+    assert geometrias.fecha_de_la_marca(True, AHORA) == AHORA
 
 
-def test_con_marca_y_con_fecha_se_conserva_la_que_ya_estaba():
-    assert geometrias.fecha_de_la_marca(True, ANTES, AHORA) == ANTES
+def test_poner_la_marca_sobre_una_fecha_vieja_deja_la_de_ahora(cliente_administrador, arbol):
+    Arbol.todos.filter(pk=arbol.pk).update(
+        ubicacion_editada_en_panel=False, fecha_ubicacion_editada=ANTES
+    )
+    datos = datos_del_arbol(
+        ubicacion=en_el_widget(arbol.ubicacion), ubicacion_editada_en_panel="on", demo=""
+    )
+
+    cliente_administrador.post(ruta_de_cambio(arbol), datos)
+
+    arbol.refresh_from_db()
+    assert arbol.ubicacion_editada_en_panel is True
+    assert arbol.fecha_ubicacion_editada > ANTES
+
+
+# --- el pin movido a la vez que la casilla: manda la casilla del Administrador -------------------
+
+
+def test_mover_el_pin_y_quitar_la_marca_a_la_vez_deja_la_marca_quitada(
+    cliente_administrador, arbol
+):
+    Arbol.todos.filter(pk=arbol.pk).update(
+        ubicacion_editada_en_panel=True, fecha_ubicacion_editada=ANTES
+    )
+    movida = arbol.ubicacion.clone()
+    movida.x += 5
+    datos = datos_del_arbol(ubicacion=en_el_widget(movida), demo="")
+    datos.pop("ubicacion_editada_en_panel", None)
+
+    cliente_administrador.post(ruta_de_cambio(arbol), datos)
+
+    arbol.refresh_from_db()
+    assert arbol.ubicacion_editada_en_panel is False
+    assert arbol.fecha_ubicacion_editada is None
+
+
+def test_mover_el_pin_y_poner_la_marca_a_la_vez_deja_la_marca_puesta(cliente_administrador, arbol):
+    movida = arbol.ubicacion.clone()
+    movida.x += 5
+    datos = datos_del_arbol(
+        ubicacion=en_el_widget(movida), ubicacion_editada_en_panel="on", demo=""
+    )
+
+    cliente_administrador.post(ruta_de_cambio(arbol), datos)
+
+    arbol.refresh_from_db()
+    assert arbol.ubicacion_editada_en_panel is True
+    assert arbol.fecha_ubicacion_editada is not None
