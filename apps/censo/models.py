@@ -1,10 +1,11 @@
 # ruff: noqa: DJ001
 # DJ001 desactivado a propósito: el contrato distingue null («Sin dato») de texto vacío,
 # así que los textos opcionales usan null=True y nunca guardan "".
-"""Modelos del censo: Sector, Arbol y los textos de ayuda de la cartilla (cápsulas).
+"""Modelos del censo: Sector, Arbol, los textos de ayuda de la cartilla (cápsulas) y las cargas.
 
 Los nombres de campo son los del contrato."""
 
+from datetime import timedelta
 from uuid import uuid4
 
 from django.conf import settings
@@ -12,17 +13,26 @@ from django.contrib.gis.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import MinLengthValidator, RegexValidator
 from django.db.models import Q
+from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
 from config.constantes import (
     CAMPOS_CATALOGADOS,
     CAMPOS_CON_AYUDA,
+    CLASIFICACION_LISTO,
+    CLASIFICACIONES_CARGA,
+    DECISION_SIN_DECIDIR,
+    DECISIONES_FILA_CARGA,
+    ESTADO_LOTE_CANCELADO,
+    ESTADO_LOTE_VALIDADO,
     ESTADO_REGISTRO_EN_REVISION,
+    ESTADOS_LOTE_CARGA,
     ESTADOS_REGISTRO,
     ETIQUETA_CO2_SIMULADO,
     MENSAJE_CODIGO_EN_PAPELERA,
     PATRON_CODIGO_ARBOL,
     PERMISO_CAMBIAR_DEMO,
+    PERMISO_CARGAR_PLANILLA,
     SRID_UTM_CENSO,
     TOPE_DESTACADOS_POR_SECTOR,
 )
@@ -308,3 +318,85 @@ class FichaEspecie(models.Model):
 
     def __str__(self):
         return f"{self.nombre_cientifico} ({self.nombre_comun})"
+
+
+class LoteCargas(models.Manager):
+    """Consultas de la bitácora de cargas."""
+
+    def purgar_vencidos(self, horas):
+        """Cierra como cancelados los lotes validados hace más de `horas` y borra sus filas."""
+        limite = timezone.now() - timedelta(hours=horas)
+        vencidos = self.filter(estado=ESTADO_LOTE_VALIDADO, fecha__lt=limite)
+        FilaCarga.objects.filter(lote__in=vencidos).delete()
+        return vencidos.update(estado=ESTADO_LOTE_CANCELADO)
+
+
+class LoteCarga(models.Model):
+    """Una planilla subida desde el panel: queda de bitácora con sus totales.
+
+    El archivo no se guarda en el servidor, solo su `sha256` y las filas que se leyeron
+    (`FilaCarga`), que se borran al confirmar o cancelar. `resultado` lleva los códigos de cada
+    grupo cuando la carga se confirma.
+    """
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="lotes_de_carga"
+    )
+    fecha = models.DateTimeField(default=timezone.now)
+    nombre_archivo = models.CharField(max_length=LARGO_TEXTO)
+    sha256 = models.CharField(max_length=64)
+    estado = models.CharField(
+        max_length=LARGO_TEXTO, choices=ESTADOS_LOTE_CARGA, default=ESTADO_LOTE_VALIDADO
+    )
+    filas_leidas = models.PositiveIntegerField(default=0)
+    listos = models.PositiveIntegerField(default=0)
+    con_campos_vacios = models.PositiveIntegerField(default=0)
+    inconsistentes = models.PositiveIntegerField(default=0)
+    duplicados = models.PositiveIntegerField(default=0)
+    resultado = models.JSONField(default=dict, blank=True)
+    objects = LoteCargas()
+
+    class Meta:
+        ordering = ["-fecha", "-id"]
+        verbose_name = "carga de planilla"
+        verbose_name_plural = "Cargar planilla"
+        permissions = [(PERMISO_CARGAR_PLANILLA, "Puede cargar la planilla de la brigada")]
+
+    def cerrar(self, estado, resultado=None):
+        """Pasa el lote a `estado`, guarda el resultado y borra las filas que quedaban."""
+        self.filas.all().delete()
+        self.estado = estado
+        self.resultado = resultado or {}
+        self.save(update_fields=["estado", "resultado"])
+
+    def __str__(self):
+        return f"{self.nombre_archivo} ({self.get_estado_display()})"
+
+
+class FilaCarga(models.Model):
+    """Una fila leída de la planilla de un lote, con lo que se decidió sobre ella.
+
+    `datos` son los valores tal como se leyeron (en JSON) y `motivos`, lo que la regla de calidad
+    y la detección de duplicados encontraron: `[{"campo": …, "porque": …}]`.
+    """
+
+    lote = models.ForeignKey(LoteCarga, on_delete=models.CASCADE, related_name="filas")
+    numero_fila = models.PositiveIntegerField()
+    codigo = models.CharField(max_length=LARGO_CODIGO)
+    clasificacion = models.CharField(
+        max_length=LARGO_TEXTO, choices=CLASIFICACIONES_CARGA, default=CLASIFICACION_LISTO
+    )
+    datos = models.JSONField()
+    motivos = models.JSONField(default=list, blank=True)
+    decision = models.CharField(
+        max_length=LARGO_TEXTO, choices=DECISIONES_FILA_CARGA, default=DECISION_SIN_DECIDIR
+    )
+
+    class Meta:
+        ordering = ["numero_fila"]
+        constraints = [
+            models.UniqueConstraint(fields=["lote", "numero_fila"], name="filacarga_lote_fila")
+        ]
+
+    def __str__(self):
+        return f"{self.codigo} (fila {self.numero_fila})"
