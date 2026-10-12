@@ -641,7 +641,7 @@ def test_un_libro_sin_la_hoja_de_la_brigada_se_rechaza_con_mensaje(cliente_admin
     assert "La planilla no tiene la hoja «Registro_Campo»." in cuerpo
 
 
-def test_una_planilla_con_latitud_y_longitud_en_vez_de_utm_se_rechaza_nombrando_las_columnas(
+def test_una_planilla_sin_ningun_par_de_coordenadas_se_rechaza_nombrando_las_columnas(
     cliente_administrador, tmp_path, sectores
 ):
     contenido = contenido_de(tmp_path, [fila()], sin_columnas=["UTM Este (m)", "UTM Norte (m)"])

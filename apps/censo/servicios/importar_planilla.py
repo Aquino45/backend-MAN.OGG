@@ -49,6 +49,8 @@ class ReportePlanilla:
     ejemplo_sin_cambios: list[str] = field(default_factory=list)
     ejemplo_reemplazados: list[str] = field(default_factory=list)
     catalogo_sin_cargar: str | None = None
+    avisos: list[str] = field(default_factory=list)
+    ubicaciones_del_panel: list[str] = field(default_factory=list)
 
 
 def importar_planilla(ruta, seco=False):
@@ -78,6 +80,8 @@ def importar_planilla(ruta, seco=False):
         ejemplo_sin_cambios=resultado.ejemplo_sin_cambios,
         ejemplo_reemplazados=resultado.ejemplo_reemplazados,
         catalogo_sin_cargar=evaluacion.catalogo_sin_cargar,
+        avisos=evaluacion.avisos,
+        ubicaciones_del_panel=resultado.ubicaciones_del_panel,
     )
     for fila in evaluacion.filas:
         reporte.codigos_calculados += fila.codigo_calculado

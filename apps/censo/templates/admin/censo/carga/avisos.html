@@ -1,0 +1,8 @@
+{% if avisos %}
+<div class="carga-avisos" role="status">
+  <h3>{{ textos.titulo_avisos }}</h3>
+  <ul>
+    {% for aviso in avisos %}<li>{{ aviso }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}

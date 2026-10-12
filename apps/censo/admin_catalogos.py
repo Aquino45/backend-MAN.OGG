@@ -2,37 +2,22 @@
 
 En especies y brigadas el Administrador hace todo; el Editor agrega, edita y ve (los permisos
 vienen de la migración de roles). Cada guardado pasa por `full_clean()` y queda en el historial.
-También están aquí las piezas que comparten con el panel de árboles: el mapa centrado en el campus
-y las columnas que el árbol toma de su especie.
+Los sectores suman el mapa editable de sus fronteras (`admin_geometrias`); aquí también están las
+columnas que el árbol toma de su especie.
 """
 
 from django import forms
 from django.contrib import admin
-from django.contrib.gis.admin.options import GeoModelAdminMixin
 from simple_history.admin import SimpleHistoryAdmin
 
+from apps.censo.admin_geometrias import FronterasDelSectorAdmin
 from apps.censo.models import Brigada, Especie, GrupoBrigada, Sector
 from apps.censo.servicios.resolver_campos import texto_de_especie
 from apps.censo.servicios.validar_especie import validar_nombres_de_especie
 from config.constantes import (
     CAMPO_ORIGEN,
-    MAPA_ADMIN_LAT,
-    MAPA_ADMIN_LON,
-    MAPA_ADMIN_ZOOM,
     TEXTO_ORIGEN_SIN_DATO,
 )
-
-
-class MapaDelCampus(GeoModelAdminMixin):
-    """Los mapas del panel abren centrados en el campus (grados WGS 84)."""
-
-    gis_widget_kwargs = {
-        "attrs": {
-            "default_lon": MAPA_ADMIN_LON,
-            "default_lat": MAPA_ADMIN_LAT,
-            "default_zoom": MAPA_ADMIN_ZOOM,
-        }
-    }
 
 
 class ColumnasDeEspecie:
@@ -48,7 +33,7 @@ class ColumnasDeEspecie:
 
 
 @admin.register(Sector)
-class SectorAdmin(MapaDelCampus, SimpleHistoryAdmin):
+class SectorAdmin(FronterasDelSectorAdmin, SimpleHistoryAdmin):
     """Los sectores se editan (con su geometría) pero no se borran desde el panel."""
 
     list_display = ("id", "nombre", "provisional")

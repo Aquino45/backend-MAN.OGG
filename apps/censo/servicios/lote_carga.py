@@ -65,6 +65,7 @@ def registrar_lote(usuario, nombre_archivo, contenido, evaluacion):
             con_campos_vacios=cuentas[CLASIFICACION_CAMPOS_VACIOS],
             inconsistentes=cuentas[CLASIFICACION_INCONSISTENTE],
             duplicados=cuentas[CLASIFICACION_DUPLICADO],
+            resultado={"avisos": evaluacion.avisos},
         )
         FilaCarga.objects.bulk_create(
             FilaCarga(
@@ -206,7 +207,10 @@ def confirmar_lote(lote, conservadas=None, ediciones=None):
             fila.decision = decisiones.get(fila.numero_fila, fila.decision)
         FilaCarga.objects.bulk_update(filas, ["decision"])
         resultado = aplicar_decisiones(evaluacion, decisiones, conservar_existentes=True)
-        lote.cerrar(ESTADO_LOTE_CONFIRMADO, resultado.como_dict())
+        lote.cerrar(
+            ESTADO_LOTE_CONFIRMADO,
+            {**resultado.como_dict(), "avisos": lote.resultado.get("avisos", [])},
+        )
     return resultado
 
 

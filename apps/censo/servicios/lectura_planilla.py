@@ -3,24 +3,39 @@
 Solo mira los valores guardados: no se evalúa ninguna fórmula ni macro.
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from io import BytesIO
 from pathlib import Path
 
+from django.contrib.gis.geos import Point
 from django.db import models
 from openpyxl import load_workbook
 from openpyxl.utils.cell import range_boundaries
 
 from apps.censo.models import Arbol
 from config.constantes import (
+    AVISO_COLUMNAS_COORDENADAS_CON_UTM,
+    CAMPO_COORDENADAS_NO_RECONOCIDAS,
     COLUMNAS_OPCIONALES_PLANILLA,
     COLUMNAS_PLANILLA,
+    ENCABEZADOS_LATITUD_PLANILLA,
+    ENCABEZADOS_LONGITUD_PLANILLA,
     FILA_ENCABEZADOS_PLANILLA,
+    FORMATO_COORDENADAS_NO_RECONOCIDAS,
     FORMATOS_FECHA_PLANILLA,
     HOJA_PLANILLA,
     MENSAJE_CARGA_MUCHAS_FILAS,
+    PATRON_ROTULO_SECTOR_PLANILLA,
+    RANGO_LATITUD_CAMPUS_GRADOS,
+    RANGO_LONGITUD_CAMPUS_GRADOS,
+    RANGO_UTM_ESTE_M,
+    RANGO_UTM_NORTE_M,
+    SRID_MAPA,
+    SRID_UTM_CENSO,
+    TEXTO_CELDA_VACIA_COORDENADAS,
 )
 
 CAMPOS_DECIMALES = {
@@ -37,13 +52,25 @@ ENCABEZADO_POR_CAMPO = {
 """Inverso de COLUMNAS_PLANILLA y las opcionales, para nombrar la columna en los reportes."""
 
 
+CAMPOS_DE_COORDENADAS = frozenset({"utm_este_m", "utm_norte_m"})
+ENCABEZADOS_UTM = tuple(
+    encabezado for encabezado, campo in COLUMNAS_PLANILLA.items() if campo in CAMPOS_DE_COORDENADAS
+)
+"""Los campos y los encabezados de las coordenadas UTM de la planilla."""
+
+
 @dataclass
 class PlanillaLeida:
-    """Las filas de la hoja como vienen: `[(número de fila, {campo: valor})]`."""
+    """Las filas de la hoja como vienen: `[(número de fila, {campo: valor})]`.
+
+    `avisos` son los avisos de toda la planilla (no de una fila), por ejemplo que las columnas
+    Latitud y Longitud traían valores UTM.
+    """
 
     nombre_archivo: str
     filas: list
     catalogos: dict = field(default_factory=dict)
+    avisos: list = field(default_factory=list)
 
 
 def leer(origen, nombre_archivo=None, filas_maximas=None):
@@ -65,10 +92,12 @@ def leer(origen, nombre_archivo=None, filas_maximas=None):
     if filas_maximas is not None and declaradas > filas_maximas:
         raise ValueError(MENSAJE_CARGA_MUCHAS_FILAS.format(filas=declaradas, maximo=filas_maximas))
     columnas = _ubicar_columnas(hoja_formulas)
+    filas = _leer_filas(hoja_formulas, hoja_valores, columnas)
     return PlanillaLeida(
         nombre_archivo=nombre,
-        filas=_leer_filas(hoja_formulas, hoja_valores, columnas),
+        filas=filas,
         catalogos=_leer_catalogos(hoja_formulas, columnas),
+        avisos=_interpretar_coordenadas(filas, columnas),
     )
 
 
@@ -87,21 +116,45 @@ def _abrir_hojas(contenido, nombre):
 def _ubicar_columnas(hoja):
     """Devuelve {campo: número de columna} buscando los encabezados por nombre.
 
-    Las columnas opcionales entran solo si la planilla las trae; las ajenas se ignoran.
+    Las columnas opcionales entran solo si la planilla las trae; las ajenas se ignoran. En lugar de
+    «UTM Este (m)» y «UTM Norte (m)» la planilla puede traer el par Latitud y Longitud: entran como
+    los campos `latitud` y `longitud`, que `_interpretar_coordenadas` convierte.
     """
     posicion_por_encabezado = {
         str(celda.value).strip(): celda.column
         for celda in hoja[FILA_ENCABEZADOS_PLANILLA]
         if celda.value is not None
     }
-    faltan = [e for e in COLUMNAS_PLANILLA if e not in posicion_por_encabezado]
+    par_alternativo = _par_de_coordenadas(posicion_por_encabezado)
+    faltan = [
+        encabezado
+        for encabezado, campo in COLUMNAS_PLANILLA.items()
+        if encabezado not in posicion_por_encabezado
+        and not (par_alternativo and campo in CAMPOS_DE_COORDENADAS)
+    ]
     if faltan:
         raise ValueError("Faltan columnas en la planilla: " + ", ".join(faltan))
-    return {
+    columnas = {
         campo: posicion_por_encabezado[encabezado]
         for encabezado, campo in {**COLUMNAS_PLANILLA, **COLUMNAS_OPCIONALES_PLANILLA}.items()
         if encabezado in posicion_por_encabezado
     }
+    return {**columnas, **(par_alternativo or {})}
+
+
+def _par_de_coordenadas(posicion_por_encabezado):
+    """`{latitud: columna, longitud: columna}` si la planilla trae el par sin UTM; si no, None."""
+    if any(encabezado in posicion_por_encabezado for encabezado in ENCABEZADOS_UTM):
+        return None
+    par = {}
+    for campo, encabezados in (
+        ("latitud", ENCABEZADOS_LATITUD_PLANILLA),
+        ("longitud", ENCABEZADOS_LONGITUD_PLANILLA),
+    ):
+        presentes = [e for e in encabezados if e in posicion_por_encabezado]
+        if presentes:
+            par[campo] = posicion_por_encabezado[presentes[0]]
+    return par if len(par) == 2 else None
 
 
 def _leer_catalogos(hoja, columnas):
@@ -134,6 +187,70 @@ def _leer_filas(hoja_formulas, hoja_valores, columnas):
     return filas
 
 
+# --- coordenadas en grados o con el rótulo equivocado ------------------------------------------
+
+
+def _interpretar_coordenadas(filas, columnas):
+    """Pasa las columnas Latitud y Longitud a `utm_este_m` y `utm_norte_m`; devuelve los avisos.
+
+    Cada fila se lee sola: los grados WGS 84 del campus se convierten a UTM 18S; los valores de 6
+    y 7 cifras se toman como UTM (el rótulo está mal) y la planilla avisa una vez; otra cosa deja
+    la fila sin coordenadas, con su texto en `coordenadas_no_reconocidas`, para que vaya a revisión.
+    """
+    if "latitud" not in columnas:
+        return []
+    hubo_utm_con_rotulo_de_grados = False
+    for _, datos in filas:
+        primera, segunda = datos.pop("latitud"), datos.pop("longitud")
+        este, norte, eran_utm = _coordenadas_utm_de(primera, segunda)
+        datos["utm_este_m"], datos["utm_norte_m"] = este, norte
+        hubo_utm_con_rotulo_de_grados |= eran_utm
+        if este is None and (texto_de(primera) or texto_de(segunda)):
+            datos[CAMPO_COORDENADAS_NO_RECONOCIDAS] = FORMATO_COORDENADAS_NO_RECONOCIDAS.format(
+                primera=texto_de(primera) or TEXTO_CELDA_VACIA_COORDENADAS,
+                segunda=texto_de(segunda) or TEXTO_CELDA_VACIA_COORDENADAS,
+            )
+    return [AVISO_COLUMNAS_COORDENADAS_CON_UTM] if hubo_utm_con_rotulo_de_grados else []
+
+
+def _coordenadas_utm_de(primera, segunda):
+    """`(este, norte, eran_utm)` de lo que traen las columnas Latitud y Longitud.
+
+    Si no se reconocen (o falta alguna) devuelve `(None, None, False)`.
+    """
+    en_primera, en_segunda = _decimal_de(primera), _decimal_de(segunda)
+    if en_primera is None or en_segunda is None:
+        return None, None, False
+    if _en_rango(en_primera, RANGO_LATITUD_CAMPUS_GRADOS) and _en_rango(
+        en_segunda, RANGO_LONGITUD_CAMPUS_GRADOS
+    ):
+        punto = Point(float(en_segunda), float(en_primera), srid=SRID_MAPA)
+        punto.transform(SRID_UTM_CENSO)
+        return punto.x, punto.y, False
+    if _en_rango(en_primera, RANGO_UTM_ESTE_M, True) and _en_rango(
+        en_segunda, RANGO_UTM_NORTE_M, True
+    ):
+        return primera, segunda, True
+    return None, None, False
+
+
+def _decimal_de(valor):
+    """El valor como Decimal (con coma o punto decimal), o None si está vacío o no es un número."""
+    texto = texto_de(valor)
+    if texto is None or isinstance(valor, bool):
+        return None
+    try:
+        numero = Decimal(texto.replace(",", "."))
+    except InvalidOperation:
+        return None
+    return numero if numero.is_finite() else None
+
+
+def _en_rango(numero, rango, excluye_maximo=False):
+    minimo, maximo = rango
+    return minimo <= numero < maximo if excluye_maximo else minimo <= numero <= maximo
+
+
 # --- conversiones ------------------------------------------------------------
 
 
@@ -149,8 +266,11 @@ def a_json(valor):
 
 
 def entero_sector(valor):
+    """El número de sector de la celda: un número o el rótulo «S» + número («S01», «s 1»)."""
+    texto = str(valor).strip()
+    rotulado = re.fullmatch(PATRON_ROTULO_SECTOR_PLANILLA, texto, re.IGNORECASE)
     try:
-        return int(Decimal(str(valor).strip()))
+        return int(Decimal(rotulado.group(1) if rotulado else texto))
     except (InvalidOperation, ValueError) as error:
         raise ValueError(f"Sector no válido en la planilla: «{valor}».") from error
 

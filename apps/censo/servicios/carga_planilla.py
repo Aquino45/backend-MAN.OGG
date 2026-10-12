@@ -39,6 +39,7 @@ from apps.censo.servicios.resultados_carga import (
     ValorNoValido,
 )
 from config.constantes import (
+    CAMPO_COORDENADAS_NO_RECONOCIDAS,
     CAMPO_GRUPO,
     CAMPOS_CON_NOTA_PLANILLA,
     CAMPOS_NUMERICOS_PLANILLA,
@@ -50,6 +51,7 @@ from config.constantes import (
     CO2_PLANILLA_ES_SIMULADO,
     COLUMNAS_PLANILLA,
     DECISION_CONSERVAR,
+    ENCABEZADO_COORDENADAS_NO_RECONOCIDAS,
     ESTADO_REGISTRO_EN_REVISION,
     ETIQUETAS_CAMPOS_CALIDAD,
     FORMATO_CODIGO_CALCULADO,
@@ -63,6 +65,7 @@ from config.constantes import (
     SEPARADOR_DE_LINEAS,
     SEPARADOR_NOTAS,
     SRID_UTM_CENSO,
+    TOLERANCIA_MISMA_UBICACION_M,
 )
 
 CAMPOS_SIN_COPIA_DIRECTA = frozenset(
@@ -93,6 +96,7 @@ def evaluar(planilla):
         nombre_archivo=planilla.nombre_archivo,
         catalogo_calidad=catalogo,
         catalogo_sin_cargar=aviso_catalogo_sin_cargar(catalogo),
+        avisos=list(planilla.avisos),
     )
     sectores = _cargar_sectores(planilla.filas)
     orden_en_sector, por_codigo, por_ubicacion = {}, {}, {}
@@ -192,6 +196,12 @@ def _poner_ubicacion(fila, sector):
         valores["ubicacion"] = Point(float(este), float(norte), srid=SRID_UTM_CENSO)
     else:
         fila.sin_coordenadas = True
+        sin_reconocer = fila.datos.get(CAMPO_COORDENADAS_NO_RECONOCIDAS)
+        if sin_reconocer:
+            fila.numeros_no_validos.append(
+                ValorNoValido(fila.codigo, ENCABEZADO_COORDENADAS_NO_RECONOCIDAS, sin_reconocer)
+            )
+            fila.textos_no_numericos["ubicacion"] = sin_reconocer
     if valores["ubicacion"] is not None and not sector.geom.covers(valores["ubicacion"]):
         distancia_m = sector.geom.distance(valores["ubicacion"])
         fila.fuera_de_sector.append(ArbolFueraDeSector(fila.codigo, sector.id, distancia_m))
@@ -259,6 +269,23 @@ def aplicar_decisiones(evaluacion, decisiones, conservar_existentes=False):
     return resultado
 
 
+def _gana_el_panel(existente):
+    """True si el árbol ya existe, es de campo y su ubicación se corrigió a mano en el panel."""
+    return (
+        existente is not None
+        and not existente.demo
+        and existente.ubicacion_editada_en_panel
+        and existente.ubicacion is not None
+    )
+
+
+def _es_otra_ubicacion(de_la_planilla, del_panel):
+    """True si la planilla trae una ubicación y no es la del panel (a menos de 1 cm)."""
+    if de_la_planilla is None:
+        return False
+    return not de_la_planilla.equals_exact(del_panel, TOLERANCIA_MISMA_UBICACION_M)
+
+
 def _guardar_fila(fila, catalogo, resultado, conservar_existentes=False):
     """Guarda la fila con su estado. Un árbol de ejemplo solo se reemplaza por una fila completa.
 
@@ -269,6 +296,10 @@ def _guardar_fila(fila, catalogo, resultado, conservar_existentes=False):
     valores = fila.valores
     if conservar_existentes and existente is not None and not existente.demo:
         valores = valores_sobre_existente(existente, fila.valores)
+    if _gana_el_panel(existente):
+        valores = {**valores, "ubicacion": existente.ubicacion}
+        if _es_otra_ubicacion(fila.valores["ubicacion"], existente.ubicacion):
+            resultado.ubicaciones_del_panel.append(codigo)
     candidato = Arbol(codigo=codigo, **valores)
     motivos = aplicar(candidato, catalogo, fila.valores["sector"].geom, fila.textos_no_numericos)
     if fila.duplicado_por_ubicacion:

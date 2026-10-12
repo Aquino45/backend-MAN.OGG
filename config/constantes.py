@@ -521,6 +521,9 @@ CAMPO_ARCHIVO_CARGA = "planilla"
 LOTES_RECIENTES_EN_CARGA = 10
 """Cuántas cargas anteriores se listan en la pantalla de carga."""
 
+AVISO_UBICACION_DEL_PANEL = "Ubicación corregida en el panel; se mantiene"
+"""Aviso cuando la planilla trae otra ubicación para un árbol corregido en el panel."""
+
 TEXTOS_CARGA_PLANILLA = {
     "titulo": "Cargar planilla",
     "ayuda_subir": (
@@ -556,6 +559,8 @@ TEXTOS_CARGA_PLANILLA = {
     "etiqueta_codigos_en_revision": "En revisión",
     "etiqueta_codigos_no_incorporados": "No incorporados",
     "etiqueta_codigos_ejemplo": "De ejemplo sin cambios",
+    "etiqueta_codigos_ubicacion_del_panel": AVISO_UBICACION_DEL_PANEL,
+    "titulo_avisos": "Avisos de la planilla",
     "texto_sin_registros": "Ninguno",
     "enlace_a_revision": "Ver los registros en revisión",
     "migas_inicio": "Inicio",
@@ -687,3 +692,185 @@ MENSAJE_FICHA_PUBLICADA_INCOMPLETA = (
     "Una ficha publicada necesita el nombre común, los beneficios y la fuente de la ficha."
 )
 """Errores de validación de una especie."""
+
+# --- coordenadas de la planilla y ubicación editada en el panel ----------------------------------
+
+ENCABEZADOS_LATITUD_PLANILLA = ("Latitud", "Lat")
+ENCABEZADOS_LONGITUD_PLANILLA = ("Longitud", "Long", "Lon")
+"""Encabezados que la planilla puede traer en lugar de «UTM Este (m)» y «UTM Norte (m)». La
+primera columna del par ocupa el lugar del este y la segunda el del norte."""
+
+RANGO_LATITUD_CAMPUS_GRADOS = (-12.09, -11.89)
+RANGO_LONGITUD_CAMPUS_GRADOS = (-76.94, -76.74)
+"""Rango (mínimo, máximo) de grados WGS 84 que se reconoce como el campus: el centro de
+`MAPA_ADMIN_LAT` y `MAPA_ADMIN_LON` con 0,1 grados (unos 11 km) a cada lado."""
+
+RANGO_UTM_ESTE_M = (100_000, 1_000_000)
+RANGO_UTM_NORTE_M = (1_000_000, 10_000_000)
+"""Rango (mínimo incluido, máximo excluido) de un valor UTM: el este tiene 6 cifras y el norte 7."""
+
+CAMPO_COORDENADAS_NO_RECONOCIDAS = "coordenadas_no_reconocidas"
+"""Clave con que la lectura anota en la fila el texto de unas coordenadas no reconocidas."""
+
+FORMATO_COORDENADAS_NO_RECONOCIDAS = "Latitud {primera}; Longitud {segunda}"
+"""Cómo se muestra, en el motivo de la fila, lo que traían las columnas de coordenadas."""
+
+TEXTO_CELDA_VACIA_COORDENADAS = "(vacío)"
+"""Lo que se muestra de una celda de coordenadas sin valor."""
+
+ENCABEZADO_COORDENADAS_NO_RECONOCIDAS = "Latitud / Longitud"
+"""Columna que los reportes nombran cuando las coordenadas no se pudieron leer."""
+
+AVISO_COLUMNAS_COORDENADAS_CON_UTM = (
+    "Columnas Latitud/Longitud con valores UTM: se tomaron como UTM"
+)
+"""Aviso del lote cuando las columnas Latitud/Longitud traen valores de 6 y 7 cifras."""
+
+TOLERANCIA_MISMA_UBICACION_M = 0.01
+"""Metros bajo los cuales dos ubicaciones UTM son la misma (1 cm, como `DECIMALES_UTM`)."""
+
+
+ETIQUETA_UBICACION_EDITADA_EN_PANEL = "Ubicación corregida en el panel"
+ETIQUETA_FECHA_UBICACION_EDITADA = "Fecha de la corrección de la ubicación"
+"""Cómo se llaman en el panel las marcas de una ubicación editada a mano."""
+
+# --- mapa editable del panel ------------------------------------------------------------------
+
+ESRI_URL_MOSAICOS = (
+    "https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/"
+    "{z}/{y}/{x}?token={clave}"
+)
+"""Mosaicos de Esri World Imagery (ArcGIS Location Platform); `{clave}` se reemplaza por la clave
+del entorno y `{z}/{y}/{x}` los llena el mapa."""
+
+OSM_URL_MOSAICOS = "https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+"""Mosaicos de OpenStreetMap, la capa de calles y la de respaldo sin clave de Esri."""
+
+ATRIBUCION_ESRI = "Powered by Esri · Esri, Maxar, Earthstar Geographics, and the GIS User Community"
+ATRIBUCION_ESRI_URL = "https://www.esri.com"
+ATRIBUCION_OSM = "© OpenStreetMap contributors"
+ATRIBUCION_OSM_URL = "https://www.openstreetmap.org/copyright"
+"""Atribución que se muestra sobre el mapa con cada capa de fondo."""
+
+ID_CAPA_SATELITE = "satelite"
+ID_CAPA_CALLES = "calles"
+NOMBRE_CAPA_SATELITE = "Satélite"
+NOMBRE_CAPA_CALLES = "Calles"
+"""Identificador y nombre en el selector de cada capa de fondo."""
+
+ZOOM_MAXIMO_MAPA_ADMIN = 19
+"""Zoom máximo de los mosaicos del mapa del panel."""
+
+MARGEN_CAMPUS_M = 200
+"""Metros que se admiten alrededor de la caja de los 5 sectores para ubicar un árbol."""
+
+SRID_MAPA_ADMIN = 3857
+"""SRID en que trabaja el mapa del panel (Web Mercator); GeoDjango transforma al guardar."""
+
+CAMPO_UTM_ESTE_ADMIN = "utm_este_m"
+CAMPO_UTM_NORTE_ADMIN = "utm_norte_m"
+CAMPO_LATITUD_ADMIN = "latitud"
+CAMPO_LONGITUD_ADMIN = "longitud"
+"""Campos del formulario del árbol que acompañan al pin (no son campos del modelo)."""
+
+ETIQUETA_UTM_ESTE_ADMIN = "UTM Este (m)"
+ETIQUETA_UTM_NORTE_ADMIN = "UTM Norte (m)"
+ETIQUETA_LATITUD_ADMIN = "Latitud (grados)"
+ETIQUETA_LONGITUD_ADMIN = "Longitud (grados)"
+AYUDA_UBICACION_ADMIN = (
+    "UTM zona 18 Sur. Escribir las coordenadas mueve el pin y mover el pin las llena; la latitud "
+    "y la longitud son solo de lectura. Un clic en el mapa coloca el pin."
+)
+"""Etiquetas y ayuda de la sección «Ubicación» del árbol."""
+
+DECIMALES_FORMULARIO_UTM = 2
+DIGITOS_FORMULARIO_UTM = 12
+"""Decimales y dígitos de las coordenadas UTM del formulario (centímetros)."""
+
+MENSAJE_FUERA_DEL_CAMPUS = (
+    "La ubicación está fuera del campus (se admiten hasta {margen_m} m alrededor de los sectores)."
+)
+MENSAJE_PIDE_ESTE_Y_NORTE = "Escribe el UTM Este y el UTM Norte, o ninguno de los dos."
+MENSAJE_COORDENADAS_ILEGIBLES = "Las coordenadas no son números válidos."
+"""Errores al ubicar un árbol."""
+
+MENSAJE_PUNTO_EN_SECTOR = "La ubicación de {codigo} cae en el sector {sector_id} ({nombre})."
+MENSAJE_PUNTO_EN_OTRO_SECTOR = (
+    "La ubicación de {codigo} cae en el sector {cae_en}, pero el árbol sigue registrado en el "
+    "sector {sector_id}."
+)
+MENSAJE_PUNTO_SIN_SECTOR = "La ubicación de {codigo} no cae dentro de ningún sector."
+"""Avisos al guardar una ubicación nueva."""
+
+PERMISO_EDITAR_MARCA_UBICACION = "change_sector"
+"""Quien puede quitar o poner a mano la marca de ubicación corregida en el panel: quien edita las
+fronteras de los sectores, que hoy es solo el Administrador."""
+
+ESTILOS_MAPA_ADMIN = {
+    "sector_contorno": "#ffd54f",
+    "sector_grosor_px": 2,
+    "sector_texto": "#ffffff",
+    "sector_texto_borde": "#212121",
+    "arbol_contexto_relleno": "rgba(255, 255, 255, 0.55)",
+    "arbol_contexto_borde": "rgba(33, 33, 33, 0.55)",
+    "arbol_contexto_radio_px": 3,
+    "editable_relleno": "rgba(255, 87, 34, 0.15)",
+    "editable_borde": "#ff5722",
+    "editable_grosor_px": 3,
+    "pin_relleno": "#ff5722",
+    "pin_borde": "#ffffff",
+    "pin_radio_px": 8,
+    "texto_tamano_px": 12,
+}
+"""Colores y tamaños con que el mapa del panel dibuja el contexto y la geometría que se edita."""
+
+TEXTOS_MAPA_ADMIN = {
+    "selector": "Mapa de fondo",
+    "convirtiendo": "Convirtiendo coordenadas…",
+    "error_conversion": "No se pudo convertir la coordenada.",
+    "error_contexto": "No se pudo cargar el contexto del mapa.",
+    "contexto": "Los sectores y los demás árboles se ven solo como referencia.",
+}
+"""Textos que el JavaScript del mapa muestra."""
+
+TIPO_CONTEXTO_SECTOR = "sector"
+TIPO_CONTEXTO_ARBOL = "arbol"
+"""Valor de `properties.tipo` de cada elemento del contexto GeoJSON del mapa."""
+
+MAPA_ADMIN_ANCHO_PX = 720
+MAPA_ADMIN_ALTO_PX = 480
+"""Tamaño del mapa en los formularios del panel."""
+
+RANGO_LATITUD_VALIDA_GRADOS = (-80, 84)
+RANGO_LONGITUD_VALIDA_GRADOS = (-180, 180)
+"""Grados que el panel acepta convertir a UTM (los de la proyección UTM)."""
+
+# --- fronteras de los sectores en el panel ------------------------------------------------------
+
+CAMPO_GUARDAR_IGUAL = "guardar_igual"
+ETIQUETA_GUARDAR_IGUAL = "Guardar igual"
+"""Botón que confirma guardar un sector cuyos árboles quedarían fuera."""
+
+MENSAJE_VISTA_PREVIA_SECTOR_UNO = (
+    "{cuantos} árbol quedaría a más de {tolerancia_m} m del sector. "
+    "Corrige el polígono o pulsa «Guardar igual»."
+)
+MENSAJE_VISTA_PREVIA_SECTOR_VARIOS = (
+    "{cuantos} árboles quedarían a más de {tolerancia_m} m del sector. "
+    "Corrige el polígono o pulsa «Guardar igual»."
+)
+MENSAJE_SECTOR_A_REVISION_UNO = "{cuantos} árbol quedó fuera del sector y pasó a revisión."
+MENSAJE_SECTOR_A_REVISION_VARIOS = (
+    "{cuantos} árboles quedaron fuera del sector y pasaron a revisión."
+)
+"""Vista previa antes de guardar la frontera de un sector y aviso después de guardarla."""
+
+MENSAJE_IDENTIFICADOR_ILEGIBLE = "El identificador del registro no es un número válido."
+"""Respuesta del contexto del mapa ante un identificador que no es un entero positivo."""
+
+MOTIVO_HISTORIAL_FRONTERA_SECTOR = "Recálculo por el cambio de las fronteras del sector {sector_id}"
+"""Razón con que el historial de un árbol anota su cambio de estado por la frontera del sector."""
+
+PATRON_ROTULO_SECTOR_PLANILLA = r"S\s*(\d+)"
+"""Rótulo con que la planilla puede nombrar un sector en lugar del número («S01»); sin distinguir
+mayúsculas."""

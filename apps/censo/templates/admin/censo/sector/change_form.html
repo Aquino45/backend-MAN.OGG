@@ -1,0 +1,9 @@
+{% extends "admin/change_form.html" %}
+{% block submit_buttons_bottom %}
+{{ block.super }}
+{% if adminform.form.pide_confirmar %}
+<div class="submit-row">
+  <input type="submit" name="{{ campo_guardar_igual }}" value="{{ etiqueta_guardar_igual }}" class="default">
+</div>
+{% endif %}
+{% endblock %}
