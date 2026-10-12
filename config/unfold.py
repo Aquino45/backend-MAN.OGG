@@ -1,4 +1,4 @@
-"""Configuración del panel con Unfold: nombre, logo, favicon, hoja de estilos y escalas de color.
+"""Configuración del panel con Unfold: símbolo y nombre de la barra, favicon, estilos y escalas.
 
 Las escalas no llevan colores: apuntan a las variables que define la hoja de identidad, que es
 el único lugar con la paleta.
@@ -11,7 +11,7 @@ from config.constantes import (
     HOJA_COMPONENTES_ADMIN,
     HOJA_IDENTIDAD_ADMIN,
     LOGO_ADMIN,
-    NOMBRE_PUBLICO_ADMIN,
+    NOMBRE_BARRA_ADMIN,
     PESOS_ESCALA_COLOR_ADMIN,
     TITULO_ADMIN,
 )
@@ -25,8 +25,8 @@ def _escala(nombre_en_la_hoja):
 
 UNFOLD = {
     "SITE_TITLE": TITULO_ADMIN,
-    "SITE_HEADER": NOMBRE_PUBLICO_ADMIN,
-    "SITE_LOGO": lambda request: static(LOGO_ADMIN),
+    "SITE_HEADER": NOMBRE_BARRA_ADMIN,
+    "SITE_ICON": lambda request: static(LOGO_ADMIN),
     "SITE_FAVICONS": [
         {"rel": "icon", "type": "image/svg+xml", "href": lambda request: static(FAVICON_ADMIN)}
     ],

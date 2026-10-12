@@ -243,3 +243,12 @@ html.dark .carga-planilla table,
 html.dark .carga-planilla td {
   border-color: var(--marca-base-700);
 }
+
+/* Símbolo de la barra lateral: el dibujo es una rejilla de 29 celdas de alto, así que el alto es
+   un múltiplo entero de 29 px (2 px por celda) y los bordes salen nítidos en cualquier pantalla. */
+img[src$="logo-vivero.svg"] {
+  --barra-logo-alto: 58px;
+  height: var(--barra-logo-alto);
+  width: auto;
+  image-rendering: pixelated;
+}
