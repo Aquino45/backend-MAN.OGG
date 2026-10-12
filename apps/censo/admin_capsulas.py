@@ -12,14 +12,25 @@ from django.core.exceptions import PermissionDenied
 from django.template.response import TemplateResponse
 from django.urls import path, reverse
 from simple_history.admin import SimpleHistoryAdmin
+from unfold.admin import ModelAdmin
 
+from apps.censo.admin_listas import chip_activo
 from apps.censo.models import AyudaCampo, ValorCatalogo
 from apps.censo.selectores import conteo_de_valores_de_arboles, valores_fuera_del_catalogo
-from config.constantes import AYUDA_VALORES_FUERA_DEL_CATALOGO, TITULO_VALORES_FUERA_DEL_CATALOGO
+from config.constantes import (
+    AYUDA_VALORES_FUERA_DEL_CATALOGO,
+    ETIQUETAS_COLUMNAS_ADMIN,
+    PAGINA_ADMIN,
+    TITULO_VALORES_FUERA_DEL_CATALOGO,
+)
 
 
-class _AdminDeCapsulas(SimpleHistoryAdmin):
+class _AdminDeCapsulas(SimpleHistoryAdmin, ModelAdmin):
     """Base: valida el modelo entero al guardar, además del formulario."""
+
+    @admin.display(description=ETIQUETAS_COLUMNAS_ADMIN["activo"], ordering="activo")
+    def chip_activo(self, capsula):
+        return chip_activo(capsula.activo)
 
     def save_model(self, request, obj, form, change):
         obj.full_clean()
@@ -28,15 +39,17 @@ class _AdminDeCapsulas(SimpleHistoryAdmin):
 
 @admin.register(AyudaCampo)
 class AyudaCampoAdmin(_AdminDeCapsulas):
-    list_display = ("campo", "titulo", "orden", "activo")
+    list_display = ("campo", "titulo", "orden", "chip_activo")
     list_filter = ("activo",)
+    list_per_page = PAGINA_ADMIN
     search_fields = ("campo", "titulo", "que_es")
 
 
 @admin.register(ValorCatalogo)
 class ValorCatalogoAdmin(_AdminDeCapsulas):
-    list_display = ("campo", "valor", "orden", "activo")
+    list_display = ("campo", "valor", "orden", "chip_activo")
     list_filter = ("campo", "activo")
+    list_per_page = PAGINA_ADMIN
     search_fields = ("valor", "explicacion")
     change_list_template = "admin/censo/valorcatalogo/change_list.html"
 

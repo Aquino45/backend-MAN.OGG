@@ -1,18 +1,24 @@
 {% extends "admin/delete_confirmation.html" %}
-
-{% block delete_confirm %}
-  <p>¿Mandar a la papelera el árbol «{{ object }}»? No se borra: queda guardado y puede restaurarse.</p>
-  <form method="post">{% csrf_token %}
-  <div>
+{% comment %}Mandar un árbol a la papelera: pide el motivo antes de confirmar.{% endcomment %}
+{% load admin_urls %}
+{% block content %}
+<div class="border border-base-200 rounded-default shadow-xs dark:border-base-800">
+  <p class="font-semibold p-4 text-font-important-light dark:text-font-important-dark">
+    ¿Mandar a la papelera el árbol «{{ object }}»? No se borra: queda guardado y puede restaurarse.
+  </p>
+  <form method="post" class="border-base-200 border-t px-4 py-3 dark:border-base-800">{% csrf_token %}
     <input type="hidden" name="post" value="yes">
     {% if is_popup %}<input type="hidden" name="{{ is_popup_var }}" value="1">{% endif %}
     {% if to_field %}<input type="hidden" name="{{ to_field_var }}" value="{{ to_field }}">{% endif %}
-    <p>
-      <label for="id_{{ campo_motivo }}">Motivo (obligatorio):</label>
-      <input type="text" name="{{ campo_motivo }}" id="id_{{ campo_motivo }}" size="60" required>
+    <p class="mb-3">
+      <label for="id_{{ campo_motivo }}" class="block font-medium mb-1">Motivo (obligatorio):</label>
+      <input type="text" name="{{ campo_motivo }}" id="id_{{ campo_motivo }}" size="60" required
+             class="border border-base-200 rounded-default px-3 py-2 w-full dark:border-base-700 dark:bg-base-900">
     </p>
-    <input type="submit" value="Mandar a la papelera">
-    <a href="#" class="button cancel-link">No, volver</a>
-  </div>
+    <div class="flex items-center gap-3">
+      <button type="submit" class="bg-primary-600 text-white font-medium px-3 py-2 rounded-default">Mandar a la papelera</button>
+      <a href="{% url opts|admin_urlname:'changelist' %}" class="cancel-link">No, volver</a>
+    </div>
   </form>
+</div>
 {% endblock %}

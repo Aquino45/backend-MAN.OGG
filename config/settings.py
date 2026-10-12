@@ -4,6 +4,8 @@ from pathlib import Path
 
 import environ
 
+from config.unfold import UNFOLD  # noqa: F401  (Unfold lee `settings.UNFOLD`)
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 env = environ.Env()
@@ -32,6 +34,8 @@ usa OpenStreetMap. Es un secreto: vive solo en el entorno."""
 DB_ESQUEMA = env.str("DB_ESQUEMA")
 
 INSTALLED_APPS = [
+    "unfold",
+    "unfold.contrib.simple_history",
     "django.contrib.admin",
     "django.contrib.auth",
     "django.contrib.contenttypes",

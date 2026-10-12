@@ -93,7 +93,7 @@ def pagina_del_arbol(cliente, arbol):
 def origen_mostrado(pagina):
     """El texto de solo lectura de la fila «origen de la especie» de la página del árbol."""
     fila = re.search(
-        r'field-origen_de_la_especie.*?<div class="readonly">(.*?)</div>', pagina, re.S
+        r'Origen \(el de su especie\).*?<div class="readonly[^"]*">(.*?)</div>', pagina, re.S
     )
     return fila.group(1).strip()
 

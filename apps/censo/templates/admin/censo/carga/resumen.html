@@ -16,14 +16,14 @@
 <div class="carga-acciones">
   <form method="post" action="{% url 'admin:censo_lotecarga_confirmar' lote.pk %}">
     {% csrf_token %}
-    <input type="submit" class="default" value="{{ textos.boton_incorporar }}">
+    <input type="submit" class="button default" value="{{ textos.boton_incorporar }}">
   </form>
 </div>
 {% endif %}
 <div class="carga-acciones">
   <form method="post" action="{% url 'admin:censo_lotecarga_cancelar' lote.pk %}">
     {% csrf_token %}
-    <input type="submit" value="{{ textos.boton_cancelar }}">
+    <input type="submit" class="button" value="{{ textos.boton_cancelar }}">
   </form>
 </div>
 {% endblock %}

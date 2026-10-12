@@ -9,13 +9,17 @@ columnas que el árbol toma de su especie.
 from django import forms
 from django.contrib import admin
 from simple_history.admin import SimpleHistoryAdmin
+from unfold.admin import ModelAdmin, TabularInline
 
 from apps.censo.admin_geometrias import FronterasDelSectorAdmin
+from apps.censo.admin_listas import chip_activo, chip_de_ficha, chip_de_revision
 from apps.censo.models import Brigada, Especie, GrupoBrigada, Sector
 from apps.censo.servicios.resolver_campos import texto_de_especie
 from apps.censo.servicios.validar_especie import validar_nombres_de_especie
 from config.constantes import (
     CAMPO_ORIGEN,
+    ETIQUETAS_COLUMNAS_ADMIN,
+    PAGINA_ADMIN,
     TEXTO_ORIGEN_SIN_DATO,
 )
 
@@ -33,7 +37,7 @@ class ColumnasDeEspecie:
 
 
 @admin.register(Sector)
-class SectorAdmin(FronterasDelSectorAdmin, SimpleHistoryAdmin):
+class SectorAdmin(FronterasDelSectorAdmin, SimpleHistoryAdmin, ModelAdmin):
     """Los sectores se editan (con su geometría) pero no se borran desde el panel."""
 
     list_display = ("id", "nombre", "provisional")
@@ -42,7 +46,7 @@ class SectorAdmin(FronterasDelSectorAdmin, SimpleHistoryAdmin):
         return False
 
 
-class _ValidaAlGuardar(SimpleHistoryAdmin):
+class _ValidaAlGuardar(SimpleHistoryAdmin, ModelAdmin):
     """Base: valida el modelo entero al guardar, además del formulario."""
 
     def save_model(self, request, obj, form, change):
@@ -83,20 +87,38 @@ class EspecieForm(forms.ModelForm):
 @admin.register(Especie)
 class EspecieAdmin(_ValidaAlGuardar):
     form = EspecieForm
-    list_display = ("nombre_cientifico", "nombre_comun", "origen", "ficha_publicada", "revisada")
+    list_display = ("nombre_cientifico", "nombre_comun", "origen", "chip_ficha", "chip_revisada")
     list_filter = ("revisada", "ficha_publicada", "forma")
+    list_per_page = PAGINA_ADMIN
     search_fields = ("nombre_cientifico", "nombre_comun", "alias")
     list_select_related = ("origen",)
 
+    @admin.display(description=ETIQUETAS_COLUMNAS_ADMIN["ficha"], ordering="ficha_publicada")
+    def chip_ficha(self, especie):
+        return chip_de_ficha(especie.ficha_publicada)
 
-class GrupoBrigadaInline(admin.TabularInline):
+    @admin.display(description=ETIQUETAS_COLUMNAS_ADMIN["revisada"], ordering="revisada")
+    def chip_revisada(self, especie):
+        return chip_de_revision(especie.revisada)
+
+
+class GrupoBrigadaInline(TabularInline):
     model = GrupoBrigada
     extra = 0
 
 
 @admin.register(Brigada)
 class BrigadaAdmin(_ValidaAlGuardar):
-    list_display = ("nombre", "activa")
-    list_filter = ("activa",)
-    search_fields = ("nombre",)
+    list_display = ("nombre", "chip_activa", "total_de_grupos")
+    list_filter = ("activa", ("grupos", admin.RelatedOnlyFieldListFilter))
+    list_per_page = PAGINA_ADMIN
+    search_fields = ("nombre", "grupos__nombre", "grupos__alias")
     inlines = [GrupoBrigadaInline]
+
+    @admin.display(description=ETIQUETAS_COLUMNAS_ADMIN["activo"], ordering="activa")
+    def chip_activa(self, brigada):
+        return chip_activo(brigada.activa)
+
+    @admin.display(description=ETIQUETAS_COLUMNAS_ADMIN["grupos"])
+    def total_de_grupos(self, brigada):
+        return brigada.grupos.count()

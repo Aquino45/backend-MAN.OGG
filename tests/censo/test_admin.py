@@ -1,6 +1,7 @@
 """Tests del panel de administración: páginas por rol, permisos, mapa, papelera y avisos."""
 
 import importlib
+import re
 
 import pytest
 from django.apps import apps as registro_de_apps
@@ -536,8 +537,8 @@ def test_el_catalogo_cuenta_los_arboles_vigentes_por_valor_y_filtra_por_campo(
     todos = cliente_editor.get(url)
     solo_copa = cliente_editor.get(url, {"campo": "estado_copa"})
 
-    assert '<td class="field-arboles_vigentes">3</td>' in todos.content.decode()
-    assert '<td class="field-arboles_vigentes">1</td>' in todos.content.decode()
+    celdas = re.findall(r"field-arboles_vigentes[^>]*>\s*(\d+)\s*</td>", todos.content.decode())
+    assert "3" in celdas and "1" in celdas
     assert [v.campo for v in solo_copa.context["cl"].result_list] == ["estado_copa"]
 
 
