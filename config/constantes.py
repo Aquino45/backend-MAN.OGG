@@ -852,11 +852,11 @@ ETIQUETA_GUARDAR_IGUAL = "Guardar igual"
 """Botón que confirma guardar un sector cuyos árboles quedarían fuera."""
 
 MENSAJE_VISTA_PREVIA_SECTOR_UNO = (
-    "{cuantos} árbol quedaría a más de {tolerancia_m} m del sector y pasaría a revisión. "
+    "{cuantos} árbol quedaría a más de {tolerancia_m} m del sector. "
     "Corrige el polígono o pulsa «Guardar igual»."
 )
 MENSAJE_VISTA_PREVIA_SECTOR_VARIOS = (
-    "{cuantos} árboles quedarían a más de {tolerancia_m} m del sector y pasarían a revisión. "
+    "{cuantos} árboles quedarían a más de {tolerancia_m} m del sector. "
     "Corrige el polígono o pulsa «Guardar igual»."
 )
 MENSAJE_SECTOR_A_REVISION_UNO = "{cuantos} árbol quedó fuera del sector y pasó a revisión."
@@ -864,6 +864,9 @@ MENSAJE_SECTOR_A_REVISION_VARIOS = (
     "{cuantos} árboles quedaron fuera del sector y pasaron a revisión."
 )
 """Vista previa antes de guardar la frontera de un sector y aviso después de guardarla."""
+
+MENSAJE_IDENTIFICADOR_ILEGIBLE = "El identificador del registro no es un número válido."
+"""Respuesta del contexto del mapa ante un identificador que no es un entero positivo."""
 
 MOTIVO_HISTORIAL_FRONTERA_SECTOR = "Recálculo por el cambio de las fronteras del sector {sector_id}"
 """Razón con que el historial de un árbol anota su cambio de estado por la frontera del sector."""

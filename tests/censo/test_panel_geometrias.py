@@ -518,3 +518,11 @@ def test_el_widget_conoce_los_endpoints_y_los_campos_que_debe_sincronizar(client
     }
     assert configuracion["srid_mapa"] == SRID_DEL_WIDGET
     assert SRID_MAPA == 4326
+
+
+@pytest.mark.parametrize("identificador", ["²", "٣", "abc", "-1", "1.5"])
+def test_un_identificador_ilegible_en_el_contexto_da_400_y_no_500(cliente_editor, identificador):
+    respuesta = cliente_editor.get(ruta_de_contexto(), {"arbol": identificador})
+
+    assert respuesta.status_code == 400
+    assert respuesta.json()["mensaje"]

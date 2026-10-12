@@ -215,7 +215,12 @@ class MapaEditableAdmin(GeoModelAdminMixin):
         """Los sectores y los árboles de referencia, sin el registro que se está editando."""
         self._exigir_cambio(request)
         parametro = request.GET.get(self.parametro_de_contexto)
-        identificador = int(parametro) if parametro and parametro.isdigit() else None
+        try:
+            identificador = int(parametro) if parametro else None
+        except ValueError:
+            identificador = -1
+        if identificador is not None and identificador < 0 or not (parametro or "").isascii():
+            return JsonResponse({"mensaje": constantes.MENSAJE_IDENTIFICADOR_ILEGIBLE}, status=400)
         argumentos = {f"{self.parametro_de_contexto}_id": identificador}
         return JsonResponse(geometrias.contexto_del_mapa(**argumentos))
 

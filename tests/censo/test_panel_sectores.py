@@ -184,6 +184,7 @@ def test_la_vista_previa_cuenta_los_arboles_y_no_guarda_hasta_guardar_igual(
     assert respuesta.status_code == 200
     assert "1 árbol quedaría a más de 15 m del sector" in contenido
     assert 'name="guardar_igual"' in contenido
+    assert "pasaría a revisión" not in contenido  # la vista previa no promete el estado
     assert Sector.objects.get(id=SECTOR).geom.area == pytest.approx(original)
     assert dos_arboles[1].history.count() == 1
 
