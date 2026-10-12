@@ -902,8 +902,9 @@ mayúsculas."""
 NOMBRE_PUBLICO_ADMIN = "Censo arbóreo UPeU Lima"
 """Nombre público completo: título de la pestaña y pantalla de acceso del panel."""
 
-NOMBRE_BARRA_ADMIN = "Censo arbóreo"
-"""Nombre corto junto al logo en la cabecera de la barra lateral (para que entre)."""
+WORDMARK_BARRA_ADMIN = ("Censo", "Arbóreo", "Administración")
+"""Nombre junto al símbolo en la barra lateral y en el acceso, como el wordmark del sitio público:
+«CENSO» espaciado arriba, «Arbóreo» grande al medio y «ADMINISTRACIÓN» chico debajo."""
 
 HOJA_IDENTIDAD_ADMIN = "admin/censo/identidad.css"
 HOJA_COMPONENTES_ADMIN = "admin/censo/componentes.css"

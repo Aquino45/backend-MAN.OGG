@@ -1,0 +1,15 @@
+{% extends "admin/login.html" %}
+{% comment %}
+Pantalla de acceso con la marca del sitio: el símbolo y el wordmark en grande, en lugar del título
+de texto de Unfold (la hoja de componentes oculta ese título).
+{% endcomment %}
+
+{% block content %}
+    <div class="marca-acceso">
+        <div class="marca-acceso__logo">
+            <img src="{{ site_icon }}" alt="">
+            {{ site_header }}
+        </div>
+    </div>
+    {{ block.super }}
+{% endblock %}
