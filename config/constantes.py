@@ -269,8 +269,8 @@ TITULO_VALORES_FUERA_DEL_CATALOGO = "Valores fuera del catálogo"
 """Título de la vista del panel con los valores de los árboles que no están en el catálogo."""
 
 AYUDA_VALORES_FUERA_DEL_CATALOGO = (
-    "Valores que usan los árboles vigentes y todavía no están en el catálogo. La comparación es "
-    "exacta: «bueno» y «Bueno» aparecen por separado. Esta vista solo avisa; no cambia árboles."
+    "Valores que traen los árboles vigentes y no se pudieron resolver al catálogo: se cuentan tal "
+    "cual vinieron en la planilla. Esta vista solo avisa; no cambia árboles."
 )
 """Texto de apoyo de la vista de valores fuera del catálogo."""
 

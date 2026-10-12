@@ -68,7 +68,7 @@ Nada se borra por error: «Eliminar» pide el motivo y manda el árbol a la **Pa
 - **Ayudas de los datos:** qué es cada dato, en lenguaje simple; se pueden desactivar.
 - **Catálogo de valores:** qué significa cada estado de las listas de la planilla. Cada fila muestra cuántos árboles vigentes tienen exactamente ese valor y se filtra por campo.
 - **Ficha de la especie:** vive en la propia especie (sección «Ficha»); la fuente es obligatoria y solo salen en la API las **publicadas** (publicar es editar la especie).
-- **Valores fuera del catálogo** (botón en el catálogo): los valores que usan los árboles y el catálogo no tiene, con su campo, cuántos árboles los usan y un enlace para agregarlos. Compara exacto (se ve «bueno» frente a «Bueno») y solo avisa: nunca cambia ni rechaza árboles.
+- **Valores fuera del catálogo** (botón en el catálogo): los valores que usan los árboles y el catálogo no tiene, con su campo, cuántos árboles los usan y un enlace para agregarlos. Lo que la planilla trae con otras mayúsculas («bueno») ya se resuelve al valor del catálogo («Bueno»); la vista cuenta lo que no se pudo resolver (texto guardado en `valores_originales`), tal cual vino. Solo avisa: nunca cambia ni rechaza árboles.
 - **Carga inicial:** `docker compose run --rm api python manage.py cargar_capsulas datos/capsulas/capsulas-v0.json [--actualizar]`. Sin `--actualizar` solo crea lo que falta y no pisa lo editado en el panel; con él sobrescribe los textos (conserva si una ficha está publicada y si una ayuda está activa). Valida el archivo entero antes de guardar.
 
 ## Documentación
