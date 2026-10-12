@@ -130,57 +130,65 @@
       }).catch(function () { decir(textos.error_contexto); });
     }
 
-    // --- el pin y las coordenadas, en las dos direcciones
-    var campos = configuracion.campos;
-    if (!campos || !configuracion.url_convertir) { return; }
-    var entradas = {};
-    Object.keys(campos).forEach(function (clave) { entradas[clave] = document.getElementById(campos[clave]); });
-    var moviendoDesdeLosCampos = false;
-    var fuente = widget.featureOverlay.getSource();
+    // --- el pin y las coordenadas, en las dos direcciones (los campos van después del mapa: se enlazan al cargar el documento)
+    function enlazarCoordenadas() {
+      var campos = configuracion.campos;
+      if (!campos || !configuracion.url_convertir) { return; }
+      var entradas = {};
+      Object.keys(campos).forEach(function (clave) { entradas[clave] = document.getElementById(campos[clave]); });
+      if (Object.keys(entradas).some(function (clave) { return !entradas[clave]; })) { return; }
+      var moviendoDesdeLosCampos = false;
+      var fuente = widget.featureOverlay.getSource();
 
-    function llenar(cuerpo) {
-      entradas.utm_este_m.value = cuerpo.utm_este_m;
-      entradas.utm_norte_m.value = cuerpo.utm_norte_m;
-      entradas.latitud.value = cuerpo.latitud;
-      entradas.longitud.value = cuerpo.longitud;
-      decir(cuerpo.mensaje);
-    }
-    function convertir(parametros, alTerminar) {
-      decir(textos.convirtiendo);
-      consultar(configuracion.url_convertir, parametros).then(function (resultado) {
-        if (!resultado.ok) { decir(resultado.cuerpo.mensaje || textos.error_conversion); return; }
-        llenar(resultado.cuerpo);
-        if (alTerminar) { alTerminar(resultado.cuerpo); }
-      }).catch(function () { decir(textos.error_conversion); });
-    }
-    function delPinALosCampos() {
-      if (moviendoDesdeLosCampos) { return; }
-      var elemento = fuente.getFeatures()[0];
-      if (!elemento) { return; }
-      var grados = ol.proj.toLonLat(elemento.getGeometry().getCoordinates(), proyeccion);
-      convertir({latitud: grados[1], longitud: grados[0]});
-    }
-    function deLosCamposAlPin() {
-      var este = entradas.utm_este_m.value.trim();
-      var norte = entradas.utm_norte_m.value.trim();
-      if (!este || !norte) { return; }
-      convertir({utm_este_m: este, utm_norte_m: norte}, function (cuerpo) {
-        var coordenadas = ol.proj.fromLonLat([cuerpo.longitud, cuerpo.latitud], proyeccion);
-        moviendoDesdeLosCampos = true;
+      function llenar(cuerpo) {
+        entradas.utm_este_m.value = cuerpo.utm_este_m;
+        entradas.utm_norte_m.value = cuerpo.utm_norte_m;
+        entradas.latitud.value = cuerpo.latitud;
+        entradas.longitud.value = cuerpo.longitud;
+        decir(cuerpo.mensaje);
+      }
+      function convertir(parametros, alTerminar) {
+        decir(textos.convirtiendo);
+        consultar(configuracion.url_convertir, parametros).then(function (resultado) {
+          if (!resultado.ok) { decir(resultado.cuerpo.mensaje || textos.error_conversion); return; }
+          llenar(resultado.cuerpo);
+          if (alTerminar) { alTerminar(resultado.cuerpo); }
+        }).catch(function () { decir(textos.error_conversion); });
+      }
+      function delPinALosCampos() {
+        if (moviendoDesdeLosCampos) { return; }
         var elemento = fuente.getFeatures()[0];
-        if (elemento) {
-          elemento.getGeometry().setCoordinates(coordenadas);
-        } else {
-          widget.featureCollection.push(new ol.Feature(new ol.geom.Point(coordenadas)));
-        }
-        moviendoDesdeLosCampos = false;
-        widget.map.getView().setCenter(coordenadas);
-      });
+        if (!elemento) { return; }
+        var grados = ol.proj.toLonLat(elemento.getGeometry().getCoordinates(), proyeccion);
+        convertir({latitud: grados[1], longitud: grados[0]});
+      }
+      function deLosCamposAlPin() {
+        var este = entradas.utm_este_m.value.trim();
+        var norte = entradas.utm_norte_m.value.trim();
+        if (!este || !norte) { return; }
+        convertir({utm_este_m: este, utm_norte_m: norte}, function (cuerpo) {
+          var coordenadas = ol.proj.fromLonLat([cuerpo.longitud, cuerpo.latitud], proyeccion);
+          moviendoDesdeLosCampos = true;
+          var elemento = fuente.getFeatures()[0];
+          if (elemento) {
+            elemento.getGeometry().setCoordinates(coordenadas);
+          } else {
+            widget.featureCollection.push(new ol.Feature(new ol.geom.Point(coordenadas)));
+          }
+          moviendoDesdeLosCampos = false;
+          widget.map.getView().setCenter(coordenadas);
+        });
+      }
+      widget.interactions.modify.on('modifyend', delPinALosCampos);
+      widget.featureCollection.on('add', delPinALosCampos);
+      entradas.utm_este_m.addEventListener('change', deLosCamposAlPin);
+      entradas.utm_norte_m.addEventListener('change', deLosCamposAlPin);
     }
-    widget.interactions.modify.on('modifyend', delPinALosCampos);
-    widget.featureCollection.on('add', delPinALosCampos);
-    entradas.utm_este_m.addEventListener('change', deLosCamposAlPin);
-    entradas.utm_norte_m.addEventListener('change', deLosCamposAlPin);
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', enlazarCoordenadas);
+    } else {
+      enlazarCoordenadas();
+    }
   })();
   </script>
 </div>

@@ -249,6 +249,10 @@ class UbicacionDelArbolAdmin(MapaEditableAdmin):
         if cambio and "ubicacion_editada_en_panel" not in form.changed_data:
             obj.ubicacion_editada_en_panel = True
             obj.fecha_ubicacion_editada = timezone.now()
+        if "ubicacion_editada_en_panel" in form.changed_data:
+            obj.fecha_ubicacion_editada = geometrias.fecha_de_la_marca(
+                obj.ubicacion_editada_en_panel, obj.fecha_ubicacion_editada, timezone.now()
+            )
         super().save_model(request, obj, form, change)
         if cambio and obj.ubicacion is not None:
             texto, es_aviso = geometrias.mensaje_de_sector(obj)
