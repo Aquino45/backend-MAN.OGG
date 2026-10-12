@@ -99,6 +99,31 @@ def _sembrar_arbol(apps_viejas, codigo, **textos):
     return Arbol.objects.create(codigo=codigo, sector=sector, fuente=FUENTE, **textos)
 
 
+def _sembrar_historial(apps_viejas, arbol, **cambios):
+    """Un registro del historial del árbol (copia de sus columnas) con los textos que se den."""
+    Historial = apps_viejas.get_model("censo", "HistoricalArbol")
+    Arbol = apps_viejas.get_model("censo", "Arbol")
+    nombres = {campo.attname for campo in Historial._meta.concrete_fields}
+    copia = {
+        campo.attname: getattr(arbol, campo.attname)
+        for campo in Arbol._meta.concrete_fields
+        if campo.attname in nombres
+    }
+    return Historial.objects.create(
+        **{**copia, **cambios},
+        history_date=datetime(2026, 10, 2, tzinfo=UTC),
+        history_type="~",
+    )
+
+
+def _textos_del_historial(apps, columnas):
+    Historial = apps.get_model("censo", "HistoricalArbol")
+    return {
+        registro.history_id: {columna: getattr(registro, columna) for columna in columnas}
+        for registro in Historial.objects.order_by("history_id")
+    }
+
+
 def _textos_de(Arbol, columnas):
     return {
         arbol.codigo: {columna: getattr(arbol, columna) for columna in columnas}
@@ -150,6 +175,16 @@ def datos_viejos(esquema_viejo):
         tronco_danos="Sin daño aparente",  # el campo no tiene catálogo cargado
     )
     _sembrar_arbol(esquema_viejo, "S01-A004", nombre_comun="Palma real", brigada=None)
+    Arbol = esquema_viejo.get_model("censo", "Arbol")
+    primero, segundo, tercero = (
+        Arbol.objects.get(codigo=c) for c in ("S01-A001", "S01-A002", "S01-A003")
+    )
+    _sembrar_historial(esquema_viejo, primero)
+    _sembrar_historial(esquema_viejo, primero, estado_general="Regular", brigada="Zapato")
+    _sembrar_historial(esquema_viejo, segundo, nombre_cientifico="Schinus Molle", origen="Nativa")
+    _sembrar_historial(
+        esquema_viejo, tercero, estado_general="Mala", nombre_cientifico="Ficus raro"
+    )
     return esquema_viejo
 
 
@@ -258,6 +293,37 @@ def test_una_especie_con_origenes_distintos_detiene_la_migracion_y_los_lista(esq
     ejecutor = MigrationExecutor(connection)
     apps_0010 = ejecutor.loader.project_state(PARCIAL).apps
     apps_0010.get_model("censo", "Arbol").objects.all().delete()
+
+
+def test_el_historial_del_arbol_pasa_a_las_tablas_igual_que_el_arbol(datos_viejos):
+    apps_nuevas = _migrar_a(CON_DATOS)
+
+    registros = list(
+        apps_nuevas.get_model("censo", "HistoricalArbol").objects.order_by("history_id")
+    )
+    assert len(registros) == 4
+    molle = apps_nuevas.get_model("censo", "Especie").objects.get(nombre_cientifico="Schinus molle")
+    primero, cambiado, por_alias, sin_especie = registros
+    assert (primero.especie_id, primero.estado_general.valor) == (molle.pk, "Bueno")
+    assert primero.valores_originales == {"brigada": "Brigada A"}
+    assert cambiado.estado_general is None
+    assert cambiado.valores_originales == {"brigada": "Zapato", "estado_general": "Regular"}
+    assert cambiado.grupo.nombre == "zapato"
+    assert por_alias.especie_id == molle.pk
+    assert por_alias.valores_originales["nombre_cientifico"] == "Schinus Molle"
+    assert sin_especie.especie is None
+    assert sin_especie.valores_originales["nombre_cientifico"] == "Ficus raro"
+    assert sin_especie.valores_originales["estado_general"] == "Mala"
+
+
+def test_la_reversa_reescribe_los_textos_del_historial_tal_como_estaban(datos_viejos):
+    columnas = ("history_type", *COLUMNAS_DE_TEXTO)
+    antes = _textos_del_historial(datos_viejos, columnas)
+    _migrar_a(SIN_TEXTOS)
+
+    apps_viejas = _migrar_a(ANTES)
+
+    assert _textos_del_historial(apps_viejas, columnas) == antes
 
 
 def test_la_reversa_reescribe_los_textos_y_las_fichas_tal_como_estaban(datos_viejos):

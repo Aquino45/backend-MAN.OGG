@@ -9,6 +9,8 @@ Hacia adelante:
 4. Los 8 estados pasan a su valor del catálogo. Si el valor no está en el catálogo, la referencia
    queda vacía y el texto, en `valores_originales`.
 5. Se crea la brigada con sus grupos. Los árboles no tienen grupo hasta que la planilla lo trae.
+6. Cada registro del historial del árbol pasa igual que el árbol (sin crear especies nuevas): lo que
+   no coincide queda en el `valores_originales` del registro.
 
 Cada texto que no coincide con lo que quedó en las tablas se guarda en `valores_originales`, así
 la reversa reescribe los textos tal como estaban.
@@ -55,6 +57,19 @@ def pasar_a_tablas(apps, schema_editor):
         especie = especies.get(por_especie.get(arbol.pk))
         cambios = _cambios_del_arbol(arbol, especie, catalogo, grupos)
         Arbol.objects.filter(pk=arbol.pk).update(**cambios)
+    _historial_a_las_tablas(apps, catalogo, grupos)
+
+
+def _historial_a_las_tablas(apps, catalogo, grupos):
+    """Los registros del historial del árbol toman especie, estados y grupo como el árbol."""
+    Especie = apps.get_model("censo", "Especie")
+    Historial = apps.get_model("censo", "HistoricalArbol")
+    indice = _indice_de_especies(Especie)
+    for registro in Historial.objects.order_by("pk"):
+        encontradas = _coincidencias(indice, registro)
+        especie = next(iter(encontradas.values())) if len(encontradas) == 1 else None
+        cambios = _cambios_del_arbol(registro, especie, catalogo, grupos)
+        Historial.objects.filter(pk=registro.pk).update(**cambios)
 
 
 def _fichas_a_especies(apps):
@@ -204,12 +219,18 @@ def _cambios_del_arbol(arbol, especie, catalogo, grupos):
 
 
 def volver_a_textos(apps, schema_editor):
-    """Reescribe los textos del árbol desde sus referencias y las especies vuelven a ser fichas."""
-    Arbol = apps.get_model("censo", "Arbol")
+    """Reescribe los textos del árbol y de su historial desde sus referencias; las especies vuelven
+    a ser fichas."""
+    for nombre_modelo in ("Arbol", "HistoricalArbol"):
+        _reescribir_textos(apps.get_model("censo", nombre_modelo))
+    _especies_a_fichas(apps)
+
+
+def _reescribir_textos(Modelo):
     relaciones = ("especie__origen", "grupo__brigada", *CAMPOS_ESTADO_ARBOL)
-    for arbol in Arbol.objects.select_related(*relaciones).order_by("pk"):
-        originales = arbol.valores_originales or {}
-        especie, grupo = arbol.especie, arbol.grupo
+    for fila in Modelo.objects.select_related(*relaciones).order_by("pk"):
+        originales = fila.valores_originales or {}
+        especie, grupo = fila.especie, fila.grupo
         canonicos = {
             "nombre_cientifico": especie.nombre_cientifico if especie else None,
             "nombre_comun": especie.nombre_comun if especie else None,
@@ -217,14 +238,13 @@ def volver_a_textos(apps, schema_editor):
             "brigada": grupo.brigada.nombre if grupo else None,
         }
         for campo in CAMPOS_ESTADO_ARBOL:
-            valor = getattr(arbol, campo)
+            valor = getattr(fila, campo)
             canonicos[_texto_de_estado(campo)] = valor.valor if valor else None
         textos = {}
         for columna, canonico in canonicos.items():
             campo = columna.removesuffix("_texto")
             textos[columna] = originales[campo] if campo in originales else canonico
-        Arbol.objects.filter(pk=arbol.pk).update(**textos)
-    _especies_a_fichas(apps)
+        Modelo.objects.filter(pk=fila.pk).update(**textos)
 
 
 def _especies_a_fichas(apps):
