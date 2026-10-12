@@ -1,6 +1,6 @@
 # ESTADO — backend-MAN.OGG
 
-Actualizado: 11/10/2026 (ticket BE-013).
+Actualizado: 11/10/2026 (ticket BE-016).
 
 ## Dónde estamos
 - El repo levanta con `docker compose up -d --build`: BD PostgreSQL 16 + PostGIS 3.4 (`db`) y API Django 5.2 + DRF + GeoDjango (`api`).
@@ -18,10 +18,12 @@ Actualizado: 11/10/2026 (ticket BE-013).
 - Orden en una BD ya cargada: `migrate` → `recalcular_calidad` → `completar_ejemplo` → `importar_planilla` (planilla del S01 con 34 árboles) → vaciar a mano el motivo de los destacados del S01 si se quiere. Pendiente de la prueba en la PC (con OK de Cristhian y `pg_dump` primero).
 - CO₂ simulado (BE-015, en revisión; Issue #28; contrato 0.5.0): `Arbol.co2_simulado` (migración `0008`: marca los árboles que ya tenían CO₂, hoy 34 del S01 y 73 de ejemplo = 107, y agrega la restricción `arbol_demo_con_co2_es_simulado`: un ejemplo con algún CO₂ va marcado). La regla de calidad (`aplicar`) normaliza: sin CO₂ queda en falso, un ejemplo con CO₂ en verdadero, y un real con CO₂ respeta lo marcado en el panel. El importador marca el CO₂ de la planilla con `CO2_PLANILLA_ES_SIMULADO` (hoy `True`, decisión del stakeholder: el día del dato real se cambia ahí o en el panel); `cargar_demo` siempre marca. El panel suma la casilla «CO₂ simulado» con su ayuda y un filtro. La lista del sector trae `co2_almacenado_kg`, `co2_captura_anual_kg` y `co2_simulado` sin consultas extra. Pendiente de la prueba en la PC (OK de Cristhian y `pg_dump` primero): `migrate` y la lista del S01 con sus 34 en `co2_simulado: true`, y `S02-D002` también.
 - Cargar planilla (BE-013, en revisión; Issue #30): el panel suma «Cargar planilla» (`admin_carga.py`, permiso `cargar_planilla` para Administrador y Editor, migración `0009` con los modelos `LoteCarga` y `FilaCarga` y el permiso). Se sube el `.xlsx`, se valida sin guardar (resumen listos / campos vacíos / inconsistentes / duplicados), una alerta pregunta si revisar; con **Sí** se corrige y se elige qué conservar fila por fila, con **No** se confirman solo los registros buenos. El servicio `servicios/carga_planilla.py` (leer → evaluar → aplicar decisiones) lo comparte con `importar_planilla`, que queda como envoltura delgada y se comporta igual. El archivo no se guarda; las filas del lote se borran al confirmar o cancelar y los lotes vencidos (`HORAS_VIDA_LOTE_CARGA`) se purgan al entrar. No cambia el contrato. La `0009` no se aplica a la BD real hasta después del merge, con `pg_dump` primero; prueba en la PC pendiente (Cristhian).
+- Carga web, vacíos (BE-016, en revisión; Issue #32): una fila con campos vacíos cuenta como problema en el panel (alerta, revisión y rama «No»), y una celda vacía de la planilla no borra un dato que ya existe: solo se escriben los campos con valor y la regla de calidad decide publicado o en revisión sobre el resultado. Desde la planilla del panel no se puede vaciar un dato que ya existe; eso se hace en el formulario del árbol. La consola (`importar_planilla`) no cambia. Sin contrato ni migraciones.
 - Hito M0 (disciplina) en curso.
 
 ## Último ticket
-- BE-013 — Cargar planilla desde el panel, con alerta y revisión (EN REVISIÓN; Issue #30). Ficha en `docs/tickets/BE-013.md`.
+- BE-016 — Carga web: los vacíos son un problema y una celda vacía no borra un dato existente (EN REVISIÓN; Issue #32). Ficha en `docs/tickets/BE-016.md`.
+- Antes: BE-013 — Cargar planilla desde el panel, con alerta y revisión (EN REVISIÓN; Issue #30). Ficha en `docs/tickets/BE-013.md`.
 - Antes: BE-015 — CO₂ simulado y CO₂ en la lista (mergeado, #29; Issue #28). Ficha en `docs/tickets/BE-015.md`.
 - Antes: BE-012 — calidad del registro: «publicado» o «en revisión» (mergeado, #27; Issue #26). Ficha en `docs/tickets/BE-012.md`.
 - Antes: BE-011 — cápsulas de ayuda (mergeado, PR 1 #24 y PR 2 #25; Issue #23), BE-009 — panel de administración temporal (mergeado, #22; Issue #21), BE-005 (mergeado, #20) y BE-008 (mergeado, #18).

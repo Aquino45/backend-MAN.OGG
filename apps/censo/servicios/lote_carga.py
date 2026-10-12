@@ -162,7 +162,8 @@ def confirmar_lote(lote, conservadas=None, ediciones=None):
     """Evalúa otra vez el lote (con lo corregido), guarda lo que entra y lo cierra.
 
     Con `conservadas` (los pk de las filas elegidas) las demás filas con problema no entran;
-    sin él, no entra ninguna. Las filas buenas entran siempre. Las filas del lote se borran.
+    sin él, no entra ninguna. Las filas buenas entran siempre. Un dato que ya existe no se
+    borra con una celda vacía de la planilla. Las filas del lote se borran.
     Lanza ValueError si el lote ya no está pendiente.
     """
     ediciones = ediciones or {}
@@ -187,7 +188,7 @@ def confirmar_lote(lote, conservadas=None, ediciones=None):
         for fila in filas:
             fila.decision = decisiones.get(fila.numero_fila, fila.decision)
         FilaCarga.objects.bulk_update(filas, ["decision"])
-        resultado = aplicar_decisiones(evaluacion, decisiones)
+        resultado = aplicar_decisiones(evaluacion, decisiones, conservar_existentes=True)
         lote.cerrar(ESTADO_LOTE_CONFIRMADO, resultado.como_dict())
     return resultado
 

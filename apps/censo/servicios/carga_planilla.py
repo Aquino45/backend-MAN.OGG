@@ -320,12 +320,13 @@ def _marcar_duplicados(fila, por_codigo, por_ubicacion):
 # --- paso 3: aplicar las decisiones ------------------------------------------------------------
 
 
-def aplicar_decisiones(evaluacion, decisiones):
+def aplicar_decisiones(evaluacion, decisiones, conservar_existentes=False):
     """Guarda las filas que entran y devuelve qué pasó con cada una.
 
-    `decisiones` es `{número de fila: conservar | descartar}`. Una fila listo o con campos vacíos
-    entra sin decisión; una inconsistente o duplicada solo si se conserva. Todo lo que se guarda
-    pasa por la regla de calidad, así que entra publicado o en revisión.
+    `decisiones` es `{número de fila: conservar | descartar}`. Una fila lista entra sin decisión;
+    una con campos vacíos, inconsistente o duplicada solo si se conserva. Todo lo que se guarda
+    pasa por la regla de calidad, así que entra publicado o en revisión. Con `conservar_existentes`
+    (el panel), una celda vacía no borra el dato de un árbol que ya existe.
     """
     resultado = ResultadoCarga()
     with transaction.atomic():
@@ -333,25 +334,28 @@ def aplicar_decisiones(evaluacion, decisiones):
             decision = decisiones.get(fila.numero_fila)
             sin_problema = fila.clasificacion not in CLASIFICACIONES_CON_PROBLEMA
             if decision == DECISION_CONSERVAR or (decision is None and sin_problema):
-                _guardar_fila(fila, evaluacion.catalogo_calidad, resultado)
+                _guardar_fila(fila, evaluacion.catalogo_calidad, resultado, conservar_existentes)
             else:
                 resultado.no_incorporados.append(fila.codigo)
     return resultado
 
 
-def _guardar_fila(fila, catalogo, resultado):
+def _guardar_fila(fila, catalogo, resultado, conservar_existentes=False):
     """Guarda la fila con su estado. Un árbol de ejemplo solo se reemplaza por una fila completa.
 
     Un duplicado de ubicación que se conserva entra siempre en revisión, con ese motivo.
     """
     codigo = fila.codigo
-    candidato = Arbol(codigo=codigo, **fila.valores)
+    existente = Arbol.todos.filter(codigo=codigo).first()
+    valores = fila.valores
+    if conservar_existentes and existente is not None and not existente.demo:
+        valores = _valores_sobre_existente(existente, fila.valores)
+    candidato = Arbol(codigo=codigo, **valores)
     motivos = aplicar(candidato, catalogo, fila.valores["sector"].geom, fila.textos_no_numericos)
     if fila.duplicado_por_ubicacion:
         motivos = [*motivos, fila.duplicado]
         candidato.estado_registro = ESTADO_REGISTRO_EN_REVISION
         candidato.motivos_revision = SEPARADOR_DE_LINEAS.join(str(m) for m in motivos)
-    existente = Arbol.todos.filter(codigo=codigo).first()
     if existente is not None and existente.demo:
         if motivos:
             resultado.ejemplo_sin_cambios.append(codigo)
@@ -362,7 +366,7 @@ def _guardar_fila(fila, catalogo, resultado):
         "motivos_revision": candidato.motivos_revision,
         "co2_simulado": candidato.co2_simulado,
     }
-    _, creado = Arbol.todos.update_or_create(codigo=codigo, defaults={**fila.valores, **estado})
+    _, creado = Arbol.todos.update_or_create(codigo=codigo, defaults={**valores, **estado})
     if creado:
         resultado.creados += 1
     else:
@@ -371,6 +375,17 @@ def _guardar_fila(fila, catalogo, resultado):
         resultado.en_revision.append(RegistroEnRevision(codigo, [str(m) for m in motivos]))
     else:
         resultado.publicados.append(codigo)
+
+
+def _valores_sobre_existente(existente, valores):
+    """El árbol que ya existe más los campos que la fila trae con valor; los vacíos no pisan."""
+    con_valor = {campo: v for campo, v in valores.items() if v is not None and v != ""}
+    resultado = {
+        campo.name: getattr(existente, campo.name)
+        for campo in Arbol._meta.concrete_fields
+        if campo.name in valores
+    }
+    return {**resultado, **con_valor}
 
 
 def valores_activos_del_catalogo():

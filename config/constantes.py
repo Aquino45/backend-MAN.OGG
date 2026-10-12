@@ -489,10 +489,14 @@ CLASIFICACIONES_CARGA = (
     (CLASIFICACION_INCONSISTENTE, "Inconsistente"),
     (CLASIFICACION_DUPLICADO, "Duplicado"),
 )
-"""Cómo queda cada fila al validar la planilla. Inconsistente y duplicado piden una decisión."""
+"""Cómo queda cada fila al validar la planilla. Todas menos «listo» piden una decisión."""
 
-CLASIFICACIONES_CON_PROBLEMA = (CLASIFICACION_INCONSISTENTE, CLASIFICACION_DUPLICADO)
-"""Las filas por las que la carga pregunta; las demás entran sin preguntar."""
+CLASIFICACIONES_CON_PROBLEMA = (
+    CLASIFICACION_CAMPOS_VACIOS,
+    CLASIFICACION_INCONSISTENTE,
+    CLASIFICACION_DUPLICADO,
+)
+"""Las filas por las que el panel pregunta (alerta, revisión y rama «No»); las listas no."""
 
 TIPO_CAMPO_LISTA = "lista"
 TIPO_CAMPO_NUMERO = "numero"
