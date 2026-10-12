@@ -3,7 +3,9 @@
 Las planillas se arman en el test con openpyxl; nunca se usa el archivo real.
 """
 
+import os
 from io import StringIO
+from pathlib import Path
 
 import pytest
 from django.contrib.gis.geos import Point
@@ -12,13 +14,14 @@ from django.core.management import call_command
 from django.urls import reverse
 
 from apps.censo.models import Arbol, LoteCarga
-from apps.censo.servicios.carga_planilla import evaluar
+from apps.censo.servicios.carga_planilla import aplicar_decisiones, evaluar
 from apps.censo.servicios.importar_planilla import importar_planilla
-from apps.censo.servicios.lectura_planilla import leer
+from apps.censo.servicios.lectura_planilla import entero_sector, leer
 from config.constantes import (
     AVISO_COLUMNAS_COORDENADAS_CON_UTM,
     CLASIFICACION_INCONSISTENTE,
     CLASIFICACION_LISTO,
+    DECISION_CONSERVAR,
     SRID_MAPA,
     SRID_UTM_CENSO,
 )
@@ -256,3 +259,38 @@ def test_la_carga_web_manda_a_revision_la_fila_con_coordenadas_ilegibles(
 
     lote = LoteCarga.objects.get()
     assert (lote.listos, lote.inconsistentes) == (0, 1)
+
+
+# --- el rótulo del sector ("S01") y la planilla real del stakeholder ---------------------------
+
+
+@pytest.mark.parametrize(
+    "valor, esperado",
+    [(1, 1), ("1", 1), (1.0, 1), ("S01", 1), ("s1", 1), ("S 01", 1), (" s03 ", 3), ("S5", 5)],
+)
+def test_entero_sector_acepta_numeros_y_el_rotulo_s_mas_numero(valor, esperado):
+    assert entero_sector(valor) == esperado
+
+
+@pytest.mark.parametrize("valor", ["", None, "Sector 1", "SX1", "S", "1S", "A01", "S01-A001"])
+def test_entero_sector_rechaza_cualquier_otra_cosa_con_un_mensaje_claro(valor):
+    with pytest.raises(ValueError, match="Sector no válido en la planilla"):
+        entero_sector(valor)
+
+
+RUTA_PLANILLA_REAL = Path(os.environ.get("PLANILLA_REAL_RUTA", "/planilla/real.xlsx"))
+
+
+@pytest.mark.skipif(not RUTA_PLANILLA_REAL.is_file(), reason="la planilla real no se monta en CI")
+def test_la_planilla_real_del_stakeholder_se_lee_se_evalua_y_se_carga_entera(sectores):
+    planilla = leer(RUTA_PLANILLA_REAL)
+
+    evaluacion = evaluar(planilla)
+    resultado = aplicar_decisiones(
+        evaluacion, {fila.numero_fila: DECISION_CONSERVAR for fila in evaluacion.filas}
+    )
+
+    assert len(planilla.filas) == len(evaluacion.filas) == 34
+    assert planilla.avisos == [AVISO_COLUMNAS_COORDENADAS_CON_UTM]
+    assert resultado.creados + resultado.actualizados == 34
+    assert Arbol.todos.filter(ubicacion__isnull=False).count() == 34

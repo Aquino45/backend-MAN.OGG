@@ -867,3 +867,7 @@ MENSAJE_SECTOR_A_REVISION_VARIOS = (
 
 MOTIVO_HISTORIAL_FRONTERA_SECTOR = "Recálculo por el cambio de las fronteras del sector {sector_id}"
 """Razón con que el historial de un árbol anota su cambio de estado por la frontera del sector."""
+
+PATRON_ROTULO_SECTOR_PLANILLA = r"S\s*(\d+)"
+"""Rótulo con que la planilla puede nombrar un sector en lugar del número («S01»); sin distinguir
+mayúsculas."""

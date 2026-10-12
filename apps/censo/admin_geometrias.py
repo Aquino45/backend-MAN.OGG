@@ -210,27 +210,8 @@ class MapaEditableAdmin(GeoModelAdminMixin):
     def convertir_coordenadas(self, request):
         """Convierte UTM a grados (o al revés) y dice si el punto cae en el campus."""
         self._exigir_cambio(request)
-        este = geometrias.leer_numero(request.GET.get(constantes.CAMPO_UTM_ESTE_ADMIN))
-        norte = geometrias.leer_numero(request.GET.get(constantes.CAMPO_UTM_NORTE_ADMIN))
-        latitud = geometrias.leer_numero(request.GET.get(constantes.CAMPO_LATITUD_ADMIN))
-        longitud = geometrias.leer_numero(request.GET.get(constantes.CAMPO_LONGITUD_ADMIN))
-        if geometrias.en_rango(
-            latitud, constantes.RANGO_LATITUD_VALIDA_GRADOS
-        ) and geometrias.en_rango(longitud, constantes.RANGO_LONGITUD_VALIDA_GRADOS):
-            este, norte = geometrias.grados_a_utm(latitud, longitud)
-        if not (
-            geometrias.en_rango(este, constantes.RANGO_UTM_ESTE_M, True)
-            and geometrias.en_rango(norte, constantes.RANGO_UTM_NORTE_M, True)
-        ):
-            return JsonResponse({"mensaje": constantes.MENSAJE_COORDENADAS_ILEGIBLES}, status=400)
-        descripcion = geometrias.describir_punto(este, norte)
-        fuera = not descripcion["dentro_del_campus"]
-        mensaje = (
-            constantes.MENSAJE_FUERA_DEL_CAMPUS.format(margen_m=constantes.MARGEN_CAMPUS_M)
-            if fuera
-            else ""
-        )
-        return JsonResponse({**descripcion, "mensaje": mensaje})
+        respuesta = geometrias.convertir_parametros(request.GET)
+        return JsonResponse(respuesta, status=400 if "utm_este_m" not in respuesta else 200)
 
     def contexto_del_mapa(self, request):
         """Los sectores y los árboles de referencia, sin el registro que se está editando."""
@@ -267,22 +248,8 @@ class UbicacionDelArbolAdmin(MapaEditableAdmin):
             obj.fecha_ubicacion_editada = timezone.now()
         super().save_model(request, obj, form, change)
         if cambio and obj.ubicacion is not None:
-            self._avisar_sector(request, obj)
-
-    def _avisar_sector(self, request, arbol):
-        sector = geometrias.sector_que_contiene(arbol.ubicacion)
-        datos = {"codigo": arbol.codigo, "sector_id": arbol.sector_id}
-        if sector is None:
-            self.message_user(
-                request, constantes.MENSAJE_PUNTO_SIN_SECTOR.format(**datos), messages.WARNING
-            )
-        elif sector.id != arbol.sector_id:
-            aviso = constantes.MENSAJE_PUNTO_EN_OTRO_SECTOR.format(cae_en=sector.id, **datos)
-            self.message_user(request, aviso, messages.WARNING)
-        else:
-            self.message_user(
-                request, constantes.MENSAJE_PUNTO_EN_SECTOR.format(nombre=sector.nombre, **datos)
-            )
+            texto, es_aviso = geometrias.mensaje_de_sector(obj)
+            self.message_user(request, texto, messages.WARNING if es_aviso else messages.INFO)
 
 
 # --- las fronteras del sector --------------------------------------------------------------------
@@ -301,13 +268,7 @@ class FormularioDeSector(forms.ModelForm):
         cuantos = geometrias.contar_arboles_fuera(self.instance.pk, nuevo)
         if cuantos and not self.data.get(constantes.CAMPO_GUARDAR_IGUAL):
             self.pide_confirmar = True
-            plantilla = (
-                constantes.MENSAJE_VISTA_PREVIA_SECTOR_UNO
-                if cuantos == 1
-                else constantes.MENSAJE_VISTA_PREVIA_SECTOR_VARIOS
-            )
-            tolerancia_m = constantes.TOLERANCIA_FUERA_DE_SECTOR_M
-            raise ValidationError(plantilla.format(cuantos=cuantos, tolerancia_m=tolerancia_m))
+            raise ValidationError(geometrias.mensaje_vista_previa(cuantos))
         return datos
 
 
@@ -334,12 +295,7 @@ class SectorConMapaAdmin(MapaEditableAdmin, SectorAdmin):
             return
         resultado = geometrias.recalcular_calidad_del_sector(obj)
         if resultado.a_revision:
-            plantilla = (
-                constantes.MENSAJE_SECTOR_A_REVISION_UNO
-                if resultado.a_revision == 1
-                else constantes.MENSAJE_SECTOR_A_REVISION_VARIOS
-            )
-            aviso = plantilla.format(cuantos=resultado.a_revision)
+            aviso = geometrias.mensaje_a_revision(resultado.a_revision)
             self.message_user(request, aviso, messages.WARNING)
 
 

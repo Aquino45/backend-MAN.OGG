@@ -3,6 +3,7 @@
 Solo mira los valores guardados: no se evalúa ninguna fórmula ni macro.
 """
 
+import re
 from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
@@ -27,6 +28,7 @@ from config.constantes import (
     FORMATOS_FECHA_PLANILLA,
     HOJA_PLANILLA,
     MENSAJE_CARGA_MUCHAS_FILAS,
+    PATRON_ROTULO_SECTOR_PLANILLA,
     RANGO_LATITUD_CAMPUS_GRADOS,
     RANGO_LONGITUD_CAMPUS_GRADOS,
     RANGO_UTM_ESTE_M,
@@ -264,8 +266,11 @@ def a_json(valor):
 
 
 def entero_sector(valor):
+    """El número de sector de la celda: un número o el rótulo «S» + número («S01», «s 1»)."""
+    texto = str(valor).strip()
+    rotulado = re.fullmatch(PATRON_ROTULO_SECTOR_PLANILLA, texto, re.IGNORECASE)
     try:
-        return int(Decimal(str(valor).strip()))
+        return int(Decimal(rotulado.group(1) if rotulado else texto))
     except (InvalidOperation, ValueError) as error:
         raise ValueError(f"Sector no válido en la planilla: «{valor}».") from error
 

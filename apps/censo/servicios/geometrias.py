@@ -22,6 +22,10 @@ from config.constantes import (
     ATRIBUCION_ESRI_URL,
     ATRIBUCION_OSM,
     ATRIBUCION_OSM_URL,
+    CAMPO_LATITUD_ADMIN,
+    CAMPO_LONGITUD_ADMIN,
+    CAMPO_UTM_ESTE_ADMIN,
+    CAMPO_UTM_NORTE_ADMIN,
     DECIMALES_COORDENADAS,
     DECIMALES_UTM,
     ESRI_URL_MOSAICOS,
@@ -30,10 +34,23 @@ from config.constantes import (
     ID_CAPA_CALLES,
     ID_CAPA_SATELITE,
     MARGEN_CAMPUS_M,
+    MENSAJE_COORDENADAS_ILEGIBLES,
+    MENSAJE_FUERA_DEL_CAMPUS,
+    MENSAJE_PUNTO_EN_OTRO_SECTOR,
+    MENSAJE_PUNTO_EN_SECTOR,
+    MENSAJE_PUNTO_SIN_SECTOR,
+    MENSAJE_SECTOR_A_REVISION_UNO,
+    MENSAJE_SECTOR_A_REVISION_VARIOS,
+    MENSAJE_VISTA_PREVIA_SECTOR_UNO,
+    MENSAJE_VISTA_PREVIA_SECTOR_VARIOS,
     MOTIVO_HISTORIAL_FRONTERA_SECTOR,
     NOMBRE_CAPA_CALLES,
     NOMBRE_CAPA_SATELITE,
     OSM_URL_MOSAICOS,
+    RANGO_LATITUD_VALIDA_GRADOS,
+    RANGO_LONGITUD_VALIDA_GRADOS,
+    RANGO_UTM_ESTE_M,
+    RANGO_UTM_NORTE_M,
     SRID_MAPA,
     SRID_UTM_CENSO,
     TIPO_CONTEXTO_ARBOL,
@@ -234,3 +251,51 @@ def recalcular_calidad_del_sector(sector):
             elif arbol.estado_registro == ESTADO_REGISTRO_PUBLICADO:
                 resultado.publicados += 1
     return resultado
+
+
+# --- respuestas y avisos del panel ---------------------------------------------------------------
+
+
+def convertir_parametros(parametros):
+    """Respuesta del endpoint de coordenadas: el punto descrito, o `{"mensaje"}` si no se lee.
+
+    `parametros` trae el UTM (este y norte) o los grados (latitud y longitud) como texto.
+    """
+    este = leer_numero(parametros.get(CAMPO_UTM_ESTE_ADMIN))
+    norte = leer_numero(parametros.get(CAMPO_UTM_NORTE_ADMIN))
+    latitud = leer_numero(parametros.get(CAMPO_LATITUD_ADMIN))
+    longitud = leer_numero(parametros.get(CAMPO_LONGITUD_ADMIN))
+    if en_rango(latitud, RANGO_LATITUD_VALIDA_GRADOS) and en_rango(
+        longitud, RANGO_LONGITUD_VALIDA_GRADOS
+    ):
+        este, norte = grados_a_utm(latitud, longitud)
+    if not (en_rango(este, RANGO_UTM_ESTE_M, True) and en_rango(norte, RANGO_UTM_NORTE_M, True)):
+        return {"mensaje": MENSAJE_COORDENADAS_ILEGIBLES}
+    descripcion = describir_punto(este, norte)
+    fuera = MENSAJE_FUERA_DEL_CAMPUS.format(margen_m=MARGEN_CAMPUS_M)
+    return {**descripcion, "mensaje": "" if descripcion["dentro_del_campus"] else fuera}
+
+
+def mensaje_de_sector(arbol):
+    """`(texto, es_aviso)`: en qué sector cae la ubicación del árbol y si hay algo que revisar."""
+    sector = sector_que_contiene(arbol.ubicacion)
+    datos = {"codigo": arbol.codigo, "sector_id": arbol.sector_id}
+    if sector is None:
+        return MENSAJE_PUNTO_SIN_SECTOR.format(**datos), True
+    if sector.id != arbol.sector_id:
+        return MENSAJE_PUNTO_EN_OTRO_SECTOR.format(cae_en=sector.id, **datos), True
+    return MENSAJE_PUNTO_EN_SECTOR.format(nombre=sector.nombre, **datos), False
+
+
+def mensaje_vista_previa(cuantos):
+    """Qué pasaría con `cuantos` árboles si se guarda el polígono nuevo del sector."""
+    plantilla = (
+        MENSAJE_VISTA_PREVIA_SECTOR_UNO if cuantos == 1 else MENSAJE_VISTA_PREVIA_SECTOR_VARIOS
+    )
+    return plantilla.format(cuantos=cuantos, tolerancia_m=TOLERANCIA_FUERA_DE_SECTOR_M)
+
+
+def mensaje_a_revision(cuantos):
+    """El aviso de los árboles que pasaron a revisión al guardar la frontera del sector."""
+    plantilla = MENSAJE_SECTOR_A_REVISION_UNO if cuantos == 1 else MENSAJE_SECTOR_A_REVISION_VARIOS
+    return plantilla.format(cuantos=cuantos)
