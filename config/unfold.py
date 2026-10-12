@@ -7,7 +7,7 @@ el único lugar con la paleta.
 from django.templatetags.static import static
 from django.utils.html import format_html
 
-from config.constantes import (
+from config.constantes.panel import (
     FAVICON_ADMIN,
     HOJA_COMPONENTES_ADMIN,
     HOJA_IDENTIDAD_ADMIN,

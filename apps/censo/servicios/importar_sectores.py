@@ -9,7 +9,8 @@ from django.contrib.gis.geos import Polygon
 from django.db import transaction
 
 from apps.censo.models import Sector
-from config.constantes import M2_POR_HECTAREA, PROPIEDADES_OBLIGATORIAS_SECTOR, SRID_UTM_CENSO
+from config.constantes.general import M2_POR_HECTAREA, SRID_UTM_CENSO
+from config.constantes.geometrias import PROPIEDADES_OBLIGATORIAS_SECTOR
 
 
 @dataclass

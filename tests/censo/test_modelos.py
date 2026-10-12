@@ -11,7 +11,7 @@ from django.db import IntegrityError, connection, transaction
 from django.db.models import ProtectedError
 
 from apps.censo.models import Arbol, Especie, Sector
-from config.constantes import SRID_UTM_CENSO, TOPE_DESTACADOS_POR_SECTOR
+from config.constantes.general import SRID_UTM_CENSO, TOPE_DESTACADOS_POR_SECTOR
 
 ESTE_BASE = 300000.0
 NORTE_BASE = 8673000.0
@@ -283,7 +283,7 @@ def test_un_destacado_hasta_el_tope_valida(sector):
     ultimo.full_clean()
 
 
-# --- CO₂ simulado (BE-015) ---------------------------------------------------------------------
+# --- CO₂ simulado ---------------------------------------------------------------------
 
 
 @pytest.mark.django_db

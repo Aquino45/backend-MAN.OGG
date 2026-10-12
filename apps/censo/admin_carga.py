@@ -29,13 +29,11 @@ from apps.censo.servicios.lote_carga import (
     registrar_lote,
     valores_activos_del_catalogo,
 )
-from config.constantes import (
-    BYTES_POR_MB,
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION, PARAMETRO_FILTRO_ESTADO_REGISTRO
+from config.constantes.carga import (
     CAMPO_ARCHIVO_CARGA,
     ESTADO_LOTE_CONFIRMADO,
     ESTADO_LOTE_VALIDADO,
-    ESTADO_REGISTRO_EN_REVISION,
-    ETIQUETAS_COLUMNAS_ADMIN,
     EXTENSION_PLANILLA,
     FILAS_MAXIMAS_PLANILLA,
     FORMATO_ALERTA_PROBLEMAS,
@@ -52,15 +50,15 @@ from config.constantes import (
     MENSAJE_CARGA_NO_ES_XLSX,
     MENSAJE_CARGA_SIN_ARCHIVO,
     MENSAJE_CARGA_UN_SOLO_CODIGO,
-    PAGINA_ADMIN,
-    PARAMETRO_FILTRO_ESTADO_REGISTRO,
-    PERMISO_CARGAR_PLANILLA,
     PREFIJO_CAMPO_CARGA,
     PREFIJO_CONSERVAR_CARGA,
     TAMANO_MAXIMO_PLANILLA_BYTES,
     TEXTOS_CARGA_PLANILLA,
     TIPO_CAMPO_LISTA,
 )
+from config.constantes.general import BYTES_POR_MB
+from config.constantes.panel import ETIQUETAS_COLUMNAS_ADMIN, PAGINA_ADMIN
+from config.constantes.permisos import PERMISO_CARGAR_PLANILLA
 
 RUTAS = (
     ("resumen", "<int:lote_id>/"),

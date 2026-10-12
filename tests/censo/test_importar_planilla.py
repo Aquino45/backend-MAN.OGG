@@ -15,12 +15,9 @@ from openpyxl import Workbook
 from apps.censo.models import Arbol, ValorCatalogo
 from apps.censo.servicios.importar_planilla import importar_planilla
 from apps.censo.servicios.resolver_campos import texto_de
-from config.constantes import (
-    ESTADO_REGISTRO_EN_REVISION,
-    ESTADO_REGISTRO_PUBLICADO,
-    HOJA_PLANILLA,
-    SRID_UTM_CENSO,
-)
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
+from config.constantes.general import SRID_UTM_CENSO
+from config.constantes.planilla import HOJA_PLANILLA
 from tests.censo.conftest import (
     MEDIDAS_FILA_COMPLETA,
     NOMBRE_ARCHIVO,
@@ -352,7 +349,7 @@ def test_cada_arbol_importado_tiene_su_propio_uid(ruta_planilla, sectores):
     assert len(uids) == len(set(uids)) == 2
 
 
-# --- calidad del registro (BE-012) ------------------------------------------------------------
+# --- calidad del registro ------------------------------------------------------------
 
 
 def fila_completa(punto, **extra):
@@ -525,7 +522,7 @@ def test_el_comando_imprime_publicados_en_revision_y_duplicados(ruta_planilla, p
     assert "Duplicado S01-A003" in texto
 
 
-# --- CO₂ simulado (BE-015) ---------------------------------------------------------------------
+# --- CO₂ simulado ---------------------------------------------------------------------
 
 
 def test_el_co2_de_la_planilla_entra_marcado_como_simulado(ruta_planilla, sectores):

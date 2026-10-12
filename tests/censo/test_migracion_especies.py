@@ -12,11 +12,8 @@ from django.contrib.gis.geos import Polygon
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 
-from config.constantes import (
-    GRUPOS_INICIALES_DE_BRIGADA,
-    NOMBRE_BRIGADA_INICIAL,
-    SRID_UTM_CENSO,
-)
+from config.constantes.catalogos import GRUPOS_INICIALES_DE_BRIGADA, NOMBRE_BRIGADA_INICIAL
+from config.constantes.general import SRID_UTM_CENSO
 
 ANTES = [("censo", "0009_carga_de_planilla")]
 PARCIAL = [("censo", "0010_especies_brigadas_y_catalogo")]

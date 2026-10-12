@@ -11,14 +11,14 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from simple_history.models import HistoricalRecords
 
-from config.constantes import (
+from config.constantes.catalogos import (
     CAMPO_ORIGEN,
     DECIMALES_DENSIDAD_MADERA,
     DIGITOS_DENSIDAD_MADERA,
     FORMAS_ESPECIE,
-    LARGO_TEXTO,
     MENSAJE_FICHA_PUBLICADA_INCOMPLETA,
 )
+from config.constantes.general import LARGO_TEXTO
 
 
 def _texto_opcional(etiqueta):

@@ -16,12 +16,8 @@ from apps.censo.admin_listas import chip_activo, chip_de_ficha, chip_de_revision
 from apps.censo.models import Brigada, Especie, GrupoBrigada, Sector
 from apps.censo.servicios.resolver_campos import texto_de_especie
 from apps.censo.servicios.validar_especie import validar_nombres_de_especie
-from config.constantes import (
-    CAMPO_ORIGEN,
-    ETIQUETAS_COLUMNAS_ADMIN,
-    PAGINA_ADMIN,
-    TEXTO_ORIGEN_SIN_DATO,
-)
+from config.constantes.catalogos import CAMPO_ORIGEN, TEXTO_ORIGEN_SIN_DATO
+from config.constantes.panel import ETIQUETAS_COLUMNAS_ADMIN, PAGINA_ADMIN
 
 
 class ColumnasDeEspecie:

@@ -5,7 +5,7 @@ from django.urls import reverse
 
 from apps.censo.models import Arbol, Sector
 from apps.censo.servicios.papelera import mover_a_papelera, restaurar
-from config.constantes import TOPE_DESTACADOS_POR_SECTOR
+from config.constantes.general import TOPE_DESTACADOS_POR_SECTOR
 from tests.censo.conftest import FUENTE_PANEL
 
 MOTIVO = "Se registró dos veces por error"
@@ -191,6 +191,6 @@ def test_volver_a_una_version_sigue_validando_el_tope_de_destacados(nuevo_arbol,
 
 
 def test_volver_a_una_version_devuelve_tambien_la_marca_de_co2_simulado():
-    from config.constantes import CAMPOS_FUERA_DE_LA_REVERSION
+    from config.constantes.panel import CAMPOS_FUERA_DE_LA_REVERSION
 
     assert "co2_simulado" not in CAMPOS_FUERA_DE_LA_REVERSION

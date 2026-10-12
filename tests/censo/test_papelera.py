@@ -11,7 +11,7 @@ from django.urls import reverse
 from apps.censo.models import Arbol, ArbolEnPapelera
 from apps.censo.servicios.importar_planilla import importar_planilla
 from apps.censo.servicios.papelera import eliminar_definitivamente, mover_a_papelera, restaurar
-from config.constantes import TOPE_DESTACADOS_POR_SECTOR
+from config.constantes.general import TOPE_DESTACADOS_POR_SECTOR
 from tests.censo.conftest import arbol_de_ejemplo, crear_planilla, fila
 
 MOTIVO = "Se registró dos veces por error"

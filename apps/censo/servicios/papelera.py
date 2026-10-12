@@ -10,7 +10,8 @@ from django.core.exceptions import ValidationError
 from django.utils import timezone
 
 from apps.censo.models import Arbol
-from config.constantes import MENSAJE_MOTIVO_OBLIGATORIO, TOPE_DESTACADOS_POR_SECTOR
+from config.constantes.general import TOPE_DESTACADOS_POR_SECTOR
+from config.constantes.panel import MENSAJE_MOTIVO_OBLIGATORIO
 
 
 @dataclass

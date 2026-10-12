@@ -19,16 +19,19 @@ from django.http import JsonResponse
 from django.urls import path, reverse
 from django.utils import timezone
 
+import config.constantes.general as constantes_general
+import config.constantes.geometrias as constantes_geometrias
+import config.constantes.mapa as constantes_mapa
+import config.constantes.permisos as constantes_permisos
 from apps.censo.servicios import geometrias
-from config import constantes
 
 CAMPOS_DEL_MAPA = {
     campo: f"id_{campo}"
     for campo in (
-        constantes.CAMPO_UTM_ESTE_ADMIN,
-        constantes.CAMPO_UTM_NORTE_ADMIN,
-        constantes.CAMPO_LATITUD_ADMIN,
-        constantes.CAMPO_LONGITUD_ADMIN,
+        constantes_mapa.CAMPO_UTM_ESTE_ADMIN,
+        constantes_mapa.CAMPO_UTM_NORTE_ADMIN,
+        constantes_mapa.CAMPO_LATITUD_ADMIN,
+        constantes_mapa.CAMPO_LONGITUD_ADMIN,
     )
 }
 """Identificador (en la página) de cada campo que acompaña al pin."""
@@ -38,12 +41,12 @@ FIELDSET_UBICACION = (
     {
         "fields": (
             "ubicacion",
-            (constantes.CAMPO_UTM_ESTE_ADMIN, constantes.CAMPO_UTM_NORTE_ADMIN),
-            (constantes.CAMPO_LATITUD_ADMIN, constantes.CAMPO_LONGITUD_ADMIN),
+            (constantes_mapa.CAMPO_UTM_ESTE_ADMIN, constantes_mapa.CAMPO_UTM_NORTE_ADMIN),
+            (constantes_mapa.CAMPO_LATITUD_ADMIN, constantes_mapa.CAMPO_LONGITUD_ADMIN),
             "ubicacion_editada_en_panel",
             "fecha_ubicacion_editada",
         ),
-        "description": constantes.AYUDA_UBICACION_ADMIN,
+        "description": constantes_mapa.AYUDA_UBICACION_ADMIN,
     },
 )
 """Sección «Ubicación» del formulario del árbol."""
@@ -56,7 +59,7 @@ class MapaEditable(OpenLayersWidget):
     """OpenLayers con capas de fondo, contexto de solo lectura y sincronía con las coordenadas."""
 
     template_name = "admin/censo/mapa/widget.html"
-    map_srid = constantes.SRID_MAPA_ADMIN
+    map_srid = constantes_mapa.SRID_MAPA_ADMIN
     vinculos = None
 
     def configurar(self, url_convertir, url_contexto, parametros_contexto, campos=None):
@@ -74,16 +77,16 @@ class MapaEditable(OpenLayersWidget):
         contexto["capas"] = capas
         contexto["id_configuracion"] = f"{contexto['id']}_configuracion"
         contexto["ancho_px"], contexto["alto_px"] = (
-            constantes.MAPA_ADMIN_ANCHO_PX,
-            constantes.MAPA_ADMIN_ALTO_PX,
+            constantes_mapa.MAPA_ADMIN_ANCHO_PX,
+            constantes_mapa.MAPA_ADMIN_ALTO_PX,
         )
         contexto["configuracion"] = {
             "capas": capas,
             "capa_inicial": capas[0]["id"],
-            "zoom_maximo": constantes.ZOOM_MAXIMO_MAPA_ADMIN,
+            "zoom_maximo": constantes_mapa.ZOOM_MAXIMO_MAPA_ADMIN,
             "srid_mapa": self.map_srid,
-            "estilos": constantes.ESTILOS_MAPA_ADMIN,
-            "textos": constantes.TEXTOS_MAPA_ADMIN,
+            "estilos": constantes_mapa.ESTILOS_MAPA_ADMIN,
+            "textos": constantes_mapa.TEXTOS_MAPA_ADMIN,
             **(self.vinculos or {}),
         }
         return contexto
@@ -96,21 +99,21 @@ def _coordenada(etiqueta):
     return forms.DecimalField(
         label=etiqueta,
         required=False,
-        max_digits=constantes.DIGITOS_FORMULARIO_UTM,
-        decimal_places=constantes.DECIMALES_FORMULARIO_UTM,
+        max_digits=constantes_mapa.DIGITOS_FORMULARIO_UTM,
+        decimal_places=constantes_mapa.DECIMALES_FORMULARIO_UTM,
     )
 
 
 class FormularioDeArbol(forms.ModelForm):
     """El árbol con su ubicación por pin o por coordenadas UTM; la latitud y la longitud se leen."""
 
-    utm_este_m = _coordenada(constantes.ETIQUETA_UTM_ESTE_ADMIN)
-    utm_norte_m = _coordenada(constantes.ETIQUETA_UTM_NORTE_ADMIN)
+    utm_este_m = _coordenada(constantes_mapa.ETIQUETA_UTM_ESTE_ADMIN)
+    utm_norte_m = _coordenada(constantes_mapa.ETIQUETA_UTM_NORTE_ADMIN)
     latitud = forms.CharField(
-        label=constantes.ETIQUETA_LATITUD_ADMIN, required=False, disabled=True
+        label=constantes_mapa.ETIQUETA_LATITUD_ADMIN, required=False, disabled=True
     )
     longitud = forms.CharField(
-        label=constantes.ETIQUETA_LONGITUD_ADMIN, required=False, disabled=True
+        label=constantes_mapa.ETIQUETA_LONGITUD_ADMIN, required=False, disabled=True
     )
 
     def __init__(self, *args, **kwargs):
@@ -120,32 +123,41 @@ class FormularioDeArbol(forms.ModelForm):
         self.ubicacion_cambio = False
         if inicial is not None:
             latitud, longitud = geometrias.utm_a_grados(inicial.x, inicial.y)
-            decimales = constantes.DECIMALES_FORMULARIO_UTM
-            self.initial[constantes.CAMPO_UTM_ESTE_ADMIN] = round(Decimal(inicial.x), decimales)
-            self.initial[constantes.CAMPO_UTM_NORTE_ADMIN] = round(Decimal(inicial.y), decimales)
-            self.initial[constantes.CAMPO_LATITUD_ADMIN] = f"{latitud:.6f}"
-            self.initial[constantes.CAMPO_LONGITUD_ADMIN] = f"{longitud:.6f}"
+            decimales = constantes_mapa.DECIMALES_FORMULARIO_UTM
+            self.initial[constantes_mapa.CAMPO_UTM_ESTE_ADMIN] = round(
+                Decimal(inicial.x), decimales
+            )
+            self.initial[constantes_mapa.CAMPO_UTM_NORTE_ADMIN] = round(
+                Decimal(inicial.y), decimales
+            )
+            self.initial[constantes_mapa.CAMPO_LATITUD_ADMIN] = f"{latitud:.6f}"
+            self.initial[constantes_mapa.CAMPO_LONGITUD_ADMIN] = f"{longitud:.6f}"
 
     def clean(self):
         datos = super().clean()
         este, norte = (
-            datos.get(constantes.CAMPO_UTM_ESTE_ADMIN),
-            datos.get(constantes.CAMPO_UTM_NORTE_ADMIN),
+            datos.get(constantes_mapa.CAMPO_UTM_ESTE_ADMIN),
+            datos.get(constantes_mapa.CAMPO_UTM_NORTE_ADMIN),
         )
         if (este is None) != (norte is None):
-            raise ValidationError(constantes.MENSAJE_PIDE_ESTE_Y_NORTE)
-        escritas = {constantes.CAMPO_UTM_ESTE_ADMIN, constantes.CAMPO_UTM_NORTE_ADMIN} & set(
-            self.changed_data
-        )
+            raise ValidationError(constantes_geometrias.MENSAJE_PIDE_ESTE_Y_NORTE)
+        escritas = {
+            constantes_mapa.CAMPO_UTM_ESTE_ADMIN,
+            constantes_mapa.CAMPO_UTM_NORTE_ADMIN,
+        } & set(self.changed_data)
         if este is not None and escritas:
-            datos["ubicacion"] = Point(float(este), float(norte), srid=constantes.SRID_UTM_CENSO)
+            datos["ubicacion"] = Point(
+                float(este), float(norte), srid=constantes_general.SRID_UTM_CENSO
+            )
             self._errors.pop("ubicacion", None)
         nueva = datos.get("ubicacion")
         self.ubicacion_cambio = self._cambio_la_ubicacion(nueva)
         if self.ubicacion_cambio and nueva is not None and not geometrias.esta_en_el_campus(nueva):
             self.add_error(
                 "ubicacion",
-                constantes.MENSAJE_FUERA_DEL_CAMPUS.format(margen_m=constantes.MARGEN_CAMPUS_M),
+                constantes_geometrias.MENSAJE_FUERA_DEL_CAMPUS.format(
+                    margen_m=constantes_geometrias.MARGEN_CAMPUS_M
+                ),
             )
         return datos
 
@@ -155,7 +167,7 @@ class FormularioDeArbol(forms.ModelForm):
             return False
         if inicial is None:
             return True
-        return inicial.distance(nueva) > constantes.TOLERANCIA_MISMA_UBICACION_M
+        return inicial.distance(nueva) > constantes_geometrias.TOLERANCIA_MISMA_UBICACION_M
 
 
 # --- el admin ----------------------------------------------------------------------------------
@@ -167,9 +179,9 @@ class MapaEditableAdmin(GeoModelAdminMixin):
     gis_widget = MapaEditable
     gis_widget_kwargs = {
         "attrs": {
-            "default_lon": constantes.MAPA_ADMIN_LON,
-            "default_lat": constantes.MAPA_ADMIN_LAT,
-            "default_zoom": constantes.MAPA_ADMIN_ZOOM,
+            "default_lon": constantes_mapa.MAPA_ADMIN_LON,
+            "default_lat": constantes_mapa.MAPA_ADMIN_LAT,
+            "default_zoom": constantes_mapa.MAPA_ADMIN_ZOOM,
         }
     }
     campo_del_mapa = "ubicacion"
@@ -220,7 +232,9 @@ class MapaEditableAdmin(GeoModelAdminMixin):
         except ValueError:
             identificador = -1
         if identificador is not None and identificador < 0 or not (parametro or "").isascii():
-            return JsonResponse({"mensaje": constantes.MENSAJE_IDENTIFICADOR_ILEGIBLE}, status=400)
+            return JsonResponse(
+                {"mensaje": constantes_geometrias.MENSAJE_IDENTIFICADOR_ILEGIBLE}, status=400
+            )
         argumentos = {f"{self.parametro_de_contexto}_id": identificador}
         return JsonResponse(geometrias.contexto_del_mapa(**argumentos))
 
@@ -238,7 +252,7 @@ class UbicacionDelArbolAdmin(MapaEditableAdmin):
     def get_readonly_fields(self, request, obj=None):
         """La fecha nunca se edita; la marca, solo quien también edita las fronteras."""
         campos = [*super().get_readonly_fields(request, obj), "fecha_ubicacion_editada"]
-        permiso = f"{self.opts.app_label}.{constantes.PERMISO_EDITAR_MARCA_UBICACION}"
+        permiso = f"{self.opts.app_label}.{constantes_permisos.PERMISO_EDITAR_MARCA_UBICACION}"
         if not request.user.has_perm(permiso):
             campos.append("ubicacion_editada_en_panel")
         return campos
@@ -273,7 +287,7 @@ class FormularioDeSector(forms.ModelForm):
         if self.instance.pk is None or nuevo is None or "geom" not in self.changed_data:
             return datos
         cuantos = geometrias.contar_arboles_fuera(self.instance.pk, nuevo)
-        if cuantos and not self.data.get(constantes.CAMPO_GUARDAR_IGUAL):
+        if cuantos and not self.data.get(constantes_geometrias.CAMPO_GUARDAR_IGUAL):
             self.pide_confirmar = True
             raise ValidationError(geometrias.mensaje_vista_previa(cuantos))
         return datos
@@ -289,8 +303,8 @@ class FronterasDelSectorAdmin(MapaEditableAdmin):
 
     def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
         textos = {
-            "campo_guardar_igual": constantes.CAMPO_GUARDAR_IGUAL,
-            "etiqueta_guardar_igual": constantes.ETIQUETA_GUARDAR_IGUAL,
+            "campo_guardar_igual": constantes_geometrias.CAMPO_GUARDAR_IGUAL,
+            "etiqueta_guardar_igual": constantes_geometrias.ETIQUETA_GUARDAR_IGUAL,
         }
         return super().changeform_view(
             request, object_id, form_url, {**textos, **(extra_context or {})}

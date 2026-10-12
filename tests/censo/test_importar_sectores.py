@@ -10,7 +10,7 @@ from django.core.management.base import CommandError
 
 from apps.censo.models import Sector
 from apps.censo.servicios.importar_sectores import importar_sectores
-from config.constantes import SRID_UTM_CENSO
+from config.constantes.general import SRID_UTM_CENSO
 
 RUTA_GEOJSON = (
     Path(__file__).resolve().parents[2] / "datos" / "sectores" / "sectores-utm18s-v0.geojson"

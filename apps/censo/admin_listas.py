@@ -7,8 +7,8 @@ from django.contrib import admin
 from django.template.loader import render_to_string
 from django.utils.html import format_html
 
-from config.constantes import (
-    ESTADOS_REGISTRO,
+from config.constantes.calidad import ESTADOS_REGISTRO
+from config.constantes.panel import (
     ETIQUETAS_COLUMNAS_ADMIN,
     ETIQUETAS_FILTROS_ADMIN,
     TEXTOS_CHIPS_ADMIN,

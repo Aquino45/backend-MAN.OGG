@@ -17,17 +17,12 @@ from apps.censo.servicios.lectura_planilla import (
     numero_de,
     texto_de,
 )
-from config.constantes import (
-    CAMPO_MOTIVO_ESPECIE,
-    CAMPOS_CATALOGADOS,
-    CAMPOS_DE_UBICACION_PLANILLA,
-    CAMPOS_NUMERICOS_PLANILLA,
+from config.constantes.carga import (
     CLASIFICACION_CAMPOS_VACIOS,
     CLASIFICACION_DUPLICADO,
     CLASIFICACION_INCONSISTENTE,
     CLASIFICACION_LISTO,
     CLASIFICACIONES_CON_PROBLEMA,
-    COLUMNAS_PLANILLA,
     DECISION_CONSERVAR,
     DECISION_DESCARTAR,
     ESTADO_LOTE_CANCELADO,
@@ -39,6 +34,12 @@ from config.constantes import (
     TIPO_CAMPO_LISTA,
     TIPO_CAMPO_NUMERO,
     TIPO_CAMPO_TEXTO,
+)
+from config.constantes.catalogos import CAMPO_MOTIVO_ESPECIE, CAMPOS_CATALOGADOS
+from config.constantes.planilla import (
+    CAMPOS_DE_UBICACION_PLANILLA,
+    CAMPOS_NUMERICOS_PLANILLA,
+    COLUMNAS_PLANILLA,
 )
 
 CAMPOS_CORREGIBLES = frozenset(COLUMNAS_PLANILLA.values()) - {

@@ -5,7 +5,7 @@ No toca la BD ni los modelos, así que lo pueden usar los modelos y las migracio
 
 import unicodedata
 
-from config.constantes import SEPARADOR_DE_LINEAS
+from config.constantes.general import SEPARADOR_DE_LINEAS
 
 
 def normalizar(texto):

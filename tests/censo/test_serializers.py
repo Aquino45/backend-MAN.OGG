@@ -20,12 +20,8 @@ from apps.censo.api.serializers import (
     SectorColeccionSerializer,
 )
 from apps.censo.models import Arbol, Especie, Sector
-from config.constantes import (
-    DECIMALES_COORDENADAS,
-    DECIMALES_UTM,
-    ESTADO_REGISTRO_PUBLICADO,
-    SRID_UTM_CENSO,
-)
+from config.constantes.calidad import ESTADO_REGISTRO_PUBLICADO
+from config.constantes.general import DECIMALES_COORDENADAS, DECIMALES_UTM, SRID_UTM_CENSO
 from tests.censo.conftest import arbol_con_textos
 
 RUTA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "validar_contrato.py"

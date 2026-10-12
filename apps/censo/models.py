@@ -22,30 +22,37 @@ from apps.censo.models_catalogos import (  # noqa: F401  (las tablas son parte d
     Especie,
     GrupoBrigada,
 )
-from config.constantes import (
-    CAMPOS_CATALOGADOS,
-    CAMPOS_CON_AYUDA,
+from config.constantes.calidad import (
+    ESTADO_REGISTRO_EN_REVISION,
+    ESTADOS_REGISTRO,
+    ETIQUETA_CO2_SIMULADO,
+)
+from config.constantes.carga import (
     CLASIFICACION_LISTO,
     CLASIFICACIONES_CARGA,
     DECISION_SIN_DECIDIR,
     DECISIONES_FILA_CARGA,
     ESTADO_LOTE_CANCELADO,
     ESTADO_LOTE_VALIDADO,
-    ESTADO_REGISTRO_EN_REVISION,
     ESTADOS_LOTE_CARGA,
-    ESTADOS_REGISTRO,
-    ETIQUETA_CO2_SIMULADO,
-    ETIQUETA_FECHA_UBICACION_EDITADA,
-    ETIQUETA_UBICACION_EDITADA_EN_PANEL,
+)
+from config.constantes.catalogos import (
+    CAMPOS_CATALOGADOS,
+    CAMPOS_CON_AYUDA,
     ETIQUETAS_DE_CAMPOS_CON_AYUDA,
+)
+from config.constantes.general import (
     LARGO_TEXTO,
-    MENSAJE_CODIGO_EN_PAPELERA,
     PATRON_CODIGO_ARBOL,
-    PERMISO_CAMBIAR_DEMO,
-    PERMISO_CARGAR_PLANILLA,
     SRID_UTM_CENSO,
     TOPE_DESTACADOS_POR_SECTOR,
 )
+from config.constantes.mapa import (
+    ETIQUETA_FECHA_UBICACION_EDITADA,
+    ETIQUETA_UBICACION_EDITADA_EN_PANEL,
+)
+from config.constantes.panel import MENSAJE_CODIGO_EN_PAPELERA
+from config.constantes.permisos import PERMISO_CAMBIAR_DEMO, PERMISO_CARGAR_PLANILLA
 
 LARGO_CODIGO = 16
 """Largo máximo del código del árbol (el patrón usa 8 caracteres)."""

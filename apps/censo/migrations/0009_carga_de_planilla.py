@@ -11,7 +11,7 @@ from django.conf import settings
 from django.contrib.auth.management import create_permissions
 from django.db import migrations, models
 
-from config.constantes import PERMISOS_CARGA_POR_ROL
+from config.constantes.permisos import PERMISOS_CARGA_POR_ROL
 
 
 def sumar_permiso_de_carga(apps, schema_editor):

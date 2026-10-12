@@ -11,7 +11,7 @@ from django.urls import reverse
 
 from apps.censo.models import Arbol
 from apps.censo.servicios.papelera import mover_a_papelera
-from config.constantes import (
+from config.constantes.panel import (
     CAMPO_MOTIVO_ELIMINACION,
     FAVICON_ADMIN,
     HOJA_COMPONENTES_ADMIN,

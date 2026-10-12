@@ -11,7 +11,7 @@ from django.core.exceptions import ValidationError
 
 from apps.censo.models import Especie
 from apps.censo.servicios.normalizacion import lineas_de, normalizar
-from config.constantes import MENSAJE_ALIAS_REPETIDO, MENSAJE_NOMBRE_CIENTIFICO_REPETIDO
+from config.constantes.catalogos import MENSAJE_ALIAS_REPETIDO, MENSAJE_NOMBRE_CIENTIFICO_REPETIDO
 
 
 def _normalizados(nombres):

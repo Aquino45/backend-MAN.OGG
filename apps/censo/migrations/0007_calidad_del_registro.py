@@ -1,4 +1,4 @@
-"""Calidad del registro (BE-012): estado y motivos de revisión, y el motivo de un destacado opcional.
+"""Calidad del registro: estado y motivos de revisión, y el motivo de un destacado opcional.
 
 Solo de esquema: un árbol existente queda «en revisión» (a prueba de fallos) hasta que se corra
 `recalcular_calidad`, que aplica la regla a todos.

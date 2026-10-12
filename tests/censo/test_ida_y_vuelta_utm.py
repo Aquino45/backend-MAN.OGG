@@ -8,7 +8,7 @@ from django.contrib.gis.geos import Point
 
 from apps.censo.servicios import geometrias
 from apps.censo.servicios.lectura_planilla import leer
-from config.constantes import SRID_MAPA, SRID_UTM_CENSO
+from config.constantes.general import SRID_MAPA, SRID_UTM_CENSO
 from tests.censo.conftest import crear_planilla, fila
 
 ESTE_M = 299536

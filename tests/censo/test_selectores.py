@@ -13,7 +13,8 @@ from apps.censo.selectores import (
     publicados,
     sectores_con_total,
 )
-from config.constantes import ESTADO_REGISTRO_EN_REVISION, SRID_MAPA, SRID_UTM_CENSO
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION
+from config.constantes.general import SRID_MAPA, SRID_UTM_CENSO
 from tests.censo.conftest import arbol_evaluado
 
 LONGITUD_CAMPUS = -76.8

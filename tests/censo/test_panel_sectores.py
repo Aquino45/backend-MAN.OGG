@@ -7,15 +7,10 @@ from django.urls import reverse
 from apps.censo.admin_geometrias import MapaEditable
 from apps.censo.models import Arbol, Sector
 from apps.censo.servicios import geometrias
-from config.constantes import (
-    ESTADO_REGISTRO_EN_REVISION,
-    ESTADO_REGISTRO_PUBLICADO,
-    NOMBRE_ROL_ADMINISTRADOR,
-    NOMBRE_ROL_EDITOR,
-    PERMISOS_POR_ROL,
-    SRID_UTM_CENSO,
-    TOLERANCIA_FUERA_DE_SECTOR_M,
-)
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
+from config.constantes.general import SRID_UTM_CENSO
+from config.constantes.geometrias import TOLERANCIA_FUERA_DE_SECTOR_M
+from config.constantes.permisos import NOMBRE_ROL_ADMINISTRADOR, NOMBRE_ROL_EDITOR, PERMISOS_POR_ROL
 from tests.censo.conftest import arbol_evaluado
 from tests.censo.test_panel_geometrias import en_el_widget
 

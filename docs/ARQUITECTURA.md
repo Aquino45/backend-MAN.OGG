@@ -17,7 +17,7 @@ API REST de solo lectura (v1), en capas: **controlador delgado → servicio/sele
 | `@ControllerAdvice` | manejador de errores de DRF | `apps/core/excepciones.py` |
 | Spring Security | permisos, throttling y middlewares | `apps/core/seguridad.py` + `config/settings.py` |
 | `application.properties` | `settings.py`, que lee el `.env` | `config/settings.py` + `.env.example` |
-| constantes de negocio | módulo único | `config/constantes.py` |
+| constantes de negocio | un módulo por dominio | `config/constantes/<dominio>.py` |
 | Flyway / Liquibase | migraciones | `apps/<dominio>/migrations/` |
 | Swagger | contrato escrito primero | `contrato/openapi.yaml` |
 | JUnit + MockMvc | pytest + `APIClient` | `tests/<dominio>/` |
@@ -28,7 +28,7 @@ backend/
 ├── config/                    ← transversal: settings, urls raíz, constantes
 │   ├── settings.py            ← todo desde el entorno; nada de valores sueltos
 │   ├── urls.py                ← monta cada app bajo PREFIJO_API; el admin bajo ADMIN_RUTA
-│   └── constantes.py          ← constantes de negocio (MAYÚSCULAS, con docstring)
+│   └── constantes/            ← constantes de negocio, un módulo por dominio (MAYÚSCULAS, con docstring)
 ├── apps/
 │   ├── core/                  ← lo técnico y compartido
 │   │   ├── api/               ← views.py, urls.py (salud)
@@ -82,6 +82,23 @@ backend/
 - `texto_de(arbol, campo)` devuelve el texto de un dato desde las tablas y, si falta, desde `valores_originales`; lo usan la regla de calidad y las cápsulas; el serializer hace el mismo aplanado leyendo los campos que trae el selector (no llama servicios).
 - Los nombres de una especie no pueden chocar con los de otra: `servicios/validar_especie.py` lo valida (lo llaman el formulario del panel y `cargar_capsulas`; los modelos no importan servicios).
 - Una especie con `revisada = false` nació de un nombre que nadie ha confirmado; se revisa en el panel.
+
+## 4 ter. Constantes por dominio
+**Una constante vive en el módulo de su dominio; el `__init__.py` no reexporta nada.** Se importa siempre del módulo (`from config.constantes.calidad import ESTADO_REGISTRO_PUBLICADO`). Un módulo solo depende de los de abajo (`panel` → `calidad`, `carga`; nada importa hacia `panel`) y no hay ciclos.
+
+| Módulo | Qué guarda |
+|---|---|
+| `general.py` | prefijo de la API, SRID, decimales, unidades, patrón del código, largo de texto |
+| `permisos.py` | nombres de rol, permisos propios y permisos de cada rol |
+| `planilla.py` | hoja, columnas, formatos y coordenadas de la planilla de la brigada |
+| `carga.py` | cargar la planilla desde el panel: límites, estados del lote, decisiones, textos y mensajes |
+| `calidad.py` | estado del registro, obligatorios, rangos de medidas, motivos de revisión, ejemplos y CO₂ simulado |
+| `catalogos.py` | especies, brigadas, formas, ayudas y cápsulas del panel |
+| `geometrias.py` | rangos y márgenes del campus, ubicación de los árboles, fronteras de los sectores |
+| `mapa.py` | mapa editable del panel: mosaicos, capas, estilos, textos y campos de ubicación |
+| `panel.py` | identidad y listas del panel: títulos, logo, chips, columnas, filtros y avisos |
+
+- Los rangos del campus viven solo en `geometrias.py`; la comparación (`en_rango`) está una vez, en `servicios/geometrias.py`.
 
 ## 5. Receta: agregar un endpoint
 1. ¿Está en el contrato? Si no, primero se cambia el contrato, y lo aprueba quien lleva el front.

@@ -20,15 +20,12 @@ from apps.censo.models import Arbol, Brigada, Especie, GrupoBrigada, Sector, Val
 from apps.censo.servicios.calidad_registro import aplicar
 from apps.censo.servicios.importar_sectores import importar_sectores
 from apps.censo.servicios.resolver_campos import Resolutor, aplicar_textos
-from config.constantes import (
-    CAMPO_ORIGEN,
-    CAMPOS_ESTADO_ARBOL,
-    CAMPOS_TEXTO_RESUELTOS,
+from config.constantes.catalogos import CAMPO_ORIGEN, CAMPOS_ESTADO_ARBOL, CAMPOS_TEXTO_RESUELTOS
+from config.constantes.permisos import NOMBRE_ROL_ADMINISTRADOR, NOMBRE_ROL_EDITOR
+from config.constantes.planilla import (
     COLUMNAS_OPCIONALES_PLANILLA,
     COLUMNAS_PLANILLA,
     HOJA_PLANILLA,
-    NOMBRE_ROL_ADMINISTRADOR,
-    NOMBRE_ROL_EDITOR,
 )
 
 RUTA_GEOJSON = (

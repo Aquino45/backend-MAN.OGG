@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib import admin
 from django.urls import include, path
 
-from config.constantes import PREFIJO_API
+from config.constantes.general import PREFIJO_API
 
 handler404 = "apps.core.excepciones.no_encontrado"
 handler500 = "apps.core.excepciones.error_interno"
