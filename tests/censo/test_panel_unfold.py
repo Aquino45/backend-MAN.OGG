@@ -1,5 +1,6 @@
 """Tests de la identidad del panel (Unfold + hoja propia) y de que las pantallas siguen vivas."""
 
+import os
 import re
 from pathlib import Path
 
@@ -48,7 +49,10 @@ PALETA = {
     "#ffffff",
     "#ffd166",
 }
-TOKENS_DEL_FRONT = Path(r"D:\MAN.OGG\frontend-MAN.OGG\src\styles\tokens.css")
+# Ruta a src/styles/tokens.css del front, solo para comparar la paleta en una PC con los dos repos
+# (opcional; sin ella el test se salta, como en el CI y en Docker)
+_RUTA_TOKENS_FRONT = os.environ.get("RUTA_TOKENS_FRONT", "")
+TOKENS_DEL_FRONT = Path(_RUTA_TOKENS_FRONT) if _RUTA_TOKENS_FRONT else None
 MINIMO_AA = 4.5
 VARIABLES_DEL_MAPA = {"--body-bg", "--body-fg", "--error-fg"}
 PARES_CLARO = [
@@ -175,7 +179,10 @@ def test_los_colores_viven_solo_en_el_unico_bloque_root():
     assert "misma paleta que el sitio público" in texto_de_la_hoja()
 
 
-@pytest.mark.skipif(not TOKENS_DEL_FRONT.exists(), reason="el front no está junto a este repo")
+@pytest.mark.skipif(
+    TOKENS_DEL_FRONT is None or not TOKENS_DEL_FRONT.is_file(),
+    reason="sin RUTA_TOKENS_FRONT a los tokens del front",
+)
 def test_la_paleta_coincide_con_los_tokens_del_front():
     tokens = TOKENS_DEL_FRONT.read_text(encoding="utf8").lower()
     primero = bloques(texto_de_la_hoja())[0][1]
