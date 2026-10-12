@@ -17,6 +17,7 @@ from config.constantes import (
     HOJA_COMPONENTES_ADMIN,
     HOJA_IDENTIDAD_ADMIN,
     LOGO_ADMIN,
+    NOMBRE_BARRA_ADMIN,
     NOMBRE_PUBLICO_ADMIN,
     PESOS_ESCALA_COLOR_ADMIN,
     VARIANTES_CHIP,
@@ -92,6 +93,31 @@ def test_el_panel_carga_con_la_hoja_el_logo_y_el_favicon(cliente_administrador):
     assert LOGO_ADMIN in html
     assert FAVICON_ADMIN in html
     assert NOMBRE_PUBLICO_ADMIN in html
+
+
+def test_la_barra_muestra_el_simbolo_y_al_lado_el_nombre_corto(cliente_administrador):
+    html = cliente_administrador.get(reverse("admin:index")).content.decode()
+
+    simbolo_y_nombre = re.search(
+        rf'<img[^>]*{re.escape(LOGO_ADMIN)}[^>]*>.{{0,600}}?>\s*{NOMBRE_BARRA_ADMIN}\s*<',
+        html,
+        re.S,
+    )
+    assert simbolo_y_nombre, "la cabecera de la barra no trae el símbolo con el nombre al lado"
+    assert "me-4" not in simbolo_y_nombre.group(0), "el símbolo va como icono, no como logo único"
+    titulo = re.search(r"<title>(.*?)</title>", html, re.S).group(1)
+    assert NOMBRE_PUBLICO_ADMIN in titulo
+
+
+def test_el_alto_del_simbolo_de_la_barra_esta_en_la_hoja_de_componentes():
+    hoja = sin_comentarios(texto_de_la_hoja(HOJA_COMPONENTES_ADMIN))
+    archivo = Path(LOGO_ADMIN).name
+
+    alto = re.search(r"--barra-logo-alto\s*:\s*([^;]+);", hoja)
+    assert alto and not COLOR_HEX.search(alto.group(1))
+    regla = re.search(rf"[^{{}}]*{re.escape(archivo)}[^{{}}]*\{{([^{{}}]*)\}}", hoja)
+    assert regla, "falta la regla del símbolo de la barra"
+    assert re.search(r"height\s*:\s*var\(--barra-logo-alto\)", regla.group(1))
 
 
 def test_el_acceso_al_panel_tambien_trae_la_hoja_y_el_favicon(client):

@@ -1,6 +1,6 @@
 # ESTADO — backend-MAN.OGG
 
-Actualizado: 12/10/2026 (ticket BE-020).
+Actualizado: 12/10/2026 (ticket BE-023).
 
 ## Dónde estamos
 - El repo levanta con `docker compose up -d --build`: BD PostgreSQL 16 + PostGIS 3.4 (`db`) y API Django 5.2 + DRF + GeoDjango (`api`).
@@ -26,7 +26,8 @@ Actualizado: 12/10/2026 (ticket BE-020).
 - Hito M0 (disciplina) en curso.
 
 ## Último ticket
-- BE-020 — Contrato 0.6.0: el resumen del árbol trae DAP, altura y origen (EN REVISIÓN; Issue #41). Ficha en `docs/tickets/BE-020.md`.
+- BE-023 — La barra del panel muestra el símbolo del logo y al lado «Censo arbóreo» (`SITE_ICON` en `config/unfold.py`), con el símbolo a 58 px (2 px por celda) definido en `componentes.css`. Sin migraciones ni dependencias nuevas; el contrato no cambia.
+- Antes: BE-020 — Contrato 0.6.0: el resumen del árbol trae DAP, altura y origen (EN REVISIÓN; Issue #41). Ficha en `docs/tickets/BE-020.md`.
 - Antes: BE-018 — Panel con Unfold: identidad visual (hoja `identidad.css`, logo y favicon, Bricolage Grotesque), listas con chips, miniatura, filtros, búsqueda y paginación (`PAGINA_ADMIN`), y textos con tilde (EN REVISIÓN; Issue #39). Migración `0015` solo de estado. No cambia el contrato ni la API. Ficha en `docs/tickets/BE-018.md`.
 - BE-017 — Editar en el panel la ubicación de los árboles y las fronteras de los sectores (EN REVISIÓN; Issue #36). Ficha en `docs/tickets/BE-017.md`.
 - Antes: BE-014 — Especies, estados del catálogo y brigadas, PR 1 (EN REVISIÓN; Issue #34). Ficha en `docs/tickets/BE-014.md`.
