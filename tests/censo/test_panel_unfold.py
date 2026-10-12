@@ -11,16 +11,16 @@ from django.urls import reverse
 
 from apps.censo.models import Arbol
 from apps.censo.servicios.papelera import mover_a_papelera
-from config.constantes import (
+from config.constantes.panel import (
     CAMPO_MOTIVO_ELIMINACION,
     FAVICON_ADMIN,
     HOJA_COMPONENTES_ADMIN,
     HOJA_IDENTIDAD_ADMIN,
     LOGO_ADMIN,
-    NOMBRE_BARRA_ADMIN,
     NOMBRE_PUBLICO_ADMIN,
     PESOS_ESCALA_COLOR_ADMIN,
     VARIANTES_CHIP,
+    WORDMARK_BARRA_ADMIN,
 )
 from tests.censo.ayuda_css import (
     COLOR_HEX,
@@ -95,11 +95,15 @@ def test_el_panel_carga_con_la_hoja_el_logo_y_el_favicon(cliente_administrador):
     assert NOMBRE_PUBLICO_ADMIN in html
 
 
-def test_la_barra_muestra_el_simbolo_y_al_lado_el_nombre_corto(cliente_administrador):
+def test_la_barra_muestra_el_simbolo_y_al_lado_el_wordmark(cliente_administrador):
     html = cliente_administrador.get(reverse("admin:index")).content.decode()
+    censo, arboreo, admin = WORDMARK_BARRA_ADMIN
 
     simbolo_y_nombre = re.search(
-        rf"<img[^>]*{re.escape(LOGO_ADMIN)}[^>]*>.{{0,600}}?>\s*{NOMBRE_BARRA_ADMIN}\s*<",
+        rf"<img[^>]*{re.escape(LOGO_ADMIN)}[^>]*>.{{0,800}}?"
+        rf'class="wordmark-barra__censo">{censo}</span>\s*'
+        rf'<span class="wordmark-barra__arboreo">{arboreo}</span>\s*'
+        rf'<span class="wordmark-barra__admin">{admin}</span>',
         html,
         re.S,
     )
@@ -120,10 +124,32 @@ def test_el_alto_del_simbolo_de_la_barra_esta_en_la_hoja_de_componentes():
     assert re.search(r"height\s*:\s*var\(--barra-logo-alto\)", regla.group(1))
 
 
+def test_el_wordmark_de_la_barra_tiene_su_estilo_en_la_hoja_de_componentes():
+    hoja = sin_comentarios(texto_de_la_hoja(HOJA_COMPONENTES_ADMIN))
+
+    for clase in (".wordmark-barra__censo", ".wordmark-barra__arboreo"):
+        regla = re.search(rf"{re.escape(clase)}\s*\{{([^{{}}]*)\}}", hoja)
+        assert regla, f"falta la regla {clase}"
+        assert re.search(r"font-size\s*:\s*calc\(var\(--barra-logo-alto\)", regla.group(1))
+
+
 def test_el_acceso_al_panel_tambien_trae_la_hoja_y_el_favicon(client):
     html = client.get(reverse("admin:login")).content.decode()
 
     assert HOJA_IDENTIDAD_ADMIN in html and FAVICON_ADMIN in html
+
+
+def test_el_acceso_muestra_el_simbolo_y_el_wordmark(client):
+    html = client.get(reverse("admin:login")).content.decode()
+    censo, arboreo, admin = WORDMARK_BARRA_ADMIN
+
+    marca = re.search(r'<div class="marca-acceso">.*?</div>', html, re.S)
+    assert marca, "la pantalla de acceso no trae la marca"
+    assert LOGO_ADMIN in marca.group(0)
+    assert f'class="wordmark-barra__censo">{censo}<' in html
+    assert f'class="wordmark-barra__arboreo">{arboreo}<' in html
+    assert f'class="wordmark-barra__admin">{admin}<' in html
+    assert "form" in html.split("marca-acceso", 1)[1], "la marca va antes del formulario"
 
 
 def test_la_marca_y_la_fuente_se_sirven_desde_el_back():

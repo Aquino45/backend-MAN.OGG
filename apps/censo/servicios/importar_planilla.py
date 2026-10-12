@@ -16,7 +16,7 @@ from apps.censo.servicios.resultados_carga import (
     RegistroEnRevision,
     ValorNoValido,
 )
-from config.constantes import DECISION_CONSERVAR, DECISION_DESCARTAR
+from config.constantes.carga import DECISION_CONSERVAR, DECISION_DESCARTAR
 
 
 @dataclass

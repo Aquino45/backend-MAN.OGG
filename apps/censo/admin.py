@@ -28,7 +28,8 @@ from apps.censo.admin_geometrias import FIELDSET_UBICACION, UbicacionDelArbolAdm
 from apps.censo.admin_listas import ChipsDeEstado, filtro_relacionado
 from apps.censo.models import Arbol, ArbolEnPapelera
 from apps.censo.servicios import papelera
-from config.constantes import (
+from config.constantes.general import TOPE_DESTACADOS_POR_SECTOR
+from config.constantes.panel import (
     AVISO_ARBOL_DE_EJEMPLO,
     AYUDA_CO2_ADMIN,
     CAMPO_MOTIVO_ELIMINACION,
@@ -37,10 +38,9 @@ from config.constantes import (
     MENSAJE_MOTIVO_OBLIGATORIO,
     MENSAJE_RESTAURADO_SIN_DESTACADO,
     PAGINA_ADMIN,
-    PERMISO_CAMBIAR_DEMO,
     TITULO_ADMIN,
-    TOPE_DESTACADOS_POR_SECTOR,
 )
+from config.constantes.permisos import PERMISO_CAMBIAR_DEMO
 
 admin.site.site_header = TITULO_ADMIN
 admin.site.site_title = TITULO_ADMIN

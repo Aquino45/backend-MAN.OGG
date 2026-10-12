@@ -10,16 +10,12 @@ from django.test import Client
 from django.test.utils import override_settings
 from django.urls import reverse
 
+import config.constantes.mapa as constantes_mapa
 from apps.censo.admin_geometrias import MapaEditable
 from apps.censo.models import Arbol, Sector
 from apps.censo.servicios import geometrias
-from config import constantes
-from config.constantes import (
-    ESTADO_REGISTRO_EN_REVISION,
-    ESTADO_REGISTRO_PUBLICADO,
-    SRID_MAPA,
-    SRID_UTM_CENSO,
-)
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
+from config.constantes.general import SRID_MAPA, SRID_UTM_CENSO
 from tests.censo.conftest import FUENTE_PANEL, arbol_evaluado, cliente_de
 from tests.censo.test_admin import formulario_completo, mensajes
 
@@ -77,9 +73,9 @@ def test_el_campo_ubicacion_usa_el_widget_del_mapa_editable(cliente_editor, arbo
 
     widget = formulario.fields["ubicacion"].widget
     assert isinstance(widget, MapaEditable)
-    assert widget.attrs["default_lon"] == constantes.MAPA_ADMIN_LON
-    assert widget.attrs["default_lat"] == constantes.MAPA_ADMIN_LAT
-    assert widget.attrs["default_zoom"] == constantes.MAPA_ADMIN_ZOOM
+    assert widget.attrs["default_lon"] == constantes_mapa.MAPA_ADMIN_LON
+    assert widget.attrs["default_lat"] == constantes_mapa.MAPA_ADMIN_LAT
+    assert widget.attrs["default_zoom"] == constantes_mapa.MAPA_ADMIN_ZOOM
 
 
 @override_settings(ESRI_CLAVE="")

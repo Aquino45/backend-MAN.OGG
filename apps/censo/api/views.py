@@ -12,7 +12,7 @@ from apps.censo.api.serializers import (
     SectorColeccionSerializer,
 )
 from apps.censo.selectores import arbol_por_codigo, arboles_de_sector, sectores_con_total
-from config.constantes import PATRON_CODIGO_ARBOL
+from config.constantes.general import PATRON_CODIGO_ARBOL
 
 
 @api_view(["GET"])

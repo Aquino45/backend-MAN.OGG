@@ -15,14 +15,13 @@ from apps.censo.models import Arbol, GrupoBrigada, LoteCarga
 from apps.censo.servicios.carga_planilla import aplicar_decisiones, evaluar
 from apps.censo.servicios.importar_planilla import importar_planilla
 from apps.censo.servicios.lectura_planilla import entero_sector, leer
-from config.constantes import (
-    AVISO_COLUMNAS_COORDENADAS_CON_UTM,
+from config.constantes.carga import (
     CLASIFICACION_INCONSISTENTE,
     CLASIFICACION_LISTO,
     DECISION_CONSERVAR,
-    SRID_MAPA,
-    SRID_UTM_CENSO,
 )
+from config.constantes.general import SRID_MAPA, SRID_UTM_CENSO
+from config.constantes.planilla import AVISO_COLUMNAS_COORDENADAS_CON_UTM
 from tests.censo.conftest import (
     MEDIDAS_FILA_COMPLETA,
     TEXTOS_FILA_COMPLETA,

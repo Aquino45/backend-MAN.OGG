@@ -17,12 +17,11 @@ from unfold.admin import ModelAdmin
 from apps.censo.admin_listas import chip_activo
 from apps.censo.models import AyudaCampo, ValorCatalogo
 from apps.censo.selectores import conteo_de_valores_de_arboles, valores_fuera_del_catalogo
-from config.constantes import (
+from config.constantes.catalogos import (
     AYUDA_VALORES_FUERA_DEL_CATALOGO,
-    ETIQUETAS_COLUMNAS_ADMIN,
-    PAGINA_ADMIN,
     TITULO_VALORES_FUERA_DEL_CATALOGO,
 )
+from config.constantes.panel import ETIQUETAS_COLUMNAS_ADMIN, PAGINA_ADMIN
 
 
 class _AdminDeCapsulas(SimpleHistoryAdmin, ModelAdmin):

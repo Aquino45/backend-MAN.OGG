@@ -18,12 +18,9 @@ from apps.censo.models import (
     LoteCarga,
     ValorCatalogo,
 )
-from config.constantes import (
-    ESTADO_LOTE_CONFIRMADO,
-    PAGINA_ADMIN,
-    PARAMETRO_FILTRO_ESTADO_REGISTRO,
-    TEXTOS_CHIPS_ADMIN,
-)
+from config.constantes.calidad import PARAMETRO_FILTRO_ESTADO_REGISTRO
+from config.constantes.carga import ESTADO_LOTE_CONFIRMADO
+from config.constantes.panel import PAGINA_ADMIN, TEXTOS_CHIPS_ADMIN
 from tests.censo.conftest import arbol_de_ejemplo, arbol_evaluado
 
 PALABRAS_SIN_TILDE = re.compile(

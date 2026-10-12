@@ -13,22 +13,20 @@ from django.core.exceptions import ValidationError
 from django.test import Client
 from django.urls import reverse
 
+import config.constantes.catalogos as constantes_catalogos
+import config.constantes.mapa as constantes_mapa
 from apps.censo.models import Arbol, AyudaCampo, Especie, Sector, ValorCatalogo
 from apps.censo.servicios.papelera import mover_a_papelera
-from config import constantes
-from config.constantes import (
-    CAMPO_MOTIVO_ELIMINACION,
-    ESTADO_REGISTRO_EN_REVISION,
-    ESTADO_REGISTRO_PUBLICADO,
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
+from config.constantes.general import SRID_MAPA, TOPE_DESTACADOS_POR_SECTOR
+from config.constantes.panel import CAMPO_MOTIVO_ELIMINACION, TITULO_ADMIN
+from config.constantes.permisos import (
     NOMBRE_ROL_ADMINISTRADOR,
     NOMBRE_ROL_EDITOR,
     PERMISOS_CAPSULAS_POR_ROL,
     PERMISOS_CARGA_POR_ROL,
     PERMISOS_CATALOGOS_POR_ROL,
     PERMISOS_POR_ROL,
-    SRID_MAPA,
-    TITULO_ADMIN,
-    TOPE_DESTACADOS_POR_SECTOR,
 )
 from tests.censo.conftest import (
     FUENTE_PANEL,
@@ -121,9 +119,9 @@ def test_el_mapa_arranca_centrado_en_el_campus_en_grados(cliente_administrador, 
         sector.mapa.extent for sector in Sector.objects.annotate(mapa=Transform("geom", SRID_MAPA))
     ]
 
-    assert atributos["default_lon"] == constantes.MAPA_ADMIN_LON
-    assert atributos["default_lat"] == constantes.MAPA_ADMIN_LAT
-    assert atributos["default_zoom"] == constantes.MAPA_ADMIN_ZOOM
+    assert atributos["default_lon"] == constantes_mapa.MAPA_ADMIN_LON
+    assert atributos["default_lat"] == constantes_mapa.MAPA_ADMIN_LAT
+    assert atributos["default_zoom"] == constantes_mapa.MAPA_ADMIN_ZOOM
     assert min(caja[0] for caja in cajas) < atributos["default_lon"] < max(c[2] for c in cajas)
     assert min(caja[1] for caja in cajas) < atributos["default_lat"] < max(c[3] for c in cajas)
 
@@ -765,7 +763,7 @@ def test_el_indice_avisa_si_falta_cargar_el_catalogo(cliente_administrador, sect
     contenido = cliente_administrador.get(reverse("admin:index")).content.decode()
     assert "Catálogo sin cargar en: " in contenido
 
-    for campo in constantes.CAMPOS_CATALOGADOS:
+    for campo in constantes_catalogos.CAMPOS_CATALOGADOS:
         ValorCatalogo.objects.create(campo=campo, valor="Algo", explicacion="x")
 
     assert (
@@ -774,7 +772,7 @@ def test_el_indice_avisa_si_falta_cargar_el_catalogo(cliente_administrador, sect
     )
 
 
-# --- CO₂ simulado (BE-015) ---------------------------------------------------------------------
+# --- CO₂ simulado ---------------------------------------------------------------------
 
 
 def test_el_formulario_trae_la_casilla_de_co2_simulado_con_su_ayuda(

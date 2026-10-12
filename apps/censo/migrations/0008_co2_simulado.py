@@ -1,4 +1,4 @@
-"""CO₂ simulado (BE-015): la marca por árbol, su dato inicial y la regla de la BD.
+"""CO₂ simulado: la marca por árbol, su dato inicial y la regla de la BD.
 
 Todo árbol que ya tiene algún CO₂ queda marcado como simulado (decisión del stakeholder: hasta que
 llegue el dato real). Después se agrega la restricción: un árbol de ejemplo con CO₂ va marcado.

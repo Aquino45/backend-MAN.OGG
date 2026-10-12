@@ -8,7 +8,7 @@ cuando corre esta migración, así que se crean aquí antes de asignarlos.
 from django.contrib.auth.management import create_permissions
 from django.db import migrations
 
-from config.constantes import PERMISOS_CAPSULAS_POR_ROL
+from config.constantes.permisos import PERMISOS_CAPSULAS_POR_ROL
 
 
 def sumar_permisos_de_capsulas(apps, schema_editor):

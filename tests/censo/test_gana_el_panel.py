@@ -13,13 +13,13 @@ from django.urls import reverse
 
 from apps.censo.models import Arbol, LoteCarga
 from apps.censo.servicios.importar_planilla import importar_planilla
-from config.constantes import (
+from config.constantes.calidad import ESTADO_REGISTRO_PUBLICADO
+from config.constantes.carga import (
     AVISO_UBICACION_DEL_PANEL,
     ESTADO_LOTE_CONFIRMADO,
-    ESTADO_REGISTRO_PUBLICADO,
     PREFIJO_CONSERVAR_CARGA,
-    SRID_UTM_CENSO,
 )
+from config.constantes.general import SRID_UTM_CENSO
 from tests.censo.conftest import (
     MEDIDAS_FILA_COMPLETA,
     TEXTOS_FILA_COMPLETA,

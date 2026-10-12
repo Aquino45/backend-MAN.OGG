@@ -67,7 +67,8 @@ ROOT_URLCONF = "config.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        # Plantillas que reemplazan a las de Unfold (que va primero en INSTALLED_APPS)
+        "DIRS": [BASE_DIR / "config" / "plantillas"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [

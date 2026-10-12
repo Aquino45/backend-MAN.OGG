@@ -8,7 +8,8 @@ suma las coordenadas UTM tal como están guardadas, en metros, con `DECIMALES_UT
 
 from rest_framework import serializers
 
-from config.constantes import CAMPO_ORIGEN, CAMPOS_DE_ESPECIE, DECIMALES_COORDENADAS, DECIMALES_UTM
+from config.constantes.catalogos import CAMPO_ORIGEN, CAMPOS_DE_ESPECIE
+from config.constantes.general import DECIMALES_COORDENADAS, DECIMALES_UTM
 
 
 def _posicion(longitud, latitud):

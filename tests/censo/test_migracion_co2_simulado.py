@@ -1,4 +1,4 @@
-"""Migración 0008: marca como simulado el CO₂ de los árboles que ya lo tenían (BE-015).
+"""Migración 0008: marca como simulado el CO₂ de los árboles que ya lo tenían.
 
 Se ejerce de verdad: se vuelve al estado 0007 dentro de la transacción del test, se crean árboles
 con el esquema viejo, se migra a 0008 y se mira el resultado. Todo se deshace al terminar.
@@ -9,7 +9,7 @@ from django.contrib.gis.geos import Polygon
 from django.db import connection
 from django.db.migrations.executor import MigrationExecutor
 
-from config.constantes import SRID_UTM_CENSO
+from config.constantes.general import SRID_UTM_CENSO
 
 ANTES = [("censo", "0007_calidad_del_registro")]
 DESPUES = [("censo", "0008_co2_simulado")]

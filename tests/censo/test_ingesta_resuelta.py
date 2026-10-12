@@ -11,12 +11,9 @@ from apps.censo.servicios.carga_planilla import aplicar_decisiones, evaluar
 from apps.censo.servicios.importar_planilla import importar_planilla
 from apps.censo.servicios.lectura_planilla import leer
 from apps.censo.servicios.resolver_campos import texto_de
-from config.constantes import (
-    DECISION_CONSERVAR,
-    ESTADO_REGISTRO_EN_REVISION,
-    ESTADO_REGISTRO_PUBLICADO,
-    MOTIVO_ESPECIE_NO_REGISTRADA,
-)
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
+from config.constantes.carga import DECISION_CONSERVAR
+from config.constantes.catalogos import MOTIVO_ESPECIE_NO_REGISTRADA
 from tests.censo.conftest import (
     MEDIDAS_FILA_COMPLETA,
     TEXTOS_FILA_COMPLETA,

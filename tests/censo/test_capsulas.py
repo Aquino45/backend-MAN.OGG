@@ -25,9 +25,8 @@ from apps.censo.servicios.capsulas import (
     cargar_capsulas,
     normalizar,
 )
-from config.constantes import (
-    CAMPOS_CATALOGADOS,
-    CAMPOS_CON_AYUDA,
+from config.constantes.catalogos import CAMPOS_CATALOGADOS, CAMPOS_CON_AYUDA
+from config.constantes.permisos import (
     NOMBRE_ROL_ADMINISTRADOR,
     NOMBRE_ROL_EDITOR,
     PERMISOS_CAPSULAS_POR_ROL,

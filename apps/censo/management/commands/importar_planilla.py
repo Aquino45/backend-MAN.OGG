@@ -4,8 +4,8 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.censo.servicios.importar_planilla import importar_planilla
 from apps.censo.servicios.lectura_planilla import ENCABEZADO_POR_CAMPO
-from config.constantes import (
-    AVISO_UBICACION_DEL_PANEL,
+from config.constantes.carga import AVISO_UBICACION_DEL_PANEL
+from config.constantes.catalogos import (
     CAMPO_BRIGADA,
     CAMPO_GRUPO,
     TITULO_SIN_RESOLVER_BRIGADA,

@@ -21,7 +21,8 @@ from apps.censo.models import Arbol, FilaCarga, LoteCarga, ValorCatalogo
 from apps.censo.servicios.carga_planilla import evaluar
 from apps.censo.servicios.lectura_planilla import leer
 from apps.censo.servicios.lote_carga import valores_activos_del_catalogo
-from config.constantes import (
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
+from config.constantes.carga import (
     CLASIFICACION_CAMPOS_VACIOS,
     CLASIFICACION_DUPLICADO,
     CLASIFICACION_INCONSISTENTE,
@@ -29,13 +30,11 @@ from config.constantes import (
     ESTADO_LOTE_CANCELADO,
     ESTADO_LOTE_CONFIRMADO,
     ESTADO_LOTE_VALIDADO,
-    ESTADO_REGISTRO_EN_REVISION,
-    ESTADO_REGISTRO_PUBLICADO,
     HORAS_VIDA_LOTE_CARGA,
-    NOMBRE_ROL_EDITOR,
     PREFIJO_CAMPO_CARGA,
     PREFIJO_CONSERVAR_CARGA,
 )
+from config.constantes.permisos import NOMBRE_ROL_EDITOR
 from tests.censo.conftest import (
     CLAVE_PRUEBA,
     MEDIDAS_FILA_COMPLETA,

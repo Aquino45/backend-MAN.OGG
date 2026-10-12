@@ -13,7 +13,7 @@ from apps.censo.models import Arbol, Especie
 from apps.censo.servicios.calidad_registro import aplicar
 from apps.censo.servicios.capsulas import cargar_capsulas
 from apps.core.seguridad import LimiteAnonimo
-from config.constantes import DECIMALES_COORDENADAS, DECIMALES_UTM, SRID_UTM_CENSO
+from config.constantes.general import DECIMALES_COORDENADAS, DECIMALES_UTM, SRID_UTM_CENSO
 from tests.censo.conftest import arbol_evaluado
 
 RUTA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "validar_contrato.py"

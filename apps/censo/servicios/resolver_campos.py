@@ -10,7 +10,7 @@ calidad, las cápsulas y la API. Una sola implementación para todos.
 
 from apps.censo.models import Arbol, Brigada, Especie, GrupoBrigada, ValorCatalogo
 from apps.censo.servicios.normalizacion import lineas_de, normalizar
-from config.constantes import (
+from config.constantes.catalogos import (
     CAMPO_BRIGADA,
     CAMPO_GRUPO,
     CAMPO_ORIGEN,

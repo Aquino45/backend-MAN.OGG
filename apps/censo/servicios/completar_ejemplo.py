@@ -18,17 +18,17 @@ from django.db import models, transaction
 from apps.censo.models import Arbol
 from apps.censo.servicios.calidad_registro import aplicar, cargar_catalogo
 from apps.censo.servicios.resolver_campos import Resolutor, aplicar_textos, texto_de
-from config.constantes import (
+from config.constantes.calidad import (
     CAMPOS_OBLIGATORIOS_CALIDAD,
     CAMPOS_OPCIONALES_CALIDAD,
-    CAMPOS_TEXTO_RESUELTOS,
     CLAVES_COMPLETAR_EJEMPLO,
     ESTADO_REGISTRO_PUBLICADO,
     FORMATO_FUENTE_EJEMPLO,
     MOTIVO_HISTORIAL_COMPLETAR_EJEMPLO,
-    PATRON_CODIGO_ARBOL,
     SEPARADOR_FUENTE,
 )
+from config.constantes.catalogos import CAMPOS_TEXTO_RESUELTOS
+from config.constantes.general import PATRON_CODIGO_ARBOL
 
 CAMPOS_COMPLETABLES = frozenset((*CAMPOS_OBLIGATORIOS_CALIDAD, *CAMPOS_OPCIONALES_CALIDAD)) - {
     "ubicacion",

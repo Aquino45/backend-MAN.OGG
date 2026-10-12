@@ -16,7 +16,7 @@ from apps.censo.servicios.resolver_campos import (
     texto_de,
     valores_sobre_existente,
 )
-from config.constantes import MOTIVO_ESPECIE_NO_REGISTRADA
+from config.constantes.catalogos import MOTIVO_ESPECIE_NO_REGISTRADA
 from tests.censo.conftest import arbol_evaluado
 
 pytestmark = pytest.mark.django_db

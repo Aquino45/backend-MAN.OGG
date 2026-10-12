@@ -6,7 +6,8 @@ from django.contrib.gis.geos import Point
 from apps.censo.models import Sector
 from apps.censo.servicios import geometrias
 from apps.censo.servicios.papelera import mover_a_papelera
-from config.constantes import MARGEN_CAMPUS_M, SRID_MAPA, SRID_UTM_CENSO
+from config.constantes.general import SRID_MAPA, SRID_UTM_CENSO
+from config.constantes.geometrias import MARGEN_CAMPUS_M
 from tests.censo.conftest import arbol_evaluado
 
 
