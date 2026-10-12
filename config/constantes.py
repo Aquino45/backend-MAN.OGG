@@ -676,6 +676,9 @@ PERMISOS_CATALOGOS_POR_ROL = {
 """Permisos de especies, brigadas y grupos: el Administrador hace todo; el Editor agrega, edita y
 ve."""
 
+TEXTO_ORIGEN_SIN_DATO = "Sin dato"
+"""Lo que el panel del árbol muestra de origen si su especie no tiene origen (o no hay especie)."""
+
 MENSAJE_ALIAS_REPETIDO = "El alias «{alias}» ya lo tiene la especie {especie}."
 MENSAJE_FICHA_PUBLICADA_INCOMPLETA = (
     "Una ficha publicada necesita el nombre común, los beneficios y la fuente de la ficha."
