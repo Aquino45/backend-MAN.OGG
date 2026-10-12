@@ -27,7 +27,13 @@ from config.constantes import (
     TITULO_ADMIN,
     TOPE_DESTACADOS_POR_SECTOR,
 )
-from tests.censo.conftest import FUENTE_PANEL, arbol_evaluado, cliente_de, usuario_con_rol
+from tests.censo.conftest import (
+    FUENTE_PANEL,
+    arbol_de_ejemplo,
+    arbol_evaluado,
+    cliente_de,
+    usuario_con_rol,
+)
 
 MOTIVO = "Se registró dos veces por error"
 MOTIVO_DESTACADO = "Ejemplar de mayor copa del sector"
@@ -709,3 +715,68 @@ def test_el_indice_avisa_si_falta_cargar_el_catalogo(cliente_administrador, sect
         "Catálogo sin cargar"
         not in cliente_administrador.get(reverse("admin:index")).content.decode()
     )
+
+
+# --- CO₂ simulado (BE-015) ---------------------------------------------------------------------
+
+
+def test_el_formulario_trae_la_casilla_de_co2_simulado_con_su_ayuda(
+    cliente_editor, uno_publicado_y_uno_en_revision
+):
+    publicado, _ = uno_publicado_y_uno_en_revision
+
+    contenido = cliente_editor.get(
+        reverse("admin:censo_arbol_change", args=[publicado.pk])
+    ).content.decode()
+
+    assert 'name="co2_simulado"' in contenido
+    assert "CO₂ simulado" in contenido
+    assert "estimación que se va a reemplazar" in contenido
+
+
+def test_marcar_la_casilla_de_un_real_con_co2_se_guarda(sectores, cliente_editor):
+    arbol = arbol_evaluado("S01-A001", co2_simulado=False)
+    ubicacion = arbol.ubicacion.transform(SRID_DEL_MAPA_DEL_PANEL, clone=True).wkt
+    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **CAMPOS_DEL_FORMULARIO_COMPLETO)
+
+    cliente_editor.post(reverse("admin:censo_arbol_change", args=[arbol.pk]), datos)
+    assert Arbol.objects.get(pk=arbol.pk).co2_simulado is False
+
+    cliente_editor.post(
+        reverse("admin:censo_arbol_change", args=[arbol.pk]), {**datos, "co2_simulado": "on"}
+    )
+    assert Arbol.objects.get(pk=arbol.pk).co2_simulado is True
+
+
+def test_un_ejemplo_con_co2_queda_simulado_aunque_se_desmarque_la_casilla(
+    sectores, cliente_administrador
+):
+    arbol = arbol_de_ejemplo("S01-A001")
+    assert arbol.co2_simulado is True
+    ubicacion = arbol.ubicacion.transform(SRID_DEL_MAPA_DEL_PANEL, clone=True).wkt
+    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **CAMPOS_DEL_FORMULARIO_COMPLETO)
+    datos.update(demo="on", brigada="")
+
+    cliente_administrador.post(reverse("admin:censo_arbol_change", args=[arbol.pk]), datos)
+
+    assert Arbol.objects.get(pk=arbol.pk).co2_simulado is True
+
+
+def test_sin_co2_la_casilla_se_quita_al_guardar(sectores, cliente_editor):
+    arbol = arbol_evaluado("S01-A001")
+    ubicacion = arbol.ubicacion.transform(SRID_DEL_MAPA_DEL_PANEL, clone=True).wkt
+    datos = datos_de_alta(codigo="S01-A001", ubicacion=ubicacion, **CAMPOS_DEL_FORMULARIO_COMPLETO)
+    datos.update(co2_almacenado_kg="", co2_captura_anual_kg="", co2_simulado="on")
+
+    cliente_editor.post(reverse("admin:censo_arbol_change", args=[arbol.pk]), datos)
+
+    assert Arbol.objects.get(pk=arbol.pk).co2_simulado is False
+
+
+def test_el_filtro_de_co2_simulado_separa_los_arboles(sectores, cliente_editor):
+    arbol_evaluado("S01-A001", co2_simulado=True)
+    arbol_evaluado("S01-A002", co2_simulado=False)
+
+    respuesta = cliente_editor.get(url_de_arboles(co2_simulado__exact=1))
+
+    assert {a.codigo for a in respuesta.context["cl"].result_list} == {"S01-A001"}

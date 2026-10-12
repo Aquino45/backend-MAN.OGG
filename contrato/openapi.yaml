@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
   title: Censo arbóreo UPeU Lima — API
-  version: 0.4.0
+  version: 0.5.0
   description: |
     Contrato entre el back y el front (solo lectura, v1 del lunes 12/10/2026).
 
@@ -11,7 +11,7 @@ info:
     - Coordenadas: la BD guarda UTM 18S (EPSG:32718) y la API entrega WGS84 (EPSG:4326). En GeoJSON el orden es `[longitud, latitud]`; en la cartilla van `lat` y `lon` aparte.
     - Todo campo de la cartilla viene siempre en la respuesta. Si no hay dato, viene `null`, y el front muestra «Sin dato». Nunca se rellena con un valor inventado.
     - `demo: true` marca los datos de ejemplo. El front los muestra como «Dato de ejemplo».
-    - El CO₂ lo calcula el stakeholder en gabinete. La API solo lo entrega.
+    - El CO₂ lo calcula el stakeholder en gabinete. La API solo lo entrega. Mientras no llegue el dato real, los valores son una estimación simulada y `co2_simulado: true` lo indica.
 servers:
   - url: '{base}/api/v1'
     description: El back. En desarrollo, `{base}` sale de `API_PUERTO` del `.env` del back; el front lo lee de `VITE_API_URL`.
@@ -197,7 +197,7 @@ components:
     ArbolResumen:
       type: object
       description: Lo mínimo para listar el árbol y dibujarlo como punto. La cartilla completa sale de `/arboles/{codigo}`.
-      required: [codigo, uid, sector, nombre_comun, nombre_cientifico, estado_general, foto_miniatura_url, demo, destacado, motivo_destacado]
+      required: [codigo, uid, sector, nombre_comun, nombre_cientifico, estado_general, foto_miniatura_url, demo, destacado, motivo_destacado, co2_almacenado_kg, co2_captura_anual_kg, co2_simulado]
       properties:
         codigo: { $ref: '#/components/schemas/CodigoArbol' }
         uid: { type: string, format: uuid, readOnly: true, description: 'Identificador estable del árbol: no cambia aunque cambie su código' }
@@ -206,6 +206,9 @@ components:
         nombre_cientifico: { type: [string, 'null'] }
         estado_general: { type: [string, 'null'], description: Valor del catálogo de la planilla (Bueno, Regular, Malo). }
         foto_miniatura_url: { type: [string, 'null'], format: uri }
+        co2_almacenado_kg: { type: [number, 'null'], minimum: 0, description: kg de CO₂ equivalente; lo calcula el stakeholder. }
+        co2_captura_anual_kg: { type: [number, 'null'], minimum: 0, description: kg de CO₂ por año; lo calcula el stakeholder. }
+        co2_simulado: { type: boolean, description: 'true si los valores de CO₂ de este árbol son una estimación simulada que se va a reemplazar; false si no hay CO₂ o si es el dato real' }
         demo: { type: boolean }
         destacado: { type: boolean, description: 'Árbol destacado del sector, elegido por la administración del censo (con un tope por sector)' }
         motivo_destacado: { type: [string, 'null'], description: 'Por qué se destaca; `null` si no es destacado' }
@@ -258,6 +261,7 @@ components:
         - foto_miniatura_url
         - co2_almacenado_kg
         - co2_captura_anual_kg
+        - co2_simulado
         - fuente
         - fecha_registro
         - demo
@@ -292,6 +296,7 @@ components:
         foto_miniatura_url: { type: [string, 'null'], format: uri }
         co2_almacenado_kg: { type: [number, 'null'], minimum: 0, description: kg de CO₂ equivalente; lo calcula el stakeholder. }
         co2_captura_anual_kg: { type: [number, 'null'], minimum: 0, description: kg de CO₂ por año; lo calcula el stakeholder. }
+        co2_simulado: { type: boolean, description: 'true si los valores de CO₂ de este árbol son una estimación simulada que se va a reemplazar; false si no hay CO₂ o si es el dato real' }
         fuente: { type: string, minLength: 1, description: De dónde sale el registro (planilla, fila, foto). Nunca vacío. }
         fecha_registro: { type: [string, 'null'], format: date }
         demo: { type: boolean }

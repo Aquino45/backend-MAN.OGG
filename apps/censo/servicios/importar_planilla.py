@@ -25,6 +25,7 @@ from apps.censo.servicios.calidad_registro import (
 from config.constantes import (
     CAMPOS_CON_NOTA_PLANILLA,
     CAMPOS_NUMERICOS_PLANILLA,
+    CO2_PLANILLA_ES_SIMULADO,
     COLUMNAS_PLANILLA,
     FILA_ENCABEZADOS_PLANILLA,
     FORMATO_CODIGO_CALCULADO,
@@ -291,6 +292,7 @@ def _importar_fila(numero_fila, fila, contexto):
     valores["fuente"] = ", ".join(parte for parte in partes_fuente if parte)
     valores["fila_origen"] = numero_fila
     valores["demo"] = False
+    valores["co2_simulado"] = CO2_PLANILLA_ES_SIMULADO
     _guardar_fila(codigo, valores, textos_no_numericos, contexto)
 
 
@@ -322,6 +324,7 @@ def _guardar_fila(codigo, valores, textos_no_numericos, contexto):
     estado = {
         "estado_registro": candidato.estado_registro,
         "motivos_revision": candidato.motivos_revision,
+        "co2_simulado": candidato.co2_simulado,
     }
     _, creado = Arbol.todos.update_or_create(codigo=codigo, defaults={**valores, **estado})
     if creado:

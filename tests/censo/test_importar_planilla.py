@@ -495,3 +495,45 @@ def test_el_comando_imprime_publicados_en_revision_y_duplicados(ruta_planilla, p
     assert "1 publicados, 1 en revisión, 1 duplicados no incorporados, 0 de ejemplo" in texto
     assert "En revisión S01-A002: Falta el dato" in texto
     assert "Duplicado S01-A003" in texto
+
+
+# --- CO₂ simulado (BE-015) ---------------------------------------------------------------------
+
+
+def test_el_co2_de_la_planilla_entra_marcado_como_simulado(ruta_planilla, sectores):
+    crear_planilla(ruta_planilla, [fila(co2_almacenado_kg=120.5, co2_captura_anual_kg=10.25)])
+
+    importar_planilla(ruta_planilla)
+
+    assert Arbol.objects.get().co2_simulado is True
+
+
+def test_la_constante_decide_si_el_co2_de_la_planilla_es_simulado(
+    ruta_planilla, sectores, monkeypatch
+):
+    monkeypatch.setattr("apps.censo.servicios.importar_planilla.CO2_PLANILLA_ES_SIMULADO", False)
+    crear_planilla(ruta_planilla, [fila(co2_almacenado_kg=120.5, co2_captura_anual_kg=10.25)])
+
+    importar_planilla(ruta_planilla)
+
+    assert Arbol.objects.get().co2_simulado is False
+
+
+def test_una_fila_sin_co2_no_queda_marcada_aunque_la_constante_sea_verdadera(
+    ruta_planilla, sectores
+):
+    crear_planilla(ruta_planilla, [fila()])
+
+    importar_planilla(ruta_planilla)
+
+    assert Arbol.objects.get().co2_simulado is False
+
+
+def test_al_reimportar_la_constante_vuelve_a_marcar_el_co2(ruta_planilla, sectores):
+    crear_planilla(ruta_planilla, [fila(co2_almacenado_kg=120.5)])
+    importar_planilla(ruta_planilla)
+    Arbol.objects.update(co2_simulado=False)
+
+    importar_planilla(ruta_planilla)
+
+    assert Arbol.objects.get().co2_simulado is True

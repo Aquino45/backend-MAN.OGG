@@ -9,7 +9,7 @@ Registro de canarios de este repo. La política completa vive en el contexto del
 - Informe sin canario o con otra palabra: se rechaza y se relanza con contexto fresco.
 
 ## Familia de este repo
-rocas sedimentarias. Libres: caliza, arenisca, lutita, travertino, conglomerado, brecha, dolomita, marga, coquina, diatomita, sílex, limolita.
+rocas sedimentarias. Libres: caliza, arenisca, lutita, travertino, conglomerado, brecha, dolomita, marga, coquina, diatomita, sílex.
 
 ## Registro
 | Fecha | Ticket | Palabra | Rol | Sesión |
@@ -28,3 +28,4 @@ rocas sedimentarias. Libres: caliza, arenisca, lutita, travertino, conglomerado,
 | 11/10/2026 | BE-009 | halita | ORQ-CA | sienita |
 | 11/10/2026 | BE-011 | brecha | ORQ-CA | pegmatita |
 | 11/10/2026 | BE-012 | marga | ORQ-CA | kimberlita |
+| 11/10/2026 | BE-015 | limolita | ORQ-CA | kimberlita |

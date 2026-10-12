@@ -105,6 +105,7 @@ def crear_arbol(codigo, ubicacion=None, **extra):
     """
     extra.setdefault("fuente", FUENTE_PRUEBA)
     extra.setdefault("estado_registro", ESTADO_REGISTRO_PUBLICADO)
+    extra.setdefault("co2_simulado", any(extra.get(campo) is not None for campo in CAMPOS_DE_CO2))
     return Arbol.objects.create(codigo=codigo, sector_id=1, ubicacion=ubicacion, demo=True, **extra)
 
 
@@ -435,3 +436,20 @@ def test_color_null_es_valido_y_un_color_puesto_se_entrega_tal_cual(contrato, se
     assert [f["properties"]["color"] for f in con_color["features"]] == [None, "copa-carmin"] + [
         None
     ] * 3
+
+
+def test_cartilla_y_lista_traen_el_co2_y_su_marca_de_simulado(
+    contrato, arbol_completo, arbol_muerto
+):
+    por_codigo = {f["id"]: f["properties"] for f in lista_del_sector()["features"]}
+
+    for codigo, simulado, almacenado in (
+        (CODIGO_COMPLETO, True, 120.5),
+        (CODIGO_MUERTO, False, None),
+    ):
+        for datos in (cartilla(codigo), por_codigo[codigo]):
+            assert datos["co2_simulado"] is simulado
+            assert datos["co2_almacenado_kg"] == almacenado
+    assert por_codigo[CODIGO_COMPLETO]["co2_captura_anual_kg"] == 10.25
+    assert por_codigo[CODIGO_MUERTO]["co2_captura_anual_kg"] is None
+    assert all(es_numero(por_codigo[CODIGO_COMPLETO][campo]) for campo in CAMPOS_DE_CO2)

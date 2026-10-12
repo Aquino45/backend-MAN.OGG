@@ -141,6 +141,7 @@ def test_carga_guarda_los_campos_tal_como_vienen(sectores, tmp_path):
     assert simple.condicion_conservacion is None
     assert simple.co2_almacenado_kg == Decimal("120.5")
     assert simple.co2_captura_anual_kg == Decimal("10.25")
+    assert simple.co2_simulado is True
     assert simple.dap_cm == Decimal("35.25")
     este, norte = utm_calculada_por_postgis(lat, lon)
     assert simple.ubicacion.srid == SRID_UTM_CENSO
@@ -485,3 +486,18 @@ def test_comando_exige_ruta_o_borrar_pero_no_ambos(sectores, tmp_path):
     with pytest.raises(CommandError):
         ejecutar(str(ruta), "--borrar")
     assert Arbol.objects.count() == 0
+
+
+def test_carga_marca_el_co2_simulado_solo_si_el_ejemplo_trae_co2(sectores, tmp_path):
+    ruta = escribir(
+        tmp_path,
+        [
+            registro(2, 1),
+            registro(2, 2, co2_almacenado_kg=None, co2_captura_anual_kg=None),
+        ],
+    )
+
+    cargar_demo(ruta)
+
+    assert Arbol.objects.get(codigo="S02-D001").co2_simulado is True
+    assert Arbol.objects.get(codigo="S02-D002").co2_simulado is False

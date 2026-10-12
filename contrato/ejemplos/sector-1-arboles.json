@@ -19,6 +19,9 @@
     "nombre_cientifico": "Schinus",
     "estado_general": null,
     "foto_miniatura_url": null,
+    "co2_almacenado_kg": 104658.7,
+    "co2_captura_anual_kg": 1593.38,
+    "co2_simulado": true,
     "demo": false,
     "destacado": false,
     "motivo_destacado": null
@@ -42,6 +45,9 @@
     "nombre_cientifico": "Roystonea",
     "estado_general": null,
     "foto_miniatura_url": null,
+    "co2_almacenado_kg": 96.59,
+    "co2_captura_anual_kg": 4.1,
+    "co2_simulado": true,
     "demo": false,
     "destacado": false,
     "motivo_destacado": null
@@ -65,6 +71,9 @@
     "nombre_cientifico": "Prosopis pallida",
     "estado_general": "Regular",
     "foto_miniatura_url": null,
+    "co2_almacenado_kg": 75185.25,
+    "co2_captura_anual_kg": 1459.49,
+    "co2_simulado": true,
     "demo": true,
     "destacado": true,
     "motivo_destacado": "Dato de ejemplo: ejemplar de mayor copa del sector"
@@ -88,6 +97,9 @@
     "nombre_cientifico": null,
     "estado_general": null,
     "foto_miniatura_url": null,
+    "co2_almacenado_kg": 5394.65,
+    "co2_captura_anual_kg": 177.08,
+    "co2_simulado": true,
     "demo": false,
     "destacado": false,
     "motivo_destacado": null

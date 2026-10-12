@@ -85,7 +85,7 @@ def test_todo_external_value_esta_en_la_lista_de_ejemplos(contrato):
 
 
 def test_la_version_del_contrato_es_la_vigente(contrato):
-    assert contrato["info"]["version"] == "0.4.0"
+    assert contrato["info"]["version"] == "0.5.0"
 
 
 @pytest.mark.parametrize("nombre_schema", ["Arbol", "ArbolResumen"])
@@ -170,3 +170,21 @@ def test_las_capsulas_de_un_ejemplo_no_repiten_campo(archivo):
 
     assert campos
     assert len(campos) == len(set(campos))
+
+
+def test_la_cartilla_y_el_resumen_exigen_el_co2_y_su_marca_de_simulado(contrato):
+    esquemas = contrato["components"]["schemas"]
+    claves_del_co2 = {"co2_almacenado_kg", "co2_captura_anual_kg", "co2_simulado"}
+
+    assert claves_del_co2 <= set(esquemas["Arbol"]["required"])
+    assert claves_del_co2 <= set(esquemas["ArbolResumen"]["required"])
+
+
+@pytest.mark.parametrize("nombre_schema", ["Arbol", "ArbolResumen"])
+def test_el_co2_tiene_el_tipo_del_contrato(contrato, nombre_schema):
+    propiedades = contrato["components"]["schemas"][nombre_schema]["properties"]
+
+    assert propiedades["co2_simulado"]["type"] == "boolean"
+    for clave in ("co2_almacenado_kg", "co2_captura_anual_kg"):
+        assert propiedades[clave]["type"] == ["number", "null"]
+        assert propiedades[clave]["minimum"] == 0

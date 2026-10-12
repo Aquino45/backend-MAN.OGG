@@ -176,7 +176,11 @@ MENSAJE_RESTAURADO_SIN_DESTACADO = (
 AVISO_ARBOL_DE_EJEMPLO = "Dato de ejemplo: este árbol es simulado y no es del censo."
 """Aviso visible en el panel para los árboles con `demo`."""
 
-AYUDA_CO2_ADMIN = "Lo calcula el stakeholder; aquí solo se registra el resultado."
+AYUDA_CO2_ADMIN = (
+    "Lo calcula el stakeholder; aquí solo se registra el resultado. Marca «CO₂ simulado» si los "
+    "valores son una estimación que se va a reemplazar por el dato real: un árbol de ejemplo con "
+    "CO₂ siempre queda marcado y, sin CO₂, la marca se quita sola."
+)
 """Ayuda del bloque de CO₂ del formulario del árbol."""
 
 CAMPOS_CON_AYUDA = (
@@ -424,3 +428,10 @@ PARAMETRO_FILTRO_ESTADO_REGISTRO = "estado_registro"
 
 DESCRIPCION_DESTACADO_ADMIN = "Cada sector admite hasta {tope} destacados. El motivo es opcional."
 """Texto del panel sobre el tope de destacados por sector y el motivo opcional."""
+
+CO2_PLANILLA_ES_SIMULADO = True
+"""Decisión del stakeholder (11/10/2026): el CO₂ que trae la planilla se muestra como simulado
+hasta que llegue el dato real. Ese día se cambia a `False` aquí, o se desmarca en el panel."""
+
+ETIQUETA_CO2_SIMULADO = "CO₂ simulado"
+"""Nombre de la casilla de CO₂ simulado en el panel."""

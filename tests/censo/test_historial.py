@@ -188,3 +188,9 @@ def test_volver_a_una_version_sigue_validando_el_tope_de_destacados(nuevo_arbol,
 
     assert respuesta.status_code == 200
     assert Arbol.objects.get(pk=primero.pk).destacado is False
+
+
+def test_volver_a_una_version_devuelve_tambien_la_marca_de_co2_simulado():
+    from config.constantes import CAMPOS_FUERA_DE_LA_REVERSION
+
+    assert "co2_simulado" not in CAMPOS_FUERA_DE_LA_REVERSION

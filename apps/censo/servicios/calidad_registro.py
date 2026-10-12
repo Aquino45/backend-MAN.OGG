@@ -37,8 +37,8 @@ from config.constantes import (
     VALOR_TIPO_JUVENIL,
 )
 
-CAMPOS_DEL_ESTADO = ["estado_registro", "motivos_revision"]
-"""Lo único que cambia el recálculo cuando solo se actualiza el estado de un árbol guardado."""
+CAMPOS_DEL_ESTADO = ["estado_registro", "motivos_revision", "co2_simulado"]
+"""Lo único que cambia la regla al actualizar solo el estado de un árbol guardado."""
 
 
 @dataclass(frozen=True)
@@ -108,6 +108,9 @@ def evaluar(arbol, catalogo=None, geom_sector=None, textos_no_numericos=None):
 def aplicar(arbol, catalogo=None, geom_sector=None, textos_no_numericos=None):
     """Pone en el árbol su estado y sus motivos (uno por línea) y devuelve los motivos.
 
+    También normaliza `co2_simulado`: sin ningún CO₂ queda en falso y un árbol de ejemplo con algún
+    CO₂ queda en verdadero; en los demás casos se respeta lo que ya tiene.
+
     Sin `catalogo` o sin `geom_sector` los lee de la BD. Es lo que se llama antes de guardar.
     """
     if catalogo is None:
@@ -117,7 +120,17 @@ def aplicar(arbol, catalogo=None, geom_sector=None, textos_no_numericos=None):
     motivos = evaluar(arbol, catalogo, geom_sector, textos_no_numericos)
     arbol.estado_registro = ESTADO_REGISTRO_EN_REVISION if motivos else ESTADO_REGISTRO_PUBLICADO
     arbol.motivos_revision = SEPARADOR_DE_LINEAS.join(str(motivo) for motivo in motivos)
+    _normalizar_co2_simulado(arbol)
     return motivos
+
+
+def _normalizar_co2_simulado(arbol):
+    """Sin CO₂ no hay nada simulado; un árbol de ejemplo con CO₂ siempre lo es."""
+    hay_co2 = arbol.co2_almacenado_kg is not None or arbol.co2_captura_anual_kg is not None
+    if not hay_co2:
+        arbol.co2_simulado = False
+    elif arbol.demo:
+        arbol.co2_simulado = True
 
 
 def buscar_duplicado_por_ubicacion(codigo, ubicacion, nombre_cientifico):
@@ -138,18 +151,23 @@ def recalcular_calidad():
     reporte = ReporteRecalculo(catalogos_sin_cargar=campos_sin_catalogo(catalogo))
     with transaction.atomic():
         for arbol in Arbol.todos.select_related("sector").order_by("codigo"):
-            antes = (arbol.estado_registro, arbol.motivos_revision)
+            antes = _estado_de(arbol)
             aplicar(arbol, catalogo)
             reporte.revisados += 1
             if arbol.estado_registro == ESTADO_REGISTRO_PUBLICADO:
                 reporte.publicados += 1
             else:
                 reporte.en_revision += 1
-            if (arbol.estado_registro, arbol.motivos_revision) != antes:
+            if _estado_de(arbol) != antes:
                 arbol._change_reason = MOTIVO_HISTORIAL_RECALCULO_CALIDAD
                 arbol.save(update_fields=CAMPOS_DEL_ESTADO)
                 reporte.cambiaron += 1
     return reporte
+
+
+def _estado_de(arbol):
+    """Lo que la regla puede cambiar en un árbol guardado, para saber si hay que guardarlo."""
+    return tuple(getattr(arbol, campo) for campo in CAMPOS_DEL_ESTADO)
 
 
 def _campos_exigidos(arbol):

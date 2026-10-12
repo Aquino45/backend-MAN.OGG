@@ -278,3 +278,47 @@ def test_un_destacado_hasta_el_tope_valida(sector):
     )
 
     ultimo.full_clean()
+
+
+# --- CO₂ simulado (BE-015) ---------------------------------------------------------------------
+
+
+@pytest.mark.django_db
+def test_co2_simulado_nace_en_falso(sector):
+    arbol = _arbol(sector)
+    arbol.save()
+
+    assert arbol.co2_simulado is False
+    assert Arbol.todos.get(pk=arbol.pk).co2_simulado is False
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("campo", ["co2_almacenado_kg", "co2_captura_anual_kg"])
+def test_un_ejemplo_con_algun_co2_sin_marca_se_rechaza_en_la_bd(sector, campo):
+    with pytest.raises(IntegrityError), transaction.atomic():
+        _arbol(sector, demo=True, co2_simulado=False, **{campo: Decimal("10")}).save()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "extra",
+    [
+        {"demo": True, "co2_simulado": True, "co2_almacenado_kg": Decimal("10")},
+        {"demo": True, "co2_simulado": False},
+        {"demo": True, "co2_simulado": True},
+        {"demo": False, "co2_simulado": False, "co2_almacenado_kg": Decimal("10")},
+        {"demo": False, "co2_simulado": True, "co2_captura_anual_kg": Decimal("2")},
+    ],
+    ids=[
+        "ejemplo-con-co2-marcado",
+        "ejemplo-sin-co2",
+        "ejemplo-sin-co2-marcado",
+        "real-con-co2-sin-marca",
+        "real-marcado",
+    ],
+)
+def test_la_restriccion_del_co2_simulado_deja_pasar_lo_valido(sector, extra):
+    arbol = _arbol(sector, **extra)
+    arbol.save()
+
+    assert Arbol.todos.filter(pk=arbol.pk).exists()
