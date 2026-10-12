@@ -70,19 +70,21 @@ MEDIDAS_FILA_COMPLETA = {
 }
 
 
-def crear_planilla(ruta, filas, sin_columnas=(), columnas_ajenas=()):
+def crear_planilla(ruta, filas, sin_columnas=(), columnas_ajenas=(), renombrar=None):
     """Escribe una planilla de prueba; cada fila es {campo: valor}.
 
     Sin `codigo` en la fila se escribe la fórmula de la planilla real (sin valor guardado). Trae
     las columnas opcionales (salvo las de `sin_columnas`) y, al final, las `columnas_ajenas`:
-    títulos que la planilla no usa y que se deben ignorar.
+    títulos que la planilla no usa y que se deben ignorar. Con `renombrar` (`{encabezado: otro}`)
+    una columna se escribe con otro título, por ejemplo Latitud donde va «UTM Este (m)».
     """
     libro = Workbook()
     hoja = libro.active
     hoja.title = HOJA_PLANILLA
     columnas = {**COLUMNAS_PLANILLA, **COLUMNAS_OPCIONALES_PLANILLA}
     encabezados = [enc for enc in columnas if enc not in sin_columnas]
-    hoja.append([*encabezados, *columnas_ajenas])
+    renombrar = renombrar or {}
+    hoja.append([*(renombrar.get(enc, enc) for enc in encabezados), *columnas_ajenas])
     columna_por_campo = {columnas[enc]: indice for indice, enc in enumerate(encabezados, start=1)}
     for numero_fila, fila in enumerate(filas, start=2):
         for campo, valor in fila.items():

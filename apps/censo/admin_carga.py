@@ -134,6 +134,7 @@ class CargaPlanillaAdmin(admin.ModelAdmin):
             request,
             "resumen",
             lote=lote,
+            avisos=lote.resultado.get("avisos", []),
             problemas=problemas,
             resumen=FORMATO_RESUMEN_CARGA.format(
                 listos=lote.listos,
@@ -205,12 +206,16 @@ class CargaPlanillaAdmin(admin.ModelAdmin):
             (textos["etiqueta_codigos_no_incorporados"], lote.resultado["no_incorporados"]),
             (textos["etiqueta_codigos_ejemplo"], lote.resultado["ejemplo_sin_cambios"]),
         ]
+        del_panel = lote.resultado.get("ubicaciones_del_panel", [])
+        if del_panel:
+            grupos.append((textos["etiqueta_codigos_ubicacion_del_panel"], del_panel))
         enlace = f"{reverse('admin:censo_arbol_changelist')}?"
         enlace += f"{PARAMETRO_FILTRO_ESTADO_REGISTRO}={ESTADO_REGISTRO_EN_REVISION}"
         return self._pantalla(
             request,
             "resultado",
             lote=lote,
+            avisos=lote.resultado.get("avisos", []),
             grupos=grupos,
             enlace_en_revision=enlace,
             resumen=FORMATO_RESULTADO_CARGA.format(

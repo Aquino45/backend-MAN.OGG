@@ -2,6 +2,7 @@
 {% block content %}
 <h2>{{ textos.titulo_resumen }}</h2>
 <p><strong>{{ resumen }}</strong></p>
+{% include "admin/censo/carga/avisos.html" %}
 {% if problemas %}
 <div class="carga-alerta" role="alert" aria-labelledby="carga-alerta-texto">
   <p id="carga-alerta-texto">{{ alerta }}</p>

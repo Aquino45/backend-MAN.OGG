@@ -2,6 +2,7 @@
 {% block content %}
 <h2>{{ textos.titulo_resultado }}</h2>
 <p><strong>{{ resumen }}</strong></p>
+{% include "admin/censo/carga/avisos.html" %}
 {% for etiqueta, codigos in grupos %}
 <div class="carga-codigos">
   <h3>{{ etiqueta }} ({{ codigos|length }})</h3>

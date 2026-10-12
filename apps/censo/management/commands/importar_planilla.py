@@ -5,6 +5,7 @@ from django.core.management.base import BaseCommand, CommandError
 from apps.censo.servicios.importar_planilla import importar_planilla
 from apps.censo.servicios.lectura_planilla import ENCABEZADO_POR_CAMPO
 from config.constantes import (
+    AVISO_UBICACION_DEL_PANEL,
     CAMPO_BRIGADA,
     CAMPO_GRUPO,
     TITULO_SIN_RESOLVER_BRIGADA,
@@ -35,8 +36,18 @@ def lineas_del_reporte(reporte):
         f"  {a.codigo} (sector {a.sector}): a {a.distancia_m:.2f} m de su polígono"
         for a in reporte.fuera_de_sector
     ]
+    lineas += _lineas_de_avisos(reporte)
     lineas += _lineas_sin_resolver(reporte)
     lineas += _lineas_de_calidad(reporte)
+    return lineas
+
+
+def _lineas_de_avisos(reporte):
+    """Los avisos de la planilla y los árboles cuya ubicación del panel se mantuvo."""
+    lineas = list(reporte.avisos)
+    if reporte.ubicaciones_del_panel:
+        lineas.append(f"{AVISO_UBICACION_DEL_PANEL}: {len(reporte.ubicaciones_del_panel)}")
+        lineas += [f"  {codigo}" for codigo in reporte.ubicaciones_del_panel]
     return lineas
 
 

@@ -35,6 +35,8 @@ from config.constantes import (
     ESTADOS_LOTE_CARGA,
     ESTADOS_REGISTRO,
     ETIQUETA_CO2_SIMULADO,
+    ETIQUETA_FECHA_UBICACION_EDITADA,
+    ETIQUETA_UBICACION_EDITADA_EN_PANEL,
     LARGO_TEXTO,
     MENSAJE_CODIGO_EN_PAPELERA,
     PATRON_CODIGO_ARBOL,
@@ -123,6 +125,9 @@ class Arbol(models.Model):
     `co2_simulado` dice que el CO₂ es una estimación que se reemplazará por el dato real. Un árbol
     de ejemplo con algún CO₂ siempre lo lleva marcado (lo aseguran la regla de calidad y la BD).
 
+    `ubicacion_editada_en_panel` dice que alguien corrigió la ubicación a mano en el panel (y
+    `fecha_ubicacion_editada` cuándo): mientras esté activa, la planilla no la pisa.
+
     El nombre, el origen y la ficha salen de su `especie`; la brigada, de su `grupo`. Los estados
     son valores del catálogo. Lo que la planilla trajo y no se pudo resolver (o llegó con otro
     nombre) queda en `valores_originales`, por campo.
@@ -149,6 +154,12 @@ class Arbol(models.Model):
     identificacion = _valor_del_catalogo("identificacion")
     condicion_conservacion = _valor_del_catalogo("condicion_conservacion")
     ubicacion = models.PointField(srid=SRID_UTM_CENSO, null=True, blank=True)
+    ubicacion_editada_en_panel = models.BooleanField(
+        default=False, verbose_name=ETIQUETA_UBICACION_EDITADA_EN_PANEL
+    )
+    fecha_ubicacion_editada = models.DateTimeField(
+        null=True, blank=True, verbose_name=ETIQUETA_FECHA_UBICACION_EDITADA
+    )
     altura_total_m = _medida()
     dap_cm = _medida()
     copa_ns_m = _medida()

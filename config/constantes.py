@@ -521,6 +521,9 @@ CAMPO_ARCHIVO_CARGA = "planilla"
 LOTES_RECIENTES_EN_CARGA = 10
 """Cuántas cargas anteriores se listan en la pantalla de carga."""
 
+AVISO_UBICACION_DEL_PANEL = "Ubicación corregida en el panel; se mantiene"
+"""Aviso cuando la planilla trae otra ubicación para un árbol corregido en el panel."""
+
 TEXTOS_CARGA_PLANILLA = {
     "titulo": "Cargar planilla",
     "ayuda_subir": (
@@ -556,6 +559,8 @@ TEXTOS_CARGA_PLANILLA = {
     "etiqueta_codigos_en_revision": "En revisión",
     "etiqueta_codigos_no_incorporados": "No incorporados",
     "etiqueta_codigos_ejemplo": "De ejemplo sin cambios",
+    "etiqueta_codigos_ubicacion_del_panel": AVISO_UBICACION_DEL_PANEL,
+    "titulo_avisos": "Avisos de la planilla",
     "texto_sin_registros": "Ninguno",
     "enlace_a_revision": "Ver los registros en revisión",
     "migas_inicio": "Inicio",
@@ -687,3 +692,44 @@ MENSAJE_FICHA_PUBLICADA_INCOMPLETA = (
     "Una ficha publicada necesita el nombre común, los beneficios y la fuente de la ficha."
 )
 """Errores de validación de una especie."""
+
+# --- coordenadas de la planilla y ubicación editada en el panel ----------------------------------
+
+ENCABEZADOS_LATITUD_PLANILLA = ("Latitud", "Lat")
+ENCABEZADOS_LONGITUD_PLANILLA = ("Longitud", "Long", "Lon")
+"""Encabezados que la planilla puede traer en lugar de «UTM Este (m)» y «UTM Norte (m)». La
+primera columna del par ocupa el lugar del este y la segunda el del norte."""
+
+RANGO_LATITUD_CAMPUS_GRADOS = (-12.09, -11.89)
+RANGO_LONGITUD_CAMPUS_GRADOS = (-76.94, -76.74)
+"""Rango (mínimo, máximo) de grados WGS 84 que se reconoce como el campus: el centro de
+`MAPA_ADMIN_LAT` y `MAPA_ADMIN_LON` con 0,1 grados (unos 11 km) a cada lado."""
+
+RANGO_UTM_ESTE_M = (100_000, 1_000_000)
+RANGO_UTM_NORTE_M = (1_000_000, 10_000_000)
+"""Rango (mínimo incluido, máximo excluido) de un valor UTM: el este tiene 6 cifras y el norte 7."""
+
+CAMPO_COORDENADAS_NO_RECONOCIDAS = "coordenadas_no_reconocidas"
+"""Clave con que la lectura anota en la fila el texto de unas coordenadas no reconocidas."""
+
+FORMATO_COORDENADAS_NO_RECONOCIDAS = "Latitud {primera}; Longitud {segunda}"
+"""Cómo se muestra, en el motivo de la fila, lo que traían las columnas de coordenadas."""
+
+TEXTO_CELDA_VACIA_COORDENADAS = "(vacío)"
+"""Lo que se muestra de una celda de coordenadas sin valor."""
+
+ENCABEZADO_COORDENADAS_NO_RECONOCIDAS = "Latitud / Longitud"
+"""Columna que los reportes nombran cuando las coordenadas no se pudieron leer."""
+
+AVISO_COLUMNAS_COORDENADAS_CON_UTM = (
+    "Columnas Latitud/Longitud con valores UTM: se tomaron como UTM"
+)
+"""Aviso del lote cuando las columnas Latitud/Longitud traen valores de 6 y 7 cifras."""
+
+TOLERANCIA_MISMA_UBICACION_M = 0.01
+"""Metros bajo los cuales dos ubicaciones UTM son la misma (1 cm, como `DECIMALES_UTM`)."""
+
+
+ETIQUETA_UBICACION_EDITADA_EN_PANEL = "Ubicación corregida en el panel"
+ETIQUETA_FECHA_UBICACION_EDITADA = "Fecha de la corrección de la ubicación"
+"""Cómo se llaman en el panel las marcas de una ubicación editada a mano."""

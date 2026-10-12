@@ -76,6 +76,8 @@ class Evaluacion:
     filas: list = field(default_factory=list)
     catalogo_calidad: dict = field(default_factory=dict)
     catalogo_sin_cargar: str | None = None
+    avisos: list[str] = field(default_factory=list)
+    """Avisos de toda la planilla (no de una fila), tal como los dejó la lectura."""
 
     def cuentas(self):
         """Cuántas filas hay de cada clasificación."""
@@ -104,6 +106,8 @@ class ResultadoCarga:
     no_incorporados: list[str] = field(default_factory=list)
     ejemplo_sin_cambios: list[str] = field(default_factory=list)
     ejemplo_reemplazados: list[str] = field(default_factory=list)
+    ubicaciones_del_panel: list[str] = field(default_factory=list)
+    """Códigos cuya ubicación, corregida en el panel, se mantuvo frente a otra de la planilla."""
 
     def como_dict(self):
         """Los códigos de cada grupo, para guardarlos en la bitácora del lote."""
@@ -112,4 +116,5 @@ class ResultadoCarga:
             "en_revision": [registro.codigo for registro in self.en_revision],
             "no_incorporados": self.no_incorporados,
             "ejemplo_sin_cambios": self.ejemplo_sin_cambios,
+            "ubicaciones_del_panel": self.ubicaciones_del_panel,
         }
