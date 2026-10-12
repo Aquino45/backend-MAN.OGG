@@ -219,7 +219,7 @@ CAMPOS_CATALOGADOS = (
 )
 """Campos de `Arbol` con listas desplegables en la planilla: sus valores tienen catálogo."""
 
-_PERMISOS_DE_CAPSULAS = ("ayudacampo", "valorcatalogo", "fichaespecie")
+_PERMISOS_DE_CAPSULAS = ("ayudacampo", "valorcatalogo")
 
 PERMISOS_CAPSULAS_POR_ROL = {
     NOMBRE_ROL_ADMINISTRADOR: tuple(
@@ -233,8 +233,8 @@ PERMISOS_CAPSULAS_POR_ROL = {
         for accion in ("add", "change", "view")
     ),
 }
-"""Permisos de las ayudas, el catálogo y las fichas de especie. Ambos roles agregan, editan y ven
-(publicar una ficha es editarla); solo el Administrador borra."""
+"""Permisos de las ayudas y el catálogo. Ambos roles agregan, editan y ven; solo el Administrador
+borra. La ficha de una especie se edita con la especie (`PERMISOS_CATALOGOS_POR_ROL`)."""
 
 SEPARADOR_DE_LINEAS = "\n"
 """Los alias y los beneficios de una ficha se guardan uno por línea."""
@@ -313,8 +313,9 @@ CAMPOS_OPCIONALES_CALIDAD = (
 )
 """Datos que pueden ir vacíos sin mandar el registro a revisión (también el motivo destacado)."""
 
-CAMPOS_OBLIGATORIOS_SI_NO_ES_EJEMPLO = ("brigada",)
-"""Datos que exige solo un árbol real: uno de ejemplo (`demo`) no tiene brigada."""
+CAMPOS_OBLIGATORIOS_SI_NO_ES_EJEMPLO = ()
+"""Datos que exige solo un árbol real y no uno de ejemplo (`demo`). Hoy ninguno: el grupo de la
+brigada es opcional y nunca manda un árbol a revisión."""
 
 CAMPO_DAP_EXENTO_EN_JUVENIL = "dap_cm"
 """Dato que un juvenil (menos de 1.30 m) no necesita: todavía no se mide el DAP."""
@@ -591,3 +592,79 @@ BYTES_POR_MB = 1024 * 1024
 
 FORMATO_FECHA_LOTE_CARGA = "d/m/Y H:i"
 """Cómo se muestra la fecha de una carga en la lista de cargas anteriores."""
+
+# --- Especies, estados del catálogo y brigadas -------------------------------------------------
+
+LARGO_TEXTO = 255
+"""Largo máximo de los textos cortos de los modelos (nombres, catálogos, archivos)."""
+
+CAMPO_ORIGEN = "origen"
+"""Campo del catálogo con el origen de la especie (nativa, introducida…)."""
+
+CAMPOS_ESTADO_ARBOL = tuple(campo for campo in CAMPOS_CATALOGADOS if campo != CAMPO_ORIGEN)
+"""Campos de `Arbol` que son una referencia al catálogo; el origen va por la especie."""
+
+CAMPOS_DE_ESPECIE = ("nombre_comun", "nombre_cientifico", CAMPO_ORIGEN)
+"""Datos que el árbol toma de su especie (la planilla los trae como texto)."""
+
+CAMPO_BRIGADA = "brigada"
+"""Columna de la planilla con la brigada (o con el nombre de un grupo)."""
+
+CAMPOS_TEXTO_RESUELTOS = (*CAMPOS_DE_ESPECIE, *CAMPOS_ESTADO_ARBOL, CAMPO_BRIGADA)
+"""Datos que la planilla trae como texto y el árbol guarda como referencia a otra tabla."""
+
+FORMA_ARBOL = "arbol"
+FORMA_PALMA = "palma"
+FORMA_ARBUSTO = "arbusto"
+FORMAS_ESPECIE = (
+    (FORMA_ARBOL, "Árbol"),
+    (FORMA_PALMA, "Palma"),
+    (FORMA_ARBUSTO, "Arbusto"),
+)
+"""Formas de vida de una especie, con su nombre para el panel."""
+
+DIGITOS_DENSIDAD_MADERA = 6
+DECIMALES_DENSIDAD_MADERA = 3
+"""Tamaño del campo `densidad_madera_g_cm3` (g/cm³)."""
+
+MOTIVO_ESPECIE_NO_REGISTRADA = "Especie no registrada: «{texto}»"
+"""Motivo cuando el nombre de la especie no coincide con una sola especie registrada."""
+
+CAMPO_MOTIVO_ESPECIE = "nombre_cientifico"
+"""Campo al que apunta el motivo de especie no registrada."""
+
+ALIAS_INICIALES_DE_ESPECIES = {
+    "Schinus molle": ("Schinus", "Schinus Molle"),
+    "Roystonea regia": ("Roystonea",),
+    "Prosopis pallida": ("Prosopis Pallida",),
+}
+"""Otros nombres con que llegan estas especies en la planilla (los siembra la migración)."""
+
+NOMBRE_BRIGADA_INICIAL = "Brigada A"
+"""Única brigada del censo hoy: todos los grupos son de ella."""
+
+GRUPOS_INICIALES_DE_BRIGADA = ("Sopita", "zapatito", "zapato")
+"""Grupos de la brigada tal como vienen en la planilla del stakeholder."""
+
+_PERMISOS_DE_CATALOGOS = ("especie", "brigada", "grupobrigada")
+
+PERMISOS_CATALOGOS_POR_ROL = {
+    NOMBRE_ROL_ADMINISTRADOR: tuple(
+        f"{accion}_{modelo}"
+        for modelo in _PERMISOS_DE_CATALOGOS
+        for accion in ("add", "change", "delete", "view")
+    ),
+    NOMBRE_ROL_EDITOR: tuple(
+        f"{accion}_{modelo}"
+        for modelo in _PERMISOS_DE_CATALOGOS
+        for accion in ("add", "change", "view")
+    ),
+}
+"""Permisos de especies, brigadas y grupos: el Administrador hace todo; el Editor agrega, edita y
+ve."""
+
+MENSAJE_ALIAS_REPETIDO = "El alias «{alias}» ya lo tiene la especie {especie}."
+MENSAJE_FICHA_PUBLICADA_INCOMPLETA = (
+    "Una ficha publicada necesita el nombre común, los beneficios y la fuente de la ficha."
+)
+"""Errores de validación de una especie."""

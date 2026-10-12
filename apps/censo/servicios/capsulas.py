@@ -5,13 +5,14 @@ archivo entero antes de escribir nada, crea lo que falta y se puede repetir sin 
 """
 
 import json
-import unicodedata
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from django.db import transaction
 
-from apps.censo.models import AyudaCampo, FichaEspecie, ValorCatalogo
+from apps.censo.models import AyudaCampo, Especie, ValorCatalogo
+from apps.censo.servicios.normalizacion import lineas_de, normalizar
+from apps.censo.servicios.resolver_campos import texto_de
 from config.constantes import (
     CAMPOS_CATALOGADOS,
     CAMPOS_CON_AYUDA,
@@ -21,28 +22,11 @@ from config.constantes import (
     SEPARADOR_DE_LINEAS,
 )
 
+CAMPOS_DE_FICHA_EN_ESPECIE = ("beneficios", "dato_curioso", "cuidados", "fuente_ficha")
+"""Campos de `Especie` que forman su ficha (los que trae el archivo de cápsulas)."""
+
 SECCIONES = ("ayuda_campos", "valores", "fichas_especie")
 """Listas que debe traer el archivo de cápsulas."""
-
-
-def normalizar(texto):
-    """Minúsculas, sin acentos de más y con los espacios colapsados: así se comparan los valores.
-
-    «Bueno», «bueno» y « bueno  » son lo mismo; `None` queda como texto vacío.
-    """
-    if texto is None:
-        return ""
-    sin_marcas = "".join(
-        letra
-        for letra in unicodedata.normalize("NFKD", str(texto))
-        if not unicodedata.combining(letra)
-    )
-    return " ".join(sin_marcas.casefold().split())
-
-
-def lineas_de(texto):
-    """Las líneas con contenido de un texto «uno por línea», sin espacios de más."""
-    return [linea.strip() for linea in (texto or "").split(SEPARADOR_DE_LINEAS) if linea.strip()]
 
 
 def armar_capsulas(arbol, ayudas, valores):
@@ -70,36 +54,27 @@ def armar_capsulas(arbol, ayudas, valores):
 
 
 def _explicacion_del_valor(arbol, campo, explicaciones):
-    valor = getattr(arbol, campo, None)
-    if campo not in CAMPOS_CATALOGADOS or not isinstance(valor, str):
+    if campo not in CAMPOS_CATALOGADOS:
         return None
-    return explicaciones.get((campo, normalizar(valor)))
+    valor = texto_de(arbol, campo)
+    return explicaciones.get((campo, normalizar(valor))) if isinstance(valor, str) else None
 
 
-def buscar_ficha(arbol, fichas):
+def buscar_ficha(arbol):
     """La ficha de la especie del árbol, con la forma del contrato, o `None`.
 
-    Se busca por `nombre_cientifico` (que gana) o por alias, normalizados, y solo entre las
-    fichas publicadas.
+    Sale de la especie del árbol y solo si su ficha está publicada.
     """
-    buscado = normalizar(arbol.nombre_cientifico)
-    if not buscado:
+    especie = arbol.especie
+    if especie is None or not especie.ficha_publicada:
         return None
-    fichas = [ficha for ficha in fichas if ficha.publicada]
-    por_nombre = {normalizar(ficha.nombre_cientifico): ficha for ficha in fichas}
-    por_alias = {normalizar(a): ficha for ficha in fichas for a in lineas_de(ficha.alias)}
-    ficha = por_nombre.get(buscado) or por_alias.get(buscado)
-    return None if ficha is None else _formato_de_ficha(ficha)
-
-
-def _formato_de_ficha(ficha):
     return {
-        "nombre_cientifico": ficha.nombre_cientifico,
-        "nombre_comun": ficha.nombre_comun,
-        "beneficios": lineas_de(ficha.beneficios),
-        "dato_curioso": ficha.dato_curioso,
-        "cuidados": ficha.cuidados,
-        "fuente": ficha.fuente,
+        "nombre_cientifico": especie.nombre_cientifico,
+        "nombre_comun": especie.nombre_comun,
+        "beneficios": lineas_de(especie.beneficios),
+        "dato_curioso": especie.dato_curioso,
+        "cuidados": especie.cuidados,
+        "fuente": especie.fuente_ficha,
     }
 
 
@@ -145,7 +120,7 @@ def cargar_capsulas(ruta, actualizar=False):
     with transaction.atomic():
         _guardar(reporte.ayudas, AyudaCampo, ["campo"], ayudas, actualizar)
         _guardar(reporte.valores, ValorCatalogo, ["campo", "valor"], valores, actualizar)
-        _guardar(reporte.fichas, FichaEspecie, ["nombre_cientifico"], fichas, actualizar)
+        _guardar_fichas(reporte.fichas, fichas, actualizar)
     return reporte
 
 
@@ -176,6 +151,38 @@ def _guardar(conteo, modelo, claves, registros, actualizar):
             for atributo, valor in cambios.items():
                 setattr(existente, atributo, valor)
             existente.save()
+            conteo.actualizados += 1
+        else:
+            conteo.omitidos += 1
+
+
+def _guardar_fichas(conteo, fichas, actualizar):
+    """Crea las especies que faltan con su ficha; a una especie sin ficha le pone la del archivo.
+
+    Una especie que ya tiene ficha solo se sobrescribe con `actualizar`. Nunca se toca si la ficha
+    está publicada ni el origen, que no vienen en el archivo.
+    """
+    for datos in fichas:
+        especie = Especie.objects.filter(nombre_cientifico=datos["nombre_cientifico"]).first()
+        if especie is None:
+            Especie.objects.create(**datos)
+            conteo.creados += 1
+            continue
+        if actualizar:
+            campos = CAMPOS_DE_FICHA_EN_ESPECIE + ("nombre_comun", "alias")
+        elif not especie.fuente_ficha:
+            campos = CAMPOS_DE_FICHA_EN_ESPECIE + (
+                () if especie.nombre_comun else ("nombre_comun",)
+            )
+        else:
+            campos = ()
+        cambios = {
+            campo: datos[campo] for campo in campos if getattr(especie, campo) != datos[campo]
+        }
+        for campo, valor in cambios.items():
+            setattr(especie, campo, valor)
+        if cambios:
+            especie.save()
             conteo.actualizados += 1
         else:
             conteo.omitidos += 1
@@ -237,10 +244,16 @@ def _validar_fichas(crudos, errores):
 
 
 def _ficha_para_el_modelo(crudo):
+    """La ficha del archivo con los nombres de los campos de `Especie`."""
     return {
-        **crudo,
+        "nombre_cientifico": crudo["nombre_cientifico"],
+        "nombre_comun": crudo["nombre_comun"],
         "alias": SEPARADOR_DE_LINEAS.join(crudo["alias"]),
         "beneficios": SEPARADOR_DE_LINEAS.join(crudo["beneficios"]),
+        "dato_curioso": crudo["dato_curioso"],
+        "cuidados": crudo["cuidados"],
+        "fuente_ficha": crudo["fuente"],
+        "ficha_publicada": crudo["publicada"],
     }
 
 

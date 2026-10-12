@@ -17,9 +17,11 @@ from django.db import models, transaction
 
 from apps.censo.models import Arbol
 from apps.censo.servicios.calidad_registro import aplicar, cargar_catalogo
+from apps.censo.servicios.resolver_campos import Resolutor, aplicar_textos, texto_de
 from config.constantes import (
     CAMPOS_OBLIGATORIOS_CALIDAD,
     CAMPOS_OPCIONALES_CALIDAD,
+    CAMPOS_TEXTO_RESUELTOS,
     CLAVES_COMPLETAR_EJEMPLO,
     ESTADO_REGISTRO_PUBLICADO,
     FORMATO_FUENTE_EJEMPLO,
@@ -77,10 +79,11 @@ def completar_ejemplo(ruta):
     if faltan:
         raise ValueError(_rechazo([f"{codigo}: no existe en la BD" for codigo in faltan]))
     catalogo = cargar_catalogo()
+    resolutor = Resolutor.desde_bd()
     reporte = ReporteCompletarEjemplo(archivo=ruta.name, registros=len(registros))
     with transaction.atomic():
         for registro in registros:
-            _completar(arboles[registro["codigo"]], registro, catalogo, reporte)
+            _completar(arboles[registro["codigo"]], registro, catalogo, reporte, resolutor)
     return reporte
 
 
@@ -180,20 +183,26 @@ def _vacio(valor):
     return valor is None or (isinstance(valor, str) and not valor.strip())
 
 
-def _completar(arbol, registro, catalogo, reporte):
+def _completar(arbol, registro, catalogo, reporte, resolutor):
     """Llena los campos vacíos del árbol, marca el ejemplo, recalcula el estado y guarda."""
     codigo = arbol.codigo
     if not arbol.demo:
         reporte.reales_sin_tocar.append(codigo)
         return
-    llenados = []
+    llenados, textos = [], {}
     for campo, propuesto in registro["campos"].items():
-        actual = getattr(arbol, campo)
+        actual = (
+            texto_de(arbol, campo) if campo in CAMPOS_TEXTO_RESUELTOS else getattr(arbol, campo)
+        )
         if _vacio(actual):
-            setattr(arbol, campo, propuesto)
             llenados.append(campo)
+            if campo in CAMPOS_TEXTO_RESUELTOS:
+                textos[campo] = propuesto
+            else:
+                setattr(arbol, campo, propuesto)
         elif actual != propuesto:
             reporte.no_se_pisa.append(ValorQueNoSePisa(codigo, campo, str(actual), str(propuesto)))
+    aplicar_textos(arbol, textos, resolutor)
     if llenados:
         arbol.fuente = _fuente_con_nota(arbol.fuente, registro, llenados)
     antes = (arbol.estado_registro, arbol.motivos_revision)

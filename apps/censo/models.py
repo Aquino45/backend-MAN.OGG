@@ -3,7 +3,8 @@
 # así que los textos opcionales usan null=True y nunca guardan "".
 """Modelos del censo: Sector, Arbol, los textos de ayuda de la cartilla (cápsulas) y las cargas.
 
-Los nombres de campo son los del contrato."""
+Las especies y las brigadas viven en `models_catalogos`. Los nombres de campo son los del
+contrato."""
 
 from datetime import timedelta
 from uuid import uuid4
@@ -16,6 +17,11 @@ from django.db.models import Q
 from django.utils import timezone
 from simple_history.models import HistoricalRecords
 
+from apps.censo.models_catalogos import (  # noqa: F401  (las tablas son parte de la app)
+    Brigada,
+    Especie,
+    GrupoBrigada,
+)
 from config.constantes import (
     CAMPOS_CATALOGADOS,
     CAMPOS_CON_AYUDA,
@@ -29,6 +35,7 @@ from config.constantes import (
     ESTADOS_LOTE_CARGA,
     ESTADOS_REGISTRO,
     ETIQUETA_CO2_SIMULADO,
+    LARGO_TEXTO,
     MENSAJE_CODIGO_EN_PAPELERA,
     PATRON_CODIGO_ARBOL,
     PERMISO_CAMBIAR_DEMO,
@@ -36,9 +43,6 @@ from config.constantes import (
     SRID_UTM_CENSO,
     TOPE_DESTACADOS_POR_SECTOR,
 )
-
-LARGO_TEXTO = 255
-"""Largo máximo de los textos cortos (nombres, catálogos, archivos de foto)."""
 
 LARGO_CODIGO = 16
 """Largo máximo del código del árbol (el patrón usa 8 caracteres)."""
@@ -60,6 +64,18 @@ def _medida():
 def _texto_opcional():
     """Texto corto opcional: null significa «Sin dato»."""
     return models.CharField(max_length=LARGO_TEXTO, null=True, blank=True)
+
+
+def _valor_del_catalogo(campo):
+    """Referencia opcional a un valor del catálogo de ese campo; null significa «Sin dato»."""
+    return models.ForeignKey(
+        "censo.ValorCatalogo",
+        null=True,
+        blank=True,
+        on_delete=models.PROTECT,
+        related_name="+",
+        limit_choices_to={"campo": campo},
+    )
 
 
 class Sector(models.Model):
@@ -107,6 +123,10 @@ class Arbol(models.Model):
     `co2_simulado` dice que el CO₂ es una estimación que se reemplazará por el dato real. Un árbol
     de ejemplo con algún CO₂ siempre lo lleva marcado (lo aseguran la regla de calidad y la BD).
 
+    El nombre, el origen y la ficha salen de su `especie`; la brigada, de su `grupo`. Los estados
+    son valores del catálogo. Lo que la planilla trajo y no se pudo resolver (o llegó con otro
+    nombre) queda en `valores_originales`, por campo.
+
     El `uid` identifica al árbol para siempre, aunque su `codigo` se corrija. La administración
     del censo puede destacar árboles de un sector, con un motivo y hasta un tope por sector.
     """
@@ -119,13 +139,15 @@ class Arbol(models.Model):
     uid = models.UUIDField(default=uuid4, unique=True, editable=False)
     sector = models.ForeignKey(Sector, on_delete=models.PROTECT, related_name="arboles")
     fecha_registro = models.DateField(null=True, blank=True)
-    brigada = _texto_opcional()
-    tipo_individuo = _texto_opcional()
-    nombre_comun = _texto_opcional()
-    nombre_cientifico = _texto_opcional()
-    identificacion = _texto_opcional()
-    origen = _texto_opcional()
-    condicion_conservacion = _texto_opcional()
+    especie = models.ForeignKey(
+        Especie, null=True, blank=True, on_delete=models.PROTECT, related_name="arboles"
+    )
+    grupo = models.ForeignKey(
+        GrupoBrigada, null=True, blank=True, on_delete=models.PROTECT, related_name="arboles"
+    )
+    tipo_individuo = _valor_del_catalogo("tipo_individuo")
+    identificacion = _valor_del_catalogo("identificacion")
+    condicion_conservacion = _valor_del_catalogo("condicion_conservacion")
     ubicacion = models.PointField(srid=SRID_UTM_CENSO, null=True, blank=True)
     altura_total_m = _medida()
     dap_cm = _medida()
@@ -134,14 +156,15 @@ class Arbol(models.Model):
     co2_almacenado_kg = _medida()
     co2_captura_anual_kg = _medida()
     co2_simulado = models.BooleanField(default=False, verbose_name=ETIQUETA_CO2_SIMULADO)
-    estado_general = _texto_opcional()
-    estado_copa = _texto_opcional()
-    tronco_danos = _texto_opcional()
-    raices_base = _texto_opcional()
-    interferencia_entorno = _texto_opcional()
+    estado_general = _valor_del_catalogo("estado_general")
+    estado_copa = _valor_del_catalogo("estado_copa")
+    tronco_danos = _valor_del_catalogo("tronco_danos")
+    raices_base = _valor_del_catalogo("raices_base")
+    interferencia_entorno = _valor_del_catalogo("interferencia_entorno")
     foto_archivo = _texto_opcional()
     foto_detalle_archivo = _texto_opcional()
     observaciones = models.TextField(null=True, blank=True)
+    valores_originales = models.JSONField(default=dict, blank=True)
     fuente = models.TextField(validators=[MinLengthValidator(1)])
     fila_origen = models.PositiveIntegerField(null=True, blank=True)
     demo = models.BooleanField(default=False)
@@ -218,9 +241,8 @@ class Arbol(models.Model):
             raise ValidationError({"codigo": MENSAJE_CODIGO_EN_PAPELERA.format(codigo=self.codigo)})
 
     def __str__(self):
-        if self.nombre_comun:
-            return f"{self.codigo} · {self.nombre_comun}"
-        return self.codigo
+        nombre_comun = self.especie.nombre_comun if self.especie else None
+        return f"{self.codigo} · {nombre_comun}" if nombre_comun else self.codigo
 
 
 class ArbolEnPapelera(Arbol):
@@ -283,41 +305,6 @@ class ValorCatalogo(models.Model):
 
     def __str__(self):
         return f"{self.campo}: {self.valor}"
-
-
-class FichaEspecie(models.Model):
-    """Qué aporta una especie, en lenguaje simple. Siempre cita su fuente y sale solo publicada.
-
-    `alias` son otros nombres con que llega la especie en la planilla, y `beneficios`, un texto
-    con un beneficio por línea. `dato_curioso` y `cuidados` son opcionales: null, nunca "".
-    """
-
-    nombre_cientifico = models.CharField(max_length=LARGO_TEXTO, unique=True)
-    nombre_comun = models.CharField(max_length=LARGO_TEXTO)
-    alias = models.TextField(blank=True, help_text="Otros nombres de la especie, uno por línea.")
-    beneficios = models.TextField(help_text="Un beneficio por línea.")
-    dato_curioso = models.TextField(null=True, blank=True)
-    cuidados = models.TextField(null=True, blank=True)
-    fuente = models.TextField(help_text="De dónde sale el texto de la ficha. No puede ir vacía.")
-    publicada = models.BooleanField(default=False)
-    history = HistoricalRecords()
-
-    class Meta:
-        ordering = ["nombre_cientifico"]
-        verbose_name = "ficha de especie"
-        verbose_name_plural = "fichas de especie"
-        constraints = [
-            models.CheckConstraint(condition=~Q(fuente=""), name="ficha_especie_fuente_no_vacia")
-        ]
-
-    def clean(self):
-        """Los textos opcionales vacíos se guardan como null («Sin dato»)."""
-        super().clean()
-        self.dato_curioso = (self.dato_curioso or "").strip() or None
-        self.cuidados = (self.cuidados or "").strip() or None
-
-    def __str__(self):
-        return f"{self.nombre_cientifico} ({self.nombre_comun})"
 
 
 class LoteCargas(models.Manager):

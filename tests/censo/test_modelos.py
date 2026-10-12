@@ -10,7 +10,7 @@ from django.core.exceptions import ValidationError
 from django.db import IntegrityError, connection, transaction
 from django.db.models import ProtectedError
 
-from apps.censo.models import Arbol, Sector
+from apps.censo.models import Arbol, Especie, Sector
 from config.constantes import SRID_UTM_CENSO, TOPE_DESTACADOS_POR_SECTOR
 
 ESTE_BASE = 300000.0
@@ -61,7 +61,9 @@ def test_valores_por_defecto(sector):
     assert arbol.ubicacion is None
     assert arbol.fecha_registro is None
     assert arbol.dap_cm is None
-    assert arbol.nombre_comun is None
+    assert arbol.especie is None
+    assert arbol.grupo is None
+    assert arbol.valores_originales == {}
     assert arbol.destacado is False
     assert arbol.motivo_destacado is None
 
@@ -119,7 +121,8 @@ def test_no_se_borra_un_sector_con_arboles(sector):
 def test_textos_para_leer_en_el_admin(sector):
     assert str(sector) == "Sector 1"
     assert str(_arbol(sector)) == "S01-A001"
-    assert str(_arbol(sector, nombre_comun="Molle")) == "S01-A001 · Molle"
+    molle = Especie(nombre_cientifico="Schinus molle", nombre_comun="Molle")
+    assert str(_arbol(sector, especie=molle)) == "S01-A001 · Molle"
 
 
 def test_admin_registra_sector_y_arbol():

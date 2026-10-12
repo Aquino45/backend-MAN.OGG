@@ -14,6 +14,7 @@ from openpyxl import Workbook
 
 from apps.censo.models import Arbol, ValorCatalogo
 from apps.censo.servicios.importar_planilla import importar_planilla
+from apps.censo.servicios.resolver_campos import texto_de
 from config.constantes import (
     ESTADO_REGISTRO_EN_REVISION,
     ESTADO_REGISTRO_PUBLICADO,
@@ -29,6 +30,8 @@ from tests.censo.conftest import (
     crear_planilla,
     fila,
 )
+
+pytestmark = pytest.mark.usefixtures("especie_molle")
 
 
 def test_una_fila_completa_se_importa_con_todos_sus_campos_y_su_fuente(ruta_planilla, punto_dentro):
@@ -53,9 +56,9 @@ def test_una_fila_completa_se_importa_con_todos_sus_campos_y_su_fuente(ruta_plan
     assert (reporte.filas_leidas, reporte.creados, reporte.actualizados) == (1, 1, 0)
     assert arbol.sector_id == 1
     assert arbol.fecha_registro == fecha.date()
-    assert arbol.brigada == "Brigada A"
+    assert texto_de(arbol, "brigada") == "Brigada A"
     for campo, valor in TEXTOS_FILA_COMPLETA.items():
-        assert getattr(arbol, campo) == valor, campo
+        assert texto_de(arbol, campo) == valor, campo
     for campo, valor in MEDIDAS_FILA_COMPLETA.items():
         assert getattr(arbol, campo) == Decimal(str(valor)), campo
     assert arbol.ubicacion.srid == SRID_UTM_CENSO
@@ -172,13 +175,13 @@ def test_importar_dos_veces_no_duplica_nada(ruta_planilla, sectores):
 
 
 def test_reimportar_actualiza_lo_que_cambio_en_la_planilla(ruta_planilla, sectores):
-    crear_planilla(ruta_planilla, [fila(nombre_comun="Molle")])
+    crear_planilla(ruta_planilla, [fila(observaciones="Molle")])
     importar_planilla(ruta_planilla)
-    crear_planilla(ruta_planilla, [fila(nombre_comun="Eucalipto")])
+    crear_planilla(ruta_planilla, [fila(observaciones="Eucalipto")])
 
     importar_planilla(ruta_planilla)
 
-    assert Arbol.objects.get().nombre_comun == "Eucalipto"
+    assert Arbol.objects.get().observaciones == "Eucalipto"
 
 
 def test_falta_una_columna_y_el_error_la_nombra(ruta_planilla, sectores):
@@ -258,8 +261,8 @@ def test_un_valor_fuera_del_catalogo_se_guarda_y_va_al_reporte(ruta_planilla, se
     reporte = importar_planilla(ruta_planilla)
 
     arbol = Arbol.objects.get()
-    assert arbol.estado_general == "Excelente"
-    assert arbol.origen == "Nativa"
+    assert texto_de(arbol, "estado_general") == "Excelente"
+    assert texto_de(arbol, "origen") == "Nativa"
     assert [(v.codigo, v.columna, v.texto) for v in reporte.fuera_de_catalogo] == [
         ("S01-A001", "Estado general", "Excelente")
     ]
@@ -325,17 +328,17 @@ def test_el_comando_convierte_el_error_en_command_error(ruta_planilla, sectores)
 
 def test_reimportar_conserva_el_uid_y_no_toca_la_marca_de_destacado(ruta_planilla, sectores):
     motivo = "Ejemplar de mayor copa del sector"
-    crear_planilla(ruta_planilla, [fila(nombre_comun="Molle")])
+    crear_planilla(ruta_planilla, [fila(observaciones="Molle")])
     importar_planilla(ruta_planilla)
     Arbol.objects.filter(codigo="S01-A001").update(destacado=True, motivo_destacado=motivo)
     uid_original = Arbol.objects.get(codigo="S01-A001").uid
-    crear_planilla(ruta_planilla, [fila(nombre_comun="Molle corregido")])
+    crear_planilla(ruta_planilla, [fila(observaciones="Molle corregido")])
 
     reporte = importar_planilla(ruta_planilla)
 
     arbol = Arbol.objects.get(codigo="S01-A001")
     assert (reporte.creados, reporte.actualizados) == (0, 1)
-    assert arbol.nombre_comun == "Molle corregido"
+    assert arbol.observaciones == "Molle corregido"
     assert arbol.uid == uid_original
     assert (arbol.destacado, arbol.motivo_destacado) == (True, motivo)
 
@@ -412,13 +415,16 @@ def test_un_dap_con_texto_explica_el_motivo_con_el_texto(ruta_planilla, punto_de
 def test_un_codigo_repetido_en_el_archivo_no_se_incorpora_y_se_lista(ruta_planilla, punto_dentro):
     crear_planilla(
         ruta_planilla,
-        [fila_completa(punto_dentro, codigo="S01-A001"), fila(codigo="S01-A001", nombre_comun="X")],
+        [
+            fila_completa(punto_dentro, codigo="S01-A001"),
+            fila(codigo="S01-A001", observaciones="X"),
+        ],
     )
 
     reporte = importar_planilla(ruta_planilla)
 
     assert Arbol.objects.count() == 1
-    assert Arbol.objects.get().nombre_comun == "Molle"
+    assert Arbol.objects.get().observaciones == TEXTOS_FILA_COMPLETA["observaciones"]
     assert [d.codigo for d in reporte.duplicados] == ["S01-A001"]
     assert "repetido" in reporte.duplicados[0].motivo
 
@@ -444,26 +450,30 @@ def test_misma_ubicacion_con_otra_especie_no_es_duplicado(ruta_planilla, punto_d
 
 
 def test_una_fila_incompleta_no_pisa_a_un_arbol_de_ejemplo(ruta_planilla, sectores):
-    ejemplo = arbol_de_ejemplo("S01-A001", nombre_comun="Del ejemplo")
-    crear_planilla(ruta_planilla, [fila(codigo="S01-A001", nombre_comun="Incompleto")])
+    ejemplo = arbol_de_ejemplo("S01-A001", observaciones="Del ejemplo")
+    crear_planilla(ruta_planilla, [fila(codigo="S01-A001", observaciones="Incompleto")])
 
     reporte = importar_planilla(ruta_planilla)
 
     ejemplo.refresh_from_db()
-    assert (ejemplo.demo, ejemplo.nombre_comun) == (True, "Del ejemplo")
+    assert (ejemplo.demo, ejemplo.observaciones) == (True, "Del ejemplo")
     assert ejemplo.estado_registro == ESTADO_REGISTRO_PUBLICADO
     assert reporte.ejemplo_sin_cambios == ["S01-A001"]
     assert (reporte.creados, reporte.actualizados, reporte.publicados) == (0, 0, 0)
 
 
 def test_una_fila_completa_reemplaza_al_ejemplo_y_el_reporte_lo_dice(ruta_planilla, punto_dentro):
-    ejemplo = arbol_de_ejemplo("S01-A001", nombre_comun="Del ejemplo")
+    ejemplo = arbol_de_ejemplo("S01-A001", observaciones="Del ejemplo")
     crear_planilla(ruta_planilla, [fila_completa(punto_dentro, codigo="S01-A001")])
 
     reporte = importar_planilla(ruta_planilla)
 
     real = Arbol.objects.get(pk=ejemplo.pk)
-    assert (real.demo, real.nombre_comun, real.brigada) == (False, "Molle", "Brigada A")
+    assert (real.demo, real.observaciones, texto_de(real, "brigada")) == (
+        False,
+        TEXTOS_FILA_COMPLETA["observaciones"],
+        "Brigada A",
+    )
     assert real.estado_registro == ESTADO_REGISTRO_PUBLICADO
     assert real.uid == ejemplo.uid
     assert reporte.ejemplo_reemplazados == ["S01-A001"]

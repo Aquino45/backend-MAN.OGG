@@ -13,7 +13,7 @@ from django.core.exceptions import ValidationError
 from django.core.management import call_command
 from django.core.management.base import CommandError
 
-from apps.censo.models import AyudaCampo, FichaEspecie, ValorCatalogo
+from apps.censo.models import AyudaCampo, Especie, ValorCatalogo
 from apps.censo.selectores import (
     arbol_por_codigo,
     conteo_de_valores_de_arboles,
@@ -40,7 +40,7 @@ MIGRACION_DE_CAPSULAS = "apps.censo.migrations.0006_permisos_de_capsulas"
 MIGRACION_DE_ROLES = "apps.censo.migrations.0004_grupos_de_roles"
 FUENTE_FICHA = "Fuente de prueba de la ficha"
 EXPLICACION_BUENO = "Está sano y no necesita atención."
-MODELOS_DE_CAPSULAS = ("ayudacampo", "valorcatalogo", "fichaespecie")
+MODELOS_DE_CAPSULAS = ("ayudacampo", "valorcatalogo")
 EN_LA_PAPELERA = {"eliminado_en": datetime(2026, 1, 1, tzinfo=UTC), "motivo_eliminacion": "Prueba"}
 
 
@@ -60,11 +60,11 @@ def crear_ficha(nombre_cientifico="Schinus molle", **extra):
     datos = {
         "nombre_comun": "Molle",
         "beneficios": "Da sombra\nAtrae aves",
-        "fuente": FUENTE_FICHA,
-        "publicada": True,
+        "fuente_ficha": FUENTE_FICHA,
+        "ficha_publicada": True,
     }
     datos.update(extra)
-    return FichaEspecie.objects.create(nombre_cientifico=nombre_cientifico, **datos)
+    return Especie.objects.create(nombre_cientifico=nombre_cientifico, **datos)
 
 
 def escribir(ruta, **secciones):
@@ -96,7 +96,7 @@ def ficha_json(**extra):
 
 
 def total_en_bd():
-    return (AyudaCampo.objects.count(), ValorCatalogo.objects.count(), FichaEspecie.objects.count())
+    return (AyudaCampo.objects.count(), ValorCatalogo.objects.count(), Especie.objects.count())
 
 
 # --- normalizar -------------------------------------------------------------------------------
@@ -181,11 +181,11 @@ def test_un_valor_de_otro_campo_no_explica_este_campo(nuevo_arbol):
 # --- buscar_ficha -----------------------------------------------------------------------------
 
 
-def test_la_ficha_se_busca_por_nombre_cientifico_normalizado(nuevo_arbol):
-    arbol = nuevo_arbol(nombre_cientifico="  schinus   MOLLE")
+def test_la_ficha_sale_de_la_especie_del_arbol(nuevo_arbol):
     crear_ficha(beneficios="Da sombra\n\n  Atrae aves \n")
+    arbol = nuevo_arbol(nombre_cientifico="  schinus   MOLLE")
 
-    ficha = buscar_ficha(arbol, FichaEspecie.objects.all())
+    ficha = buscar_ficha(arbol)
 
     assert ficha == {
         "nombre_cientifico": "Schinus molle",
@@ -197,46 +197,43 @@ def test_la_ficha_se_busca_por_nombre_cientifico_normalizado(nuevo_arbol):
     }
 
 
-def test_la_ficha_tambien_se_busca_por_alias(nuevo_arbol):
+def test_los_arboles_que_llegan_por_alias_tienen_la_ficha_de_su_especie(nuevo_arbol):
+    crear_ficha("Prosopis pallida", alias="Algarrobo\nProsopis Pallida")
     por_nombre = nuevo_arbol(nombre_cientifico="Prosopis pallida")
     por_alias = nuevo_arbol("S01-A002", nombre_cientifico="prosopis  PALLIDA ")
     por_otro_alias = nuevo_arbol("S01-A003", nombre_cientifico="algarrobo")
-    crear_ficha("Prosopis pallida", alias="Algarrobo\nProsopis Pallida")
-
-    fichas = FichaEspecie.objects.all()
 
     for arbol in (por_nombre, por_alias, por_otro_alias):
-        assert buscar_ficha(arbol, fichas)["nombre_cientifico"] == "Prosopis pallida"
+        assert buscar_ficha(arbol)["nombre_cientifico"] == "Prosopis pallida"
 
 
 def test_una_ficha_sin_publicar_no_sale(sectores):
+    crear_ficha(ficha_publicada=False)
     arbol = arbol_de_ejemplo(nombre_cientifico="Schinus molle")
-    crear_ficha(publicada=False)
 
-    assert buscar_ficha(arbol, FichaEspecie.objects.filter(publicada=True)) is None
-    arbol_con_ficha = arbol_por_codigo("S01-A001")
-    assert arbol_con_ficha.ficha_especie is None
+    assert buscar_ficha(arbol) is None
+    assert arbol_por_codigo("S01-A001").ficha_especie is None
 
 
-def test_sin_nombre_cientifico_o_sin_ficha_no_hay_ficha(nuevo_arbol):
+def test_sin_especie_o_sin_ficha_no_hay_ficha(nuevo_arbol):
     crear_ficha()
 
-    assert buscar_ficha(nuevo_arbol(nombre_cientifico=None), FichaEspecie.objects.all()) is None
-    assert buscar_ficha(nuevo_arbol("S01-A002", nombre_cientifico="Otra"), []) is None
+    assert buscar_ficha(nuevo_arbol(nombre_cientifico=None)) is None
+    assert buscar_ficha(nuevo_arbol("S01-A002", nombre_cientifico="Otra")) is None
 
 
 # --- el selector de la cartilla ---------------------------------------------------------------
 
 
-def test_la_cartilla_trae_capsulas_y_ficha_con_tres_consultas_extra(
+def test_la_cartilla_trae_capsulas_y_ficha_con_dos_consultas_extra(
     sectores, django_assert_max_num_queries
 ):
+    crear_ficha()
     arbol_de_ejemplo(estado_general="Bueno", nombre_cientifico="Schinus molle")
     crear_ayuda()
     crear_valor()
-    crear_ficha()
 
-    with django_assert_max_num_queries(1 + 3):
+    with django_assert_max_num_queries(1 + 2):
         cartilla = arbol_por_codigo("S01-A001")
 
     assert cartilla.capsulas[0]["en_este_arbol"] == EXPLICACION_BUENO
@@ -324,24 +321,34 @@ def test_el_catalogo_solo_acepta_campos_catalogados_y_valores_unicos(db):
         ValorCatalogo(campo="estado_general", valor="Bueno", explicacion="otra").full_clean()
 
 
-def test_la_ficha_exige_fuente_y_guarda_null_en_los_opcionales(db):
-    sin_fuente = FichaEspecie(nombre_cientifico="A", nombre_comun="B", beneficios="C", fuente="")
-    with pytest.raises(ValidationError) as error:
-        sin_fuente.full_clean()
-    assert "fuente" in error.value.message_dict
+def test_una_ficha_publicada_exige_fuente_beneficios_y_nombre_comun(db):
+    completa = {
+        "nombre_cientifico": "A",
+        "nombre_comun": "B",
+        "beneficios": "C",
+        "fuente_ficha": FUENTE_FICHA,
+        "ficha_publicada": True,
+    }
+    Especie(**completa).full_clean()
+    for faltante in ({"fuente_ficha": ""}, {"beneficios": ""}, {"nombre_comun": None}):
+        with pytest.raises(ValidationError) as error:
+            Especie(**{**completa, **faltante}).full_clean()
+        assert "ficha_publicada" in error.value.message_dict
 
-    ficha = FichaEspecie(
+
+def test_la_ficha_guarda_null_en_los_opcionales(db):
+    especie = Especie(
         nombre_cientifico="A",
         nombre_comun="B",
         beneficios="C",
-        fuente=FUENTE_FICHA,
+        fuente_ficha=FUENTE_FICHA,
         dato_curioso="",
         cuidados="  ",
     )
-    ficha.full_clean()
-    ficha.save()
-    ficha.refresh_from_db()
-    assert (ficha.dato_curioso, ficha.cuidados, ficha.publicada) == (None, None, False)
+    especie.full_clean()
+    especie.save()
+    especie.refresh_from_db()
+    assert (especie.dato_curioso, especie.cuidados, especie.ficha_publicada) == (None, None, False)
 
 
 def test_los_cambios_de_las_tres_tablas_quedan_en_el_historial(db):
@@ -353,7 +360,7 @@ def test_los_cambios_de_las_tres_tablas_quedan_en_el_historial(db):
 
     assert ayuda.history.count() == 2
     assert ValorCatalogo.objects.get().history.count() == 1
-    assert FichaEspecie.objects.get().history.count() == 1
+    assert Especie.objects.get().history.count() == 1
 
 
 # --- cargar_capsulas --------------------------------------------------------------------------
@@ -366,8 +373,8 @@ def test_carga_el_archivo_real_completo_y_las_fichas_quedan_sin_publicar(db):
     assert (reporte.ayudas.creados, reporte.valores.creados, reporte.fichas.creados) == (18, 39, 3)
     assert set(AyudaCampo.objects.values_list("campo", flat=True)) == set(CAMPOS_CON_AYUDA)
     assert {v.campo for v in ValorCatalogo.objects.all()} <= set(CAMPOS_CATALOGADOS)
-    assert not FichaEspecie.objects.filter(publicada=True).exists()
-    assert not FichaEspecie.objects.filter(fuente="").exists()
+    assert not Especie.objects.filter(ficha_publicada=True).exists()
+    assert not Especie.objects.filter(fuente_ficha="").exists()
 
 
 def test_la_carga_es_idempotente(db):
@@ -396,13 +403,13 @@ def test_sin_actualizar_no_pisa_lo_editado_en_el_panel(db, tmp_path):
     cargar_capsulas(ruta)
     AyudaCampo.objects.update(que_es="Editado en el panel")
     ValorCatalogo.objects.update(explicacion="Editada en el panel")
-    FichaEspecie.objects.update(nombre_comun="Editado", publicada=True)
+    Especie.objects.update(nombre_comun="Editado", ficha_publicada=True)
 
     reporte = cargar_capsulas(ruta)
 
     assert AyudaCampo.objects.get().que_es == "Editado en el panel"
     assert ValorCatalogo.objects.get().explicacion == "Editada en el panel"
-    assert FichaEspecie.objects.get().nombre_comun == "Editado"
+    assert Especie.objects.get().nombre_comun == "Editado"
     assert reporte.ayudas.omitidos == reporte.valores.omitidos == reporte.fichas.omitidos == 1
 
 
@@ -416,14 +423,14 @@ def test_con_actualizar_sobrescribe_los_textos_pero_conserva_publicada(db, tmp_p
     cargar_capsulas(ruta)
     AyudaCampo.objects.update(que_es="Editado en el panel", activo=False)
     ValorCatalogo.objects.update(explicacion="Editada en el panel")
-    FichaEspecie.objects.update(nombre_comun="Editado", publicada=True)
+    Especie.objects.update(nombre_comun="Editado", ficha_publicada=True)
 
     reporte = cargar_capsulas(ruta, actualizar=True)
 
     assert AyudaCampo.objects.get().que_es == "Cómo se ve."
     assert ValorCatalogo.objects.get().explicacion == "Sano."
-    ficha = FichaEspecie.objects.get()
-    assert (ficha.nombre_comun, ficha.publicada) == ("Molle", True)
+    especie = Especie.objects.get()
+    assert (especie.nombre_comun, especie.ficha_publicada) == ("Molle", True)
     assert reporte.ayudas.actualizados == reporte.valores.actualizados == 1
     assert reporte.fichas.actualizados == 1
 
@@ -516,5 +523,3 @@ def test_la_migracion_de_permisos_se_repite_sin_duplicar_y_conserva_los_previos(
         esperados = set(PERMISOS_POR_ROL[nombre]) | set(PERMISOS_CAPSULAS_POR_ROL[nombre])
         assert permisos_del_grupo(nombre) == esperados
         assert Group.objects.get(name=nombre).permissions.count() == len(esperados)
-    assert "delete_fichaespecie" not in permisos_del_grupo(NOMBRE_ROL_EDITOR)
-    assert "delete_fichaespecie" in permisos_del_grupo(NOMBRE_ROL_ADMINISTRADOR)

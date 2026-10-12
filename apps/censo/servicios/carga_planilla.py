@@ -26,6 +26,12 @@ from apps.censo.servicios.lectura_planilla import (
     numero_de,
     texto_de,
 )
+from apps.censo.servicios.resolver_campos import (
+    Resolutor,
+    fusionar_originales,
+    nombre_cientifico_de,
+    resolver_valores,
+)
 from config.constantes import (
     CAMPOS_CATALOGADOS,
     CAMPOS_CON_NOTA_PLANILLA,
@@ -175,6 +181,7 @@ def evaluar(planilla):
     papelera.
     """
     catalogo = cargar_catalogo()
+    resolutor = Resolutor.desde_bd()
     evaluacion = Evaluacion(
         nombre_archivo=planilla.nombre_archivo,
         catalogo_calidad=catalogo,
@@ -186,7 +193,7 @@ def evaluar(planilla):
         id_sector = entero_sector(datos["sector"])
         orden_en_sector[id_sector] = orden_en_sector.get(id_sector, 0) + 1
         fila = _evaluar_fila(
-            numero_fila, datos, planilla, sectores[id_sector], orden_en_sector, catalogo
+            numero_fila, datos, planilla, sectores[id_sector], orden_en_sector, catalogo, resolutor
         )
         _marcar_duplicados(fila, por_codigo, por_ubicacion)
         evaluacion.filas.append(fila)
@@ -207,7 +214,7 @@ def _cargar_sectores(filas):
     return sectores
 
 
-def _evaluar_fila(numero_fila, datos, planilla, sector, orden_en_sector, catalogo):
+def _evaluar_fila(numero_fila, datos, planilla, sector, orden_en_sector, catalogo, resolutor):
     """Convierte una fila en lo que se guardaría y le aplica la regla de calidad."""
     codigo = texto_de(datos["codigo"])
     calculado = codigo is None
@@ -245,7 +252,8 @@ def _evaluar_fila(numero_fila, datos, planilla, sector, orden_en_sector, catalog
     valores["fila_origen"] = numero_fila
     valores["demo"] = False
     valores["co2_simulado"] = CO2_PLANILLA_ES_SIMULADO
-    candidato = Arbol(codigo=codigo, **valores)
+    fila.valores = resolver_valores(valores, resolutor)
+    candidato = Arbol(codigo=codigo, **fila.valores)
     motivos = aplicar(candidato, catalogo, sector.geom, fila.textos_no_numericos)
     fila.motivos, fila.clasificacion = motivos, _clasificar(motivos)
     return fila
@@ -304,7 +312,7 @@ def _marcar_duplicados(fila, por_codigo, por_ubicacion):
             )
         return
     por_codigo[fila.codigo] = fila
-    ubicacion, especie = fila.valores["ubicacion"], fila.valores["nombre_cientifico"]
+    ubicacion, especie = fila.valores["ubicacion"], nombre_cientifico_de(fila.valores)
     clave = (ubicacion.x, ubicacion.y, especie.lower()) if ubicacion and especie else None
     otro = por_ubicacion.get(clave) or buscar_duplicado_por_ubicacion(
         fila.codigo, ubicacion, especie
@@ -378,14 +386,19 @@ def _guardar_fila(fila, catalogo, resultado, conservar_existentes=False):
 
 
 def _valores_sobre_existente(existente, valores):
-    """El árbol que ya existe más los campos que la fila trae con valor; los vacíos no pisan."""
-    con_valor = {campo: v for campo, v in valores.items() if v is not None and v != ""}
+    """El árbol que ya existe más los campos que la fila trae con valor; los vacíos no pisan.
+
+    Lo que la planilla no pudo resolver se suma a lo que el árbol ya tenía anotado.
+    """
+    con_valor = {campo: v for campo, v in valores.items() if v not in (None, "", {})}
     resultado = {
         campo.name: getattr(existente, campo.name)
         for campo in Arbol._meta.concrete_fields
         if campo.name in valores
     }
-    return {**resultado, **con_valor}
+    resultado = {**resultado, **con_valor}
+    resultado["valores_originales"] = fusionar_originales(existente.valores_originales, valores)
+    return resultado
 
 
 def valores_activos_del_catalogo():

@@ -50,6 +50,8 @@ from tests.censo.conftest import (
 
 URL_SUBIR = "admin:censo_lotecarga_changelist"
 
+pytestmark = pytest.mark.usefixtures("especie_molle")
+
 
 def fila_buena(punto, codigo, desplazamiento_m=0, **extra):
     """Una fila completa y consistente; cada código lleva su propio punto."""
@@ -65,9 +67,9 @@ def planilla_mixta(punto):
         fila_buena(punto, "S01-A001", 1),
         fila(codigo="S01-A002"),
         fila_buena(punto, "S01-A003", 2, dap_cm="muerto"),
-        fila_buena(punto, "S01-A004", 3, dap_cm="muerto", nombre_comun="Del archivo"),
+        fila_buena(punto, "S01-A004", 3, dap_cm="muerto", observaciones="Del archivo"),
         fila_buena(punto, "S01-A005", 4),
-        fila_buena(punto, "S01-A005", 5, nombre_comun="Otro molle"),
+        fila_buena(punto, "S01-A005", 5, observaciones="Otro molle"),
         fila_buena(punto, "S01-A006", 6, dap_cm="muerto"),
     ]
 
@@ -109,7 +111,7 @@ def punto(punto_dentro):
 @pytest.fixture
 def lote_mixto(cliente_administrador, tmp_path, punto):
     """La planilla mixta ya validada; existe S01-A004 en la BD con otro nombre."""
-    arbol_evaluado("S01-A004", nombre_comun="Ya registrado")
+    arbol_evaluado("S01-A004", observaciones="Ya registrado")
     return cargar(cliente_administrador, tmp_path, planilla_mixta(punto))
 
 
@@ -125,7 +127,7 @@ def test_validar_no_guarda_ningun_arbol_y_el_resumen_cuenta_cada_clase(
     assert "1 listos · 1 con campos vacíos · 3 inconsistentes · 2 duplicados" in cuerpo
     assert "Se detectaron 6 registros inconsistentes o duplicados. ¿Quieres revisarlos?" in cuerpo
     assert list(Arbol.todos.values_list("codigo", flat=True)) == ["S01-A004"]
-    assert Arbol.todos.get().nombre_comun == "Ya registrado"
+    assert Arbol.todos.get().observaciones == "Ya registrado"
 
 
 def test_el_lote_guarda_las_cuentas_el_hash_y_una_fila_por_registro(
@@ -231,8 +233,10 @@ def test_guardar_publica_lo_corregido_y_conservado_y_manda_a_revision_lo_que_sig
         "S01-A005": ESTADO_REGISTRO_PUBLICADO,
     }
     assert str(Arbol.todos.get(codigo="S01-A003").dap_cm) == "30.500"
-    assert Arbol.todos.get(codigo="S01-A004").nombre_comun == "Del archivo"
-    assert Arbol.todos.get(codigo="S01-A005").nombre_comun == "Molle"
+    assert Arbol.todos.get(codigo="S01-A004").observaciones == (
+        "Del archivo; DAP (cm) en planilla: muerto"
+    )
+    assert Arbol.todos.get(codigo="S01-A005").observaciones == TEXTOS_FILA_COMPLETA["observaciones"]
     for codigo in ("S01-A001", "S01-A003", "S01-A006"):
         assert codigo in cuerpo
 
@@ -268,7 +272,7 @@ def test_se_puede_conservar_la_segunda_fila_de_un_codigo_repetido(
 
     cliente_administrador.post(url("revisar", lote_mixto), {f"{PREFIJO_CONSERVAR_CARGA}{pk}": "on"})
 
-    assert Arbol.todos.get(codigo="S01-A005").nombre_comun == "Otro molle"
+    assert Arbol.todos.get(codigo="S01-A005").observaciones == "Otro molle"
 
 
 def test_solo_se_editan_los_campos_que_la_pantalla_ofrece(lote_mixto, cliente_administrador):
@@ -276,12 +280,12 @@ def test_solo_se_editan_los_campos_que_la_pantalla_ofrece(lote_mixto, cliente_ad
     datos = {
         f"{PREFIJO_CONSERVAR_CARGA}{pk}": "on",
         f"{PREFIJO_CAMPO_CARGA}{pk}-dap_cm": "30",
-        f"{PREFIJO_CAMPO_CARGA}{pk}-nombre_comun": "Cambiado a la fuerza",
+        f"{PREFIJO_CAMPO_CARGA}{pk}-observaciones": "Cambiado a la fuerza",
     }
 
     cliente_administrador.post(url("revisar", lote_mixto), datos)
 
-    assert Arbol.todos.get(codigo="S01-A003").nombre_comun == "Molle"
+    assert Arbol.todos.get(codigo="S01-A003").observaciones == TEXTOS_FILA_COMPLETA["observaciones"]
 
 
 def test_una_ubicacion_repetida_se_corrige_desde_la_revision(
@@ -329,11 +333,11 @@ def test_un_duplicado_de_ubicacion_conservado_sin_corregir_entra_en_revision(
 def test_un_ejemplo_no_se_pisa_con_una_fila_incompleta_y_se_cuenta(
     cliente_administrador, tmp_path, punto
 ):
-    arbol_de_ejemplo("S01-A001", nombre_comun="Del ejemplo")
+    arbol_de_ejemplo("S01-A001", observaciones="Del ejemplo")
     lote = cargar(
         cliente_administrador,
         tmp_path,
-        [fila(codigo="S01-A001", nombre_comun="Incompleto"), fila_buena(punto, "S01-A002", 2)],
+        [fila(codigo="S01-A001", observaciones="Incompleto"), fila_buena(punto, "S01-A002", 2)],
     )
 
     pk = fila_del_lote(lote, "S01-A001").pk
@@ -346,17 +350,17 @@ def test_un_ejemplo_no_se_pisa_con_una_fila_incompleta_y_se_cuenta(
         respuesta
     )
     ejemplo = Arbol.todos.get(codigo="S01-A001")
-    assert (ejemplo.demo, ejemplo.nombre_comun) == (True, "Del ejemplo")
+    assert (ejemplo.demo, ejemplo.observaciones) == (True, "Del ejemplo")
 
 
 def test_una_fila_completa_reemplaza_al_ejemplo(cliente_administrador, tmp_path, punto):
-    arbol_de_ejemplo("S01-A001", nombre_comun="Del ejemplo")
+    arbol_de_ejemplo("S01-A001", observaciones="Del ejemplo")
     lote = cargar(cliente_administrador, tmp_path, [fila_buena(punto, "S01-A001")])
 
     cliente_administrador.post(url("confirmar", lote))
 
     real = Arbol.todos.get(codigo="S01-A001")
-    assert (real.demo, real.nombre_comun) == (False, "Molle")
+    assert (real.demo, real.observaciones) == (False, TEXTOS_FILA_COMPLETA["observaciones"])
 
 
 # --- No: segunda alerta y confirmar ------------------------------------------------------------
@@ -387,7 +391,7 @@ def test_confirmar_sin_revisar_incorpora_solo_los_buenos_y_deja_lo_demas_como_es
         "S01-A004",
     ]
     previo = Arbol.todos.get(codigo="S01-A004")
-    assert (previo.nombre_comun, previo.estado_registro) == (
+    assert (previo.observaciones, previo.estado_registro) == (
         "Ya registrado",
         ESTADO_REGISTRO_PUBLICADO,
     )
@@ -518,7 +522,7 @@ def test_con_si_el_vacio_aparece_en_la_revision_y_corregido_se_publica(
 def test_con_si_un_vacio_sin_corregir_mantiene_el_dato_que_ya_habia_y_publica(
     cliente_administrador, tmp_path, punto
 ):
-    arbol_evaluado("S01-A001", altura_total_m=Decimal("2.85"), nombre_comun="Ya registrado")
+    arbol_evaluado("S01-A001", altura_total_m=Decimal("2.85"), observaciones="Ya registrado")
     lote = cargar(cliente_administrador, tmp_path, [fila_vacia_de_altura(punto, "S01-A001")])
     pk = fila_del_lote(lote, "S01-A001").pk
 
@@ -527,7 +531,7 @@ def test_con_si_un_vacio_sin_corregir_mantiene_el_dato_que_ya_habia_y_publica(
     arbol = Arbol.todos.get(codigo="S01-A001")
     assert arbol.altura_total_m == Decimal("2.85")
     assert (
-        arbol.nombre_comun == TEXTOS_FILA_COMPLETA["nombre_comun"]
+        arbol.observaciones == TEXTOS_FILA_COMPLETA["observaciones"]
     )  # lo que la fila trae se actualiza
     assert (arbol.estado_registro, arbol.motivos_revision) == (ESTADO_REGISTRO_PUBLICADO, "")
 

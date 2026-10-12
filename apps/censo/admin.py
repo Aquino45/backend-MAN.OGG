@@ -17,6 +17,7 @@ from simple_history.admin import SimpleHistoryAdmin
 from apps.censo import (
     admin_capsulas,  # noqa: F401  (registra las cápsulas en el panel)
     admin_carga,  # noqa: F401  (registra «Cargar planilla» en el panel)
+    admin_catalogos,  # noqa: F401  (registra las especies y las brigadas en el panel)
 )
 from apps.censo.admin_calidad import (
     FIELDSET_ESTADO_REGISTRO,
@@ -101,8 +102,11 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
         "demo",
         "co2_simulado",
     )
-    search_fields = ("codigo", "nombre_comun", "nombre_cientifico")
+    search_fields = ("codigo", "especie__nombre_comun", "especie__nombre_cientifico")
+    list_select_related = ("sector", "especie", "estado_general")
+    autocomplete_fields = ("especie",)
     readonly_fields = (
+        "valores_originales",
         "tipo_de_dato",
         "bloque_estado_registro",
         "uid",
@@ -125,11 +129,10 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
                     ("codigo", "uid"),
                     "sector",
                     "fecha_registro",
-                    "brigada",
+                    "grupo",
                     "tipo_individuo",
-                    ("nombre_comun", "nombre_cientifico"),
+                    "especie",
                     "identificacion",
-                    "origen",
                     "condicion_conservacion",
                 )
             },
@@ -169,6 +172,7 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
                 "fields": (
                     "fuente",
                     "fila_origen",
+                    "valores_originales",
                     "demo",
                     "creado_en",
                     "actualizado_en",
@@ -179,6 +183,10 @@ class ArbolAdmin(CalidadDelRegistroAdmin, MapaDelCampus, SimpleHistoryAdmin):
             },
         ),
     )
+
+    @admin.display(description="Nombre común", ordering="especie__nombre_comun")
+    def nombre_comun(self, arbol):
+        return arbol.especie.nombre_comun if arbol.especie else None
 
     @admin.display(description="Tipo de dato")
     def tipo_de_dato(self, arbol):
@@ -273,9 +281,14 @@ class PapeleraAdmin(admin.ModelAdmin):
         "motivo_eliminacion",
     )
     list_filter = ("sector", "demo")
-    search_fields = ("codigo", "nombre_comun", "motivo_eliminacion")
+    search_fields = ("codigo", "especie__nombre_comun", "motivo_eliminacion")
+    list_select_related = ("sector", "especie", "eliminado_por")
     ordering = ("-eliminado_en",)
     actions = ["restaurar"]
+
+    @admin.display(description="Nombre común", ordering="especie__nombre_comun")
+    def nombre_comun(self, arbol):
+        return arbol.especie.nombre_comun if arbol.especie else None
 
     def has_add_permission(self, request):
         return False

@@ -1,12 +1,14 @@
 """DTO de salida del censo: la forma exacta de los schemas del contrato.
 
-Solo leen campos ya cargados por los selectores; no consultan la BD ni llaman servicios.
+Solo leen campos ya cargados por los selectores; no consultan la BD. El único servicio que usan es
+`texto_de`, que lee el texto de un dato desde las tablas ya traídas con el árbol.
 Las coordenadas salen en GeoJSON, `[longitud, latitud]`, con `DECIMALES_COORDENADAS`. La cartilla
 suma las coordenadas UTM tal como están guardadas, en metros, con `DECIMALES_UTM`.
 """
 
 from rest_framework import serializers
 
+from apps.censo.servicios.resolver_campos import texto_de
 from config.constantes import DECIMALES_COORDENADAS, DECIMALES_UTM
 
 
@@ -52,6 +54,17 @@ class _TextoOpcional(serializers.CharField):
         return texto or None
 
 
+class _TextoDelArbol(serializers.Field):
+    """Un dato de texto del árbol que vive en otra tabla (especie, catálogo): sin dato es `null`."""
+
+    def __init__(self, **kwargs):
+        kwargs.update(source="*", read_only=True)
+        super().__init__(**kwargs)
+
+    def to_representation(self, arbol):
+        return texto_de(arbol, self.field_name) or None
+
+
 class SectorPropiedadesSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     nombre = serializers.CharField()
@@ -80,9 +93,9 @@ class ArbolResumenPropiedadesSerializer(serializers.Serializer):
     codigo = serializers.CharField()
     uid = serializers.UUIDField()
     sector = serializers.IntegerField(source="sector_id")
-    nombre_comun = serializers.CharField(allow_null=True)
-    nombre_cientifico = serializers.CharField(allow_null=True)
-    estado_general = serializers.CharField(allow_null=True)
+    nombre_comun = _TextoDelArbol()
+    nombre_cientifico = _TextoDelArbol()
+    estado_general = _TextoDelArbol()
     foto_miniatura_url = serializers.SerializerMethodField()
     co2_almacenado_kg = serializers.FloatField(allow_null=True)
     co2_captura_anual_kg = serializers.FloatField(allow_null=True)
@@ -124,11 +137,11 @@ class ArbolSerializer(serializers.Serializer):
     codigo = serializers.CharField()
     uid = serializers.UUIDField()
     sector = serializers.IntegerField(source="sector_id")
-    nombre_comun = serializers.CharField(allow_null=True)
-    nombre_cientifico = serializers.CharField(allow_null=True)
-    identificacion = _TextoOpcional()
-    origen = _TextoOpcional()
-    condicion_conservacion = serializers.CharField(allow_null=True)
+    nombre_comun = _TextoDelArbol()
+    nombre_cientifico = _TextoDelArbol()
+    identificacion = _TextoDelArbol()
+    origen = _TextoDelArbol()
+    condicion_conservacion = _TextoDelArbol()
     lat = serializers.SerializerMethodField()
     lon = serializers.SerializerMethodField()
     utm_este_m = serializers.SerializerMethodField()
@@ -137,11 +150,11 @@ class ArbolSerializer(serializers.Serializer):
     dap_cm = serializers.FloatField(allow_null=True)
     copa_ns_m = serializers.FloatField(allow_null=True)
     copa_eo_m = serializers.FloatField(allow_null=True)
-    estado_general = serializers.CharField(allow_null=True)
-    estado_copa = serializers.CharField(allow_null=True)
-    tronco_danos = serializers.CharField(allow_null=True)
-    raices_base = serializers.CharField(allow_null=True)
-    interferencia_entorno = serializers.CharField(allow_null=True)
+    estado_general = _TextoDelArbol()
+    estado_copa = _TextoDelArbol()
+    tronco_danos = _TextoDelArbol()
+    raices_base = _TextoDelArbol()
+    interferencia_entorno = _TextoDelArbol()
     observaciones = _TextoOpcional()
     foto_url = serializers.SerializerMethodField()
     foto_miniatura_url = serializers.SerializerMethodField()

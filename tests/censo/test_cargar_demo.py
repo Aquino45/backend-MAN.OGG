@@ -18,6 +18,7 @@ from django.db import connection
 from apps.censo.models import Arbol, Sector
 from apps.censo.servicios.cargar_demo import ReporteDemo, borrar_demo, cargar_demo
 from apps.censo.servicios.importar_planilla import ArbolFueraDeSector
+from apps.censo.servicios.resolver_campos import texto_de
 from config.constantes import (
     DECIMALES_UTM,
     ESTADO_REGISTRO_EN_REVISION,
@@ -27,6 +28,8 @@ from config.constantes import (
     SRID_UTM_CENSO,
     TOPE_DESTACADOS_POR_SECTOR,
 )
+
+pytestmark = pytest.mark.usefixtures("especie_molle")
 
 MOTIVO = "Dato de ejemplo: ejemplar de gran porte (simulado)"
 FUENTE = "Dato simulado (demo): ubicación al azar dentro del sector; no es del censo."
@@ -137,7 +140,7 @@ def test_carga_guarda_los_campos_tal_como_vienen(sectores, tmp_path):
     assert simple.fuente == FUENTE
     assert simple.destacado is False and simple.motivo_destacado is None
     assert str(simple.fecha_registro) == "2026-10-07"
-    assert simple.nombre_cientifico == "Schinus molle"
+    assert texto_de(simple, "nombre_cientifico") == "Schinus molle"
     assert simple.condicion_conservacion is None
     assert simple.co2_almacenado_kg == Decimal("120.5")
     assert simple.co2_captura_anual_kg == Decimal("10.25")
@@ -168,13 +171,13 @@ def test_segunda_carga_actualiza_sin_duplicar_y_conserva_el_uid(sectores, tmp_pa
     cargar_demo(ruta)
     uids = dict(Arbol.objects.values_list("codigo", "uid"))
 
-    registros[0]["nombre_comun"] = "Huarango"
+    registros[0]["observaciones"] = "Junto a la banca"
     reporte = cargar_demo(escribir(tmp_path, registros))
 
     assert (reporte.creados, reporte.actualizados) == (0, 3)
     assert Arbol.objects.count() == 3
     assert dict(Arbol.objects.values_list("codigo", "uid")) == uids
-    assert Arbol.objects.get(codigo="S02-D001").nombre_comun == "Huarango"
+    assert Arbol.objects.get(codigo="S02-D001").observaciones == "Junto a la banca"
 
 
 def test_recarga_puede_cambiar_cuales_son_los_destacados_sin_chocar_con_el_tope(sectores, tmp_path):

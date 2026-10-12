@@ -13,6 +13,7 @@ from django.core.management.base import CommandError
 from apps.censo.models import Arbol
 from apps.censo.servicios.cargar_demo import cargar_demo
 from apps.censo.servicios.completar_ejemplo import completar_ejemplo
+from apps.censo.servicios.resolver_campos import texto_de
 from config.constantes import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
 from tests.censo.conftest import arbol_de_ejemplo, arbol_evaluado
 
@@ -55,7 +56,7 @@ def test_llena_un_campo_vacio_y_publica_el_registro(sectores, tmp_path):
     reporte = completar_ejemplo(escribir(tmp_path, [registro()]))
 
     arbol = Arbol.objects.get()
-    assert arbol.tipo_individuo == TIPO_ARBOL
+    assert texto_de(arbol, "tipo_individuo") == TIPO_ARBOL
     assert arbol.estado_registro == ESTADO_REGISTRO_PUBLICADO
     assert arbol.motivos_revision == ""
     assert reporte.completados == ["S01-A001"]
@@ -63,16 +64,19 @@ def test_llena_un_campo_vacio_y_publica_el_registro(sectores, tmp_path):
 
 
 def test_no_pisa_lo_que_ya_tiene_y_lo_informa(sectores, tmp_path):
-    arbol_de_ejemplo(tipo_individuo="Juvenil <1.30 m (sin DAP)", nombre_comun="Del campo")
-    campos = {"tipo_individuo": TIPO_ARBOL, "nombre_comun": "Otro"}
+    arbol_de_ejemplo(tipo_individuo="Juvenil <1.30 m (sin DAP)", estado_general="Regular")
+    campos = {"tipo_individuo": TIPO_ARBOL, "estado_general": "Malo"}
 
     reporte = completar_ejemplo(escribir(tmp_path, [registro(campos=campos)]))
 
     arbol = Arbol.objects.get()
-    assert (arbol.tipo_individuo, arbol.nombre_comun) == ("Juvenil <1.30 m (sin DAP)", "Del campo")
+    assert (texto_de(arbol, "tipo_individuo"), texto_de(arbol, "estado_general")) == (
+        "Juvenil <1.30 m (sin DAP)",
+        "Regular",
+    )
     assert {(v.campo, v.actual, v.propuesto) for v in reporte.no_se_pisa} == {
         ("tipo_individuo", "Juvenil <1.30 m (sin DAP)", TIPO_ARBOL),
-        ("nombre_comun", "Del campo", "Otro"),
+        ("estado_general", "Regular", "Malo"),
     }
     assert reporte.completados == []
 
@@ -133,7 +137,7 @@ def test_un_arbol_real_no_se_toca(sectores, tmp_path):
     reporte = completar_ejemplo(escribir(tmp_path, [registro()]))
 
     arbol = Arbol.objects.get()
-    assert (arbol.demo, arbol.tipo_individuo) == (False, None)
+    assert (arbol.demo, texto_de(arbol, "tipo_individuo")) == (False, None)
     assert reporte.reales_sin_tocar == ["S01-A001"]
 
 
@@ -195,7 +199,7 @@ def test_el_comando_imprime_el_reporte_y_convierte_el_error(sectores, tmp_path):
         call_command("completar_ejemplo", str(tmp_path / "no-esta.json"))
 
 
-def test_el_archivo_real_publica_los_73_simulados_de_s2_a_s5(sectores):
+def test_el_archivo_real_publica_los_73_simulados_de_s2_a_s5(sectores, especies_demo):
     cargar_demo(RUTA_DEMO)
     assert Arbol.objects.filter(estado_registro=ESTADO_REGISTRO_PUBLICADO).count() == 0
 
