@@ -99,7 +99,7 @@ def test_la_barra_muestra_el_simbolo_y_al_lado_el_nombre_corto(cliente_administr
     html = cliente_administrador.get(reverse("admin:index")).content.decode()
 
     simbolo_y_nombre = re.search(
-        rf'<img[^>]*{re.escape(LOGO_ADMIN)}[^>]*>.{{0,600}}?>\s*{NOMBRE_BARRA_ADMIN}\s*<',
+        rf"<img[^>]*{re.escape(LOGO_ADMIN)}[^>]*>.{{0,600}}?>\s*{NOMBRE_BARRA_ADMIN}\s*<",
         html,
         re.S,
     )
