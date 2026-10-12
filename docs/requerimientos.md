@@ -1,4 +1,4 @@
-# Requerimientos — Censo arbóreo UPeU Lima (v0.2, 09/10/2026)
+# Requerimientos — Censo arbóreo UPeU Lima (v0.3, 11/10/2026)
 
 Fuente: la visión del stakeholder, recibida el 08/10. Se convierte en RF/RNF y Cristhian aprueba cada uno. Prioridad MoSCoW: M (debe), S (debería), C (podría), W (no ahora). **v1** = entra en la entrega del lunes 12/10. Estados: `propuesto` → `aprobado` → `en ticket` → `hecho`.
 
@@ -11,23 +11,34 @@ Fuente: la visión del stakeholder, recibida el 08/10. Se convierte en RF/RNF y 
 
 ## Actores
 - **Visitante:** cualquier persona que abre la página. Solo mira. Es el único actor de la v1.
-- **Administrador del censo** (no aparece en la visión; candidato para M2): carga y edita árboles.
+- **Administrador del censo:** entra al panel de administración; carga la planilla, edita, revisa y publica árboles, especies y textos de ayuda, y es el único que borra en definitiva.
+- **Editor del censo:** entra al panel; agrega y edita, pero no borra en definitiva.
+- En la v1 el panel es el de administración del servidor, mejorado. El panel propio con inicio de sesión queda para M2.
 
 ## Requerimientos funcionales
 | ID | Requerimiento | Prioridad | v1 | Criterio de aceptación | Estado |
 |---|---|---|---|---|---|
-| RF-01 | Mostrar el mapa del campus UPeU Ñaña dividido en **5 sectores**. **Vista principal ilustrada** (vector con la paleta del árbol; decidido el 08/10, P1) | M | ✔ | Se ven los 5 sectores completos, sin huecos ni traslapes, con su nombre o número; el dibujo se genera desde los polígonos reales (no a mano alzada), para que coincida con RF-10 | propuesto |
-| RF-02 | **Resaltar el sector al pasar el cursor**; los demás se atenúan | M | ✔ | Con el cursor encima, el sector cambia de estilo (color o elevación) y los otros 4 bajan de opacidad. Al salir, todo vuelve al estado normal. En pantallas táctiles, el primer toque resalta | propuesto |
-| RF-03 | **Click en un sector:** mostrar los árboles de ese sector | M | ✔ | Se abre un panel con los árboles del sector (mínimo 5 por sector en la v1, 25 en total) y cada uno se puede abrir | propuesto |
-| RF-04 | **Cartilla del árbol** con los 18 campos de datos más la foto (ver «Datos por árbol») | M | ✔ | Muestra los 18 campos con su unidad y la foto real. Un campo vacío dice «Sin dato»; nunca se inventa | propuesto |
-| RF-05 | Presentación **«muy innovadora»** de la cartilla y del mapa | M | ✔ | Transiciones animadas al entrar a un sector y al abrir una cartilla. La foto es la protagonista. Altura, DAP, copa y CO₂ se muestran con indicadores visuales, no solo texto. Cristhian lo aprueba con capturas | propuesto |
-| RF-06 | Mostrar el **CO₂ almacenado** (kg CO₂e) y el **CO₂ capturado anual** (kg CO₂/año) de cada árbol | M | ✔ | El valor lo calcula el stakeholder en gabinete y llega en el Excel; el sistema solo lo muestra, nunca lo calcula. Si falta, la cartilla dice «Sin dato» (decidido el 08/10, P2) | propuesto |
-| RF-07 | **Animación de entrada con variantes** (decidido el 08/10, P3) | S | ✔ | La entrada al mapa elige su variante con `elegirVariante` y una tabla de pesos de `constantes.ts`; cada carga se sortea de nuevo y el test inyecta el aleatorio. Una variante que no es la estándar se descarga solo cuando sale, dura unos segundos y después entra la ruta pedida, sin cambiar la URL | propuesto |
-| RF-08 | **La paleta de la página es la del árbol** que dio el stakeholder | M | ✔ | Tokens de color tomados de esa ilustración (ver «Paleta»). No hay colores de marca fuera de ellos, salvo los neutros necesarios para leer el texto | propuesto |
-| RF-09 | Ubicar cada árbol como **punto** dentro de su sector (lat/lon) | S | ✔ | Al entrar a un sector se ven sus árboles en su posición real; un click en el punto abre su cartilla | propuesto |
+| RF-01 | Mostrar el mapa del campus UPeU Ñaña dividido en **5 sectores**. **Vista principal ilustrada** (vector con la paleta del árbol; decidido el 08/10, P1) | M | ✔ | Se ven los 5 sectores completos, sin huecos ni traslapes, con su nombre o número; el dibujo se genera desde los polígonos reales (no a mano alzada), para que coincida con RF-10 | hecho |
+| RF-02 | **Resaltar el sector al pasar el cursor**; los demás se atenúan | M | ✔ | Con el cursor encima, el sector cambia de estilo (color o elevación) y los otros 4 bajan de opacidad. Al salir, todo vuelve al estado normal. En pantallas táctiles, el primer toque resalta | hecho |
+| RF-03 | **Click en un sector:** mostrar los árboles de ese sector | M | ✔ | Se abre un panel con los árboles del sector (mínimo 5 por sector en la v1, 25 en total) y cada uno se puede abrir | hecho |
+| RF-04 | **Cartilla del árbol** con los 18 campos de datos más la foto (ver «Datos por árbol») | M | ✔ | Muestra los 18 campos con su unidad y la foto real. Un campo vacío dice «Sin dato»; nunca se inventa | hecho |
+| RF-05 | Presentación **«muy innovadora»** de la cartilla y del mapa | M | ✔ | Transiciones animadas al entrar a un sector y al abrir una cartilla. La foto es la protagonista. Altura, DAP, copa y CO₂ se muestran con indicadores visuales, no solo texto. Cristhian lo aprueba con capturas | hecho |
+| RF-06 | Mostrar el **CO₂ almacenado** (kg CO₂e) y el **CO₂ capturado anual** (kg CO₂/año) de cada árbol | M | ✔ | El valor lo calcula el stakeholder con su fórmula y sus parámetros (hoja de parámetros de la planilla) y llega en el Excel; el sistema solo lo muestra, nunca lo calcula. Si falta, la cartilla dice «Sin dato» (08/10, P2). **Mientras sea una estimación simulada, se muestra marcada como «Simulado»**, también en los árboles de campo, y se reemplaza cuando llegue el dato real (pedido del stakeholder, 11/10). La ayuda «?» explica la fórmula | aprobado |
+| RF-07 | **Animación de entrada con variantes** (decidido el 08/10, P3) | S | ✔ | La entrada al mapa elige su variante con `elegirVariante` y una tabla de pesos de `constantes.ts`; cada carga se sortea de nuevo y el test inyecta el aleatorio. Una variante que no es la estándar se descarga solo cuando sale, dura unos segundos y después entra la ruta pedida, sin cambiar la URL | hecho |
+| RF-08 | **La paleta de la página es la del árbol** que dio el stakeholder | M | ✔ | Tokens de color tomados de esa ilustración (ver «Paleta»). No hay colores de marca fuera de ellos, salvo los neutros necesarios para leer el texto | hecho |
+| RF-09 | Ubicar cada árbol como **punto** dentro de su sector (lat/lon) | S | ✔ | Al entrar a un sector se ven sus árboles en su posición real; un click en el punto abre su cartilla | hecho |
 | RF-10 | Botón para ver los sectores sobre un **mapa real** (satélite o calles), además de la vista ilustrada (decidido el 08/10, P1) | S | — | Un toggle cambia entre ilustrado y real; los 5 sectores y los árboles caen en el mismo lugar en ambas vistas. Entra a la v1 solo si sobra tiempo | propuesto |
-| RF-11 | Registro y edición de árboles por un administrador | W | — | No está en la visión; candidato para M2 | propuesto |
-| RF-12 | **Módulo web de carga de datos desde la planilla Excel** (pedido de Cristhian, 09/10) | S | — | Un administrador sube `arb2-corregido.xlsx` (u otra hoja con el mismo formato) y el sistema muestra, **antes de guardar**, el reporte de validación y limpieza: números no válidos (p. ej. «muerto» en el DAP), valores fuera de catálogo, árboles fuera de su sector y códigos calculados. Después confirma o cancela. Reusa el servicio que importa la planilla (ETL v0). No se pierde ningún dato: lo que no es válido va a `observaciones` y al reporte. Candidato para M2 | propuesto |
+| RF-11 | Registro y edición de árboles por la administración | M | ✔ | Panel con roles Administrador y Editor, papelera con motivo, historial de versiones con «volver a esta versión» y aviso visible en los árboles de ejemplo. El panel propio con inicio de sesión va en M2 | hecho |
+| RF-12 | **Módulo web de carga de datos desde la planilla Excel** (pedido de Cristhian, 09/10) | M | ✔ | Un administrador sube `arb2-corregido.xlsx` (u otra hoja con el mismo formato) y el sistema muestra, **antes de guardar**, el reporte de validación y limpieza: números no válidos (p. ej. «muerto» en el DAP), valores fuera de catálogo, árboles fuera de su sector y códigos calculados. Después confirma o cancela. Reusa el servicio que importa la planilla (ETL v0). **Flujo (11/10):** al subir, el sistema avisa «Se detectaron N registros inconsistentes o duplicados. ¿Quieres revisarlos?». Con **Sí** se abre la lista de esos registros con el campo con problema resaltado y editable, y se elige cuáles conservar: lo corregido y completo se publica, lo conservado incompleto queda en revisión y lo no elegido no entra. Con **No** se avisa qué códigos no se incorporan. Adelantado a la v1 | aprobado |
+| RF-13 | **Datos de ejemplo** en los sectores sin datos de campo (pedido del stakeholder, 10/10) | M | ✔ | 13 a 20 árboles simulados por sector, con especie y medidas tomadas de árboles reales (±20 %), dentro de su polígono y marcados siempre «Dato de ejemplo»; nunca se suman con los de campo sin decirlo | hecho |
+| RF-14 | **Árboles destacados** | S | ✔ | Marca manual de la administración, como máximo 5 por sector, con motivo opcional; en el mapa llevan una estrella y en la cartilla una insignia (sin halo) | hecho |
+| RF-15 | **Identificador público estable** de cada árbol | S | ✔ | Cada árbol tiene un `uid` que no cambia; el número interno no se publica. Las rutas de la v1 usan el código | hecho |
+| RF-16 | **Páginas del sitio** | M | ✔ | Inicio (resumen y destacados, con cifras desde la API), Mapa, Árboles (lista de todo el campus con buscador y filtros guardados en la dirección) y Cifras (gráficos con tabla accesible, campo y ejemplo siempre separados). Ningún texto fijo afirma qué datos son reales. La fuente pixel se usa solo en la variante alterna de la entrada | hecho |
+| RF-17 | **Ayudas «?» en la cartilla** (pedido del cliente, 11/10) | M | ✔ | Junto a cada dato, un «?» explica el campo en lenguaje simple y, si el valor está en el catálogo, qué significa en ESE árbol; la sección «Sobre este árbol» suma la ficha de su especie. Los textos se editan en el panel. Las fichas de especie llevan fuente y no se publican hasta el OK del stakeholder | hecho |
+| RF-18 | **Catálogo de estados** | S | ✔ | Los valores oficiales salen de las listas desplegables de la planilla; el panel cuenta cuántos árboles usan cada valor y lista los valores que no están en el catálogo | hecho |
+| RF-19 | **Calidad del registro** (11/10) | M | ✔ | Un registro con algún campo vacío o inconsistente queda **en revisión**: no sale en la web y sí en el panel, con sus motivos. Pueden ir vacíos: fotos, observaciones, condición de conservación y fecha; el motivo del destacado es opcional; el CO₂ es obligatorio. Inconsistente: número fuera de rango o con texto, valor fuera del catálogo, ubicación a más de 15 m de su sector. Al guardar, el estado se recalcula solo | hecho |
+| RF-20 | **CO₂ en Cifras** (pedido del stakeholder, 11/10) | M | ✔ | Gráficos de CO₂ almacenado por sector y por especie, captura anual por sector y los 10 árboles con más CO₂ (con enlace a su cartilla), con campo y ejemplo separados y la marca «Simulado» mientras lo sea | aprobado |
+| RF-21 | **Datos ordenados en tablas propias** (11/10) | S | ✔ | Especies con su ficha y sus alias (la carga acomoda «Schinus», «Prosopis Pallida», etc. a la especie correcta; lo que no reconoce queda en revisión), estados como valores del catálogo, brigadas con sus grupos (con alta y edición en el panel), fotos, mediciones con fecha y estimaciones de CO₂ con método. La web no cambia. Si no entra a tiempo, pasa a M2 | aprobado |
 
 ## Requerimientos no funcionales
 | ID | Requerimiento | Prioridad | Medida |
@@ -35,11 +46,13 @@ Fuente: la visión del stakeholder, recibida el 08/10. Se convierte en RF/RNF y 
 | RNF-01 | Responsive | M | Se usa bien a 360 px (celular) y a 1440 px (laptop). En el celular, el panel de la cartilla pasa a ser una hoja inferior |
 | RNF-02 | Rendimiento | M | Carga inicial < 3 s en 4G. Fotos en WebP, con miniatura y tamaño completo. Las variantes de la entrada que no son la estándar se descargan solo cuando salen |
 | RNF-03 | Legibilidad con la paleta | M | Contraste del texto ≥ 4.5:1 (WCAG AA). El carmín sobre el azul noche da 3.32:1: sirve para títulos grandes y acentos, no para párrafos. El texto va en un neutro claro sobre el azul noche (15.6:1 con blanco) |
-| RNF-04 | Veracidad de los datos | M | Ningún dato inventado. Cada árbol lleva `fuente` (planilla o foto de campo). Los datos de prueba van solo en fixtures, con `demo: true` |
+| RNF-04 | Veracidad de los datos | M | Ningún dato inventado. Cada árbol lleva `fuente` (planilla o foto de campo). Los datos de ejemplo van marcados con `demo: true` y se muestran como «Dato de ejemplo»; el CO₂ simulado va marcado con `co2_simulado` |
 | RNF-05 | Coordenadas | M | Lat/lon en WGS84 (EPSG:4326). Si vienen en UTM, se convierten en la BD con PostGIS, nunca a mano |
 | RNF-06 | Navegadores | S | Las 2 últimas versiones de Chrome, Edge, Firefox y Safari (incluido el móvil) |
 | RNF-07 | Accesibilidad | S | Los sectores se recorren también con teclado (Tab y Enter) y tienen nombre accesible. Se respeta `prefers-reduced-motion` |
-| RNF-08 | Repos públicos | M | Nada de `.env`, claves ni datos personales en git |
+| RNF-08 | Repos públicos | M | Nada de `.env`, claves ni datos personales en git. La planilla de la brigada y las fotos van fuera del repo |
+| RNF-09 | Calidad antes de publicar | M | Nada vacío o inconsistente sale en la web (RF-19); todo cambio queda en el historial |
+| RNF-10 | Movimiento | S | Movimiento corto y suave; con «reducir movimiento» se apagan todas las animaciones |
 
 ## Datos por árbol (contrato de la cartilla)
 | # | Campo (visión) | Campo de la API | Tipo | Unidad |
@@ -64,6 +77,8 @@ Fuente: la visión del stakeholder, recibida el 08/10. Se convierte en RF/RNF y 
 | 18 | CO₂ almacenado | `co2_almacenado_kg` | decimal | kg CO₂e |
 | 19 | CO₂ capturado anual | `co2_captura_anual_kg` | decimal | kg CO₂/año |
 | + | (trazabilidad) | `fuente`, `fecha_registro` | texto, fecha | — |
+| + | (identidad y marcas) | `uid`, `demo`, `destacado`, `motivo_destacado`, `co2_simulado` | uuid, sí/no, texto | — |
+| + | (ayudas) | `capsulas`, `ficha_especie` | lista, ficha | — |
 
 Sector: `id` (1–5), `nombre`, `geom` (polígono) y `color` (token de la paleta).
 
@@ -85,8 +100,10 @@ Sector: `id` (1–5), `nombre`, `geom` (polígono) y `color` (token de la paleta
 | P3 | ~~Animación de entrada~~ **Resuelta el 08/10:** ver RF-07 | Cristhian | — |
 | P4 | ~~¿Según qué lista?~~ **Resuelta el 08/10:** lista peruana DS 043-2006-AG; la llena el stakeholder, con fuente | Cristhian | — |
 | P5 | ~~Límites de los 5 sectores~~ **Resuelta provisionalmente el 08/10:** S1 desde el croquis y S2–S5 propuestos por el equipo; aprobados por Cristhian y el stakeholder, sujetos a cambios (`datos/sectores/`) | Cristhian | — |
-| P6 | Datos de los 25 árboles: **al 08/10 hay datos parciales de 1 solo sector**; el resto se recolecta en Excel (pendiente). ¿Cuándo llega la planilla y con qué columnas? | Cristhian / equipo de campo | toda la v1 |
+| P6 | ~~Datos de los árboles~~ **Resuelta en parte el 11/10:** el sector 1 tiene 34 árboles reales y completos (planilla del stakeholder del 11/10); los sectores 2 a 5 siguen con datos de ejemplo hasta que llegue su planilla | Cristhian / equipo de campo | — |
+| P8 | La plantilla de la brigada arma el código del árbol y el nombre de las fotos con el número de fila (sale «S02-A002» en el sector 1) y rotula «Latitud/Longitud» columnas que traen UTM. ¿La corrige el equipo de campo antes de seguir? | Equipo de campo | cargas futuras |
 | P7 | ~~«Caso PUEM»~~ Descartada: era una frase suelta del 08/10, no un requisito | — | — |
 
 ## Riesgo de la v1 (lunes 12/10)
 - Solo hay datos de 1 de los 5 sectores. Plan: la planilla Excel con las 19 columnas de «Datos por árbol» es el formato de entrada. La v1 muestra datos reales donde existan y, en los demás sectores, árboles **demo** marcados como tales en la cartilla («Dato de ejemplo»), nunca mezclados ni presentados como reales. Cuando llegue la planilla, se importa y los demo se borran.
+- Al 11/10: sector 1 con 34 árboles reales; sectores 2 a 5 con 73 de ejemplo. El CO₂ de todos se muestra como simulado hasta el dato real.
