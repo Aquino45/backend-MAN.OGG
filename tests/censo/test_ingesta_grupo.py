@@ -13,15 +13,10 @@ from apps.censo.servicios.importar_planilla import importar_planilla
 from apps.censo.servicios.lectura_planilla import leer
 from apps.censo.servicios.lote_carga import valores_activos_del_catalogo
 from apps.censo.servicios.resolver_campos import resolver_valores, texto_de
-from config.constantes import (
-    CAMPOS_ESTADO_ARBOL,
-    COLUMNAS_OPCIONALES_PLANILLA,
-    DECISION_CONSERVAR,
-    ESTADO_REGISTRO_EN_REVISION,
-    ESTADO_REGISTRO_PUBLICADO,
-    PREFIJO_CAMPO_CARGA,
-    PREFIJO_CONSERVAR_CARGA,
-)
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
+from config.constantes.carga import DECISION_CONSERVAR, PREFIJO_CAMPO_CARGA, PREFIJO_CONSERVAR_CARGA
+from config.constantes.catalogos import CAMPOS_ESTADO_ARBOL
+from config.constantes.planilla import COLUMNAS_OPCIONALES_PLANILLA
 from tests.censo.conftest import (
     MEDIDAS_FILA_COMPLETA,
     TEXTOS_FILA_COMPLETA,

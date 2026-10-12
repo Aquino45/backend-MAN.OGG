@@ -5,7 +5,7 @@ from unittest import mock
 import pytest
 from django.db import OperationalError, connection
 
-from config import constantes
+import config.constantes.general as constantes_general
 
 
 @pytest.mark.django_db
@@ -34,7 +34,7 @@ def test_salud_responde_503_sin_base_de_datos(cliente_api, url_salud):
 
 
 def test_constantes_valen_lo_esperado():
-    assert constantes.PREFIJO_API == "api/v1/"
-    assert constantes.PREFIJO_API.endswith("/")
-    assert constantes.SRID_UTM_CENSO == 32718
-    assert constantes.SRID_MAPA == 4326
+    assert constantes_general.PREFIJO_API == "api/v1/"
+    assert constantes_general.PREFIJO_API.endswith("/")
+    assert constantes_general.SRID_UTM_CENSO == 32718
+    assert constantes_general.SRID_MAPA == 4326

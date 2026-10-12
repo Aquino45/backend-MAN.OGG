@@ -19,16 +19,10 @@ from apps.censo.models import Arbol, Sector
 from apps.censo.servicios.calidad_registro import CAMPOS_DEL_ESTADO, aplicar, cargar_catalogo
 from apps.censo.servicios.importar_planilla import ArbolFueraDeSector
 from apps.censo.servicios.resolver_campos import Resolutor, aplicar_textos
-from config.constantes import (
-    CAMPOS_TEXTO_RESUELTOS,
-    CLAVES_EXTRA_DEMO,
-    LETRA_CODIGO_DEMO,
-    MENSAJE_CODIGO_EN_PAPELERA,
-    PATRON_CODIGO_ARBOL,
-    PATRON_CODIGO_DEMO,
-    SRID_MAPA,
-    TOPE_DESTACADOS_POR_SECTOR,
-)
+from config.constantes.calidad import CLAVES_EXTRA_DEMO, LETRA_CODIGO_DEMO, PATRON_CODIGO_DEMO
+from config.constantes.catalogos import CAMPOS_TEXTO_RESUELTOS
+from config.constantes.general import PATRON_CODIGO_ARBOL, SRID_MAPA, TOPE_DESTACADOS_POR_SECTOR
+from config.constantes.panel import MENSAJE_CODIGO_EN_PAPELERA
 
 CAMPOS_PROPIOS = frozenset({"codigo", "sector", "ubicacion"})
 """Campos del modelo que se arman aparte (la ubicación sale de `lat` y `lon`)."""

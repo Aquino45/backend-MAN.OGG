@@ -14,18 +14,14 @@ from django.db import transaction
 from apps.censo.models import Arbol, ValorCatalogo
 from apps.censo.servicios.normalizacion import normalizar
 from apps.censo.servicios.resolver_campos import RELACIONES_DEL_ARBOL, texto_de
-from config.constantes import (
+from config.constantes.calidad import (
     AVISO_CATALOGO_SIN_CARGAR,
     CAMPO_DAP_EXENTO_EN_JUVENIL,
-    CAMPO_MOTIVO_ESPECIE,
-    CAMPOS_CATALOGADOS,
     CAMPOS_OBLIGATORIOS_CALIDAD,
     CAMPOS_OBLIGATORIOS_SI_NO_ES_EJEMPLO,
-    CAMPOS_TEXTO_RESUELTOS,
     ESTADO_REGISTRO_EN_REVISION,
     ESTADO_REGISTRO_PUBLICADO,
     ETIQUETAS_CAMPOS_CALIDAD,
-    MOTIVO_ESPECIE_NO_REGISTRADA,
     MOTIVO_FALTA_DATO,
     MOTIVO_FUERA_DE_CATALOGO,
     MOTIVO_FUERA_DE_RANGO,
@@ -33,13 +29,19 @@ from config.constantes import (
     MOTIVO_HISTORIAL_RECALCULO_CALIDAD,
     MOTIVO_NO_ES_NUMERO,
     RANGOS_MEDIDAS,
-    SEPARADOR_DE_LINEAS,
     TEXTO_RANGO_DESDE,
     TEXTO_RANGO_HASTA,
     TEXTO_RANGO_MAS_DE,
-    TOLERANCIA_FUERA_DE_SECTOR_M,
     VALOR_TIPO_JUVENIL,
 )
+from config.constantes.catalogos import (
+    CAMPO_MOTIVO_ESPECIE,
+    CAMPOS_CATALOGADOS,
+    CAMPOS_TEXTO_RESUELTOS,
+    MOTIVO_ESPECIE_NO_REGISTRADA,
+)
+from config.constantes.general import SEPARADOR_DE_LINEAS
+from config.constantes.geometrias import TOLERANCIA_FUERA_DE_SECTOR_M
 
 CAMPOS_DEL_ESTADO = ["estado_registro", "motivos_revision", "co2_simulado"]
 """Lo único que cambia la regla al actualizar solo el estado de un árbol guardado."""

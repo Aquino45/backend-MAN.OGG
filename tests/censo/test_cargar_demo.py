@@ -19,11 +19,13 @@ from apps.censo.models import Arbol, Sector
 from apps.censo.servicios.cargar_demo import ReporteDemo, borrar_demo, cargar_demo
 from apps.censo.servicios.importar_planilla import ArbolFueraDeSector
 from apps.censo.servicios.resolver_campos import texto_de
-from config.constantes import (
-    DECIMALES_UTM,
+from config.constantes.calidad import (
     ESTADO_REGISTRO_EN_REVISION,
     ESTADO_REGISTRO_PUBLICADO,
     LETRA_CODIGO_DEMO,
+)
+from config.constantes.general import (
+    DECIMALES_UTM,
     SRID_MAPA,
     SRID_UTM_CENSO,
     TOPE_DESTACADOS_POR_SECTOR,

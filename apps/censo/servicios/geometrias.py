@@ -17,22 +17,14 @@ from django.db import connection, transaction
 from apps.censo.models import Arbol, Sector
 from apps.censo.servicios.calidad_registro import CAMPOS_DEL_ESTADO, aplicar, cargar_catalogo
 from apps.censo.servicios.resolver_campos import RELACIONES_DEL_ARBOL
-from config.constantes import (
-    ATRIBUCION_ESRI,
-    ATRIBUCION_ESRI_URL,
-    ATRIBUCION_OSM,
-    ATRIBUCION_OSM_URL,
-    CAMPO_LATITUD_ADMIN,
-    CAMPO_LONGITUD_ADMIN,
-    CAMPO_UTM_ESTE_ADMIN,
-    CAMPO_UTM_NORTE_ADMIN,
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
+from config.constantes.general import (
     DECIMALES_COORDENADAS,
     DECIMALES_UTM,
-    ESRI_URL_MOSAICOS,
-    ESTADO_REGISTRO_EN_REVISION,
-    ESTADO_REGISTRO_PUBLICADO,
-    ID_CAPA_CALLES,
-    ID_CAPA_SATELITE,
+    SRID_MAPA,
+    SRID_UTM_CENSO,
+)
+from config.constantes.geometrias import (
     MARGEN_CAMPUS_M,
     MENSAJE_COORDENADAS_ILEGIBLES,
     MENSAJE_FUERA_DEL_CAMPUS,
@@ -44,18 +36,29 @@ from config.constantes import (
     MENSAJE_VISTA_PREVIA_SECTOR_UNO,
     MENSAJE_VISTA_PREVIA_SECTOR_VARIOS,
     MOTIVO_HISTORIAL_FRONTERA_SECTOR,
-    NOMBRE_CAPA_CALLES,
-    NOMBRE_CAPA_SATELITE,
-    OSM_URL_MOSAICOS,
     RANGO_LATITUD_VALIDA_GRADOS,
     RANGO_LONGITUD_VALIDA_GRADOS,
     RANGO_UTM_ESTE_M,
     RANGO_UTM_NORTE_M,
-    SRID_MAPA,
-    SRID_UTM_CENSO,
+    TOLERANCIA_FUERA_DE_SECTOR_M,
+)
+from config.constantes.mapa import (
+    ATRIBUCION_ESRI,
+    ATRIBUCION_ESRI_URL,
+    ATRIBUCION_OSM,
+    ATRIBUCION_OSM_URL,
+    CAMPO_LATITUD_ADMIN,
+    CAMPO_LONGITUD_ADMIN,
+    CAMPO_UTM_ESTE_ADMIN,
+    CAMPO_UTM_NORTE_ADMIN,
+    ESRI_URL_MOSAICOS,
+    ID_CAPA_CALLES,
+    ID_CAPA_SATELITE,
+    NOMBRE_CAPA_CALLES,
+    NOMBRE_CAPA_SATELITE,
+    OSM_URL_MOSAICOS,
     TIPO_CONTEXTO_ARBOL,
     TIPO_CONTEXTO_SECTOR,
-    TOLERANCIA_FUERA_DE_SECTOR_M,
 )
 
 # --- conversión de coordenadas ----------------------------------------------------------------

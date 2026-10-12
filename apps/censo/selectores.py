@@ -13,13 +13,9 @@ from django.db.models import Count, Q
 from apps.censo.models import Arbol, AyudaCampo, Sector, ValorCatalogo
 from apps.censo.servicios.capsulas import armar_capsulas, buscar_ficha
 from apps.censo.servicios.resolver_campos import RELACIONES_DEL_ARBOL
-from config.constantes import (
-    CAMPO_ORIGEN,
-    CAMPOS_CATALOGADOS,
-    CAMPOS_ESTADO_ARBOL,
-    ESTADO_REGISTRO_PUBLICADO,
-    SRID_MAPA,
-)
+from config.constantes.calidad import ESTADO_REGISTRO_PUBLICADO
+from config.constantes.catalogos import CAMPO_ORIGEN, CAMPOS_CATALOGADOS, CAMPOS_ESTADO_ARBOL
+from config.constantes.general import SRID_MAPA
 
 
 def publicados():

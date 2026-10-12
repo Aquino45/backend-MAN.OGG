@@ -14,14 +14,14 @@ from apps.censo.models import AyudaCampo, Especie, ValorCatalogo
 from apps.censo.servicios.normalizacion import lineas_de, normalizar
 from apps.censo.servicios.resolver_campos import texto_de
 from apps.censo.servicios.validar_especie import validar_nombres_de_ficha
-from config.constantes import (
+from config.constantes.catalogos import (
     CAMPOS_CATALOGADOS,
     CAMPOS_CON_AYUDA,
     CLAVES_AYUDA_CAMPO,
     CLAVES_FICHA_ESPECIE,
     CLAVES_VALOR_CATALOGO,
-    SEPARADOR_DE_LINEAS,
 )
+from config.constantes.general import SEPARADOR_DE_LINEAS
 
 CAMPOS_DE_FICHA_EN_ESPECIE = ("beneficios", "dato_curioso", "cuidados", "fuente_ficha")
 """Campos de `Especie` que forman su ficha (los que trae el archivo de cápsulas)."""

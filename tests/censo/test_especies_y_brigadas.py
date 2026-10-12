@@ -13,8 +13,8 @@ from django.urls import reverse
 from apps.censo.admin_catalogos import EspecieForm
 from apps.censo.models import Brigada, Especie, GrupoBrigada, ValorCatalogo
 from apps.censo.servicios.validar_especie import validar_nombres_de_especie
-from config.constantes import (
-    FORMA_PALMA,
+from config.constantes.catalogos import FORMA_PALMA
+from config.constantes.permisos import (
     NOMBRE_ROL_ADMINISTRADOR,
     NOMBRE_ROL_EDITOR,
     PERMISOS_CATALOGOS_POR_ROL,

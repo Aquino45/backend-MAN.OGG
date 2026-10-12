@@ -3,7 +3,7 @@
 import pytest
 from rest_framework.test import APIClient
 
-from config.constantes import PREFIJO_API
+from config.constantes.general import PREFIJO_API
 
 
 @pytest.fixture

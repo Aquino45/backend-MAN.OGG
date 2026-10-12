@@ -16,7 +16,16 @@ from openpyxl import load_workbook
 from openpyxl.utils.cell import range_boundaries
 
 from apps.censo.models import Arbol
-from config.constantes import (
+from apps.censo.servicios.geometrias import en_rango
+from config.constantes.carga import MENSAJE_CARGA_MUCHAS_FILAS
+from config.constantes.general import SRID_MAPA, SRID_UTM_CENSO
+from config.constantes.geometrias import (
+    RANGO_LATITUD_CAMPUS_GRADOS,
+    RANGO_LONGITUD_CAMPUS_GRADOS,
+    RANGO_UTM_ESTE_M,
+    RANGO_UTM_NORTE_M,
+)
+from config.constantes.planilla import (
     AVISO_COLUMNAS_COORDENADAS_CON_UTM,
     CAMPO_COORDENADAS_NO_RECONOCIDAS,
     COLUMNAS_OPCIONALES_PLANILLA,
@@ -27,14 +36,7 @@ from config.constantes import (
     FORMATO_COORDENADAS_NO_RECONOCIDAS,
     FORMATOS_FECHA_PLANILLA,
     HOJA_PLANILLA,
-    MENSAJE_CARGA_MUCHAS_FILAS,
     PATRON_ROTULO_SECTOR_PLANILLA,
-    RANGO_LATITUD_CAMPUS_GRADOS,
-    RANGO_LONGITUD_CAMPUS_GRADOS,
-    RANGO_UTM_ESTE_M,
-    RANGO_UTM_NORTE_M,
-    SRID_MAPA,
-    SRID_UTM_CENSO,
     TEXTO_CELDA_VACIA_COORDENADAS,
 )
 
@@ -221,13 +223,13 @@ def _coordenadas_utm_de(primera, segunda):
     en_primera, en_segunda = _decimal_de(primera), _decimal_de(segunda)
     if en_primera is None or en_segunda is None:
         return None, None, False
-    if _en_rango(en_primera, RANGO_LATITUD_CAMPUS_GRADOS) and _en_rango(
+    if en_rango(en_primera, RANGO_LATITUD_CAMPUS_GRADOS) and en_rango(
         en_segunda, RANGO_LONGITUD_CAMPUS_GRADOS
     ):
         punto = Point(float(en_segunda), float(en_primera), srid=SRID_MAPA)
         punto.transform(SRID_UTM_CENSO)
         return punto.x, punto.y, False
-    if _en_rango(en_primera, RANGO_UTM_ESTE_M, True) and _en_rango(
+    if en_rango(en_primera, RANGO_UTM_ESTE_M, True) and en_rango(
         en_segunda, RANGO_UTM_NORTE_M, True
     ):
         return primera, segunda, True
@@ -244,11 +246,6 @@ def _decimal_de(valor):
     except InvalidOperation:
         return None
     return numero if numero.is_finite() else None
-
-
-def _en_rango(numero, rango, excluye_maximo=False):
-    minimo, maximo = rango
-    return minimo <= numero < maximo if excluye_maximo else minimo <= numero <= maximo
 
 
 # --- conversiones ------------------------------------------------------------

@@ -8,7 +8,7 @@ crean aquí antes de asignarlos.
 from django.contrib.auth.management import create_permissions
 from django.db import migrations
 
-from config.constantes import PERMISOS_POR_ROL
+from config.constantes.permisos import PERMISOS_POR_ROL
 
 
 def crear_grupos(apps, schema_editor):

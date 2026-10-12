@@ -16,7 +16,7 @@ from apps.censo.servicios.calidad_registro import (
     cargar_catalogo,
 )
 from apps.censo.servicios.capsulas import lineas_de
-from config.constantes import (
+from config.constantes.calidad import (
     AVISO_CATALOGO_SIN_CARGAR,
     AVISO_INDICE_REGISTROS_EN_REVISION,
     AVISO_INDICE_UN_REGISTRO_EN_REVISION,
@@ -28,16 +28,16 @@ from config.constantes import (
     ETIQUETA_COLUMNA_ESTADO_REGISTRO,
     ETIQUETA_COLUMNA_MOTIVOS_REVISION,
     ETIQUETA_FILTRO_ESTADO_REGISTRO,
-    ETIQUETAS_DE_CAMPOS_CON_AYUDA,
     LARGO_MOTIVOS_EN_LISTA,
     MENSAJE_REGISTRO_EN_REVISION,
     MENSAJE_REGISTRO_PUBLICADO,
     PARAMETRO_FILTRO_ESTADO_REGISTRO,
     PLANTILLA_INDICE_ADMIN,
-    SEPARADOR_DE_LINEAS,
     TEXTO_ESTADO_SE_CALCULA_AL_GUARDAR,
     TEXTO_SIN_MOTIVOS,
 )
+from config.constantes.catalogos import ETIQUETAS_DE_CAMPOS_CON_AYUDA
+from config.constantes.general import SEPARADOR_DE_LINEAS
 
 FIELDSET_ESTADO_REGISTRO = (
     ETIQUETA_BLOQUE_ESTADO_REGISTRO,

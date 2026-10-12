@@ -9,7 +9,7 @@ from django.test.utils import CaptureQueriesContext
 from django.urls import reverse
 
 from apps.censo.models import Arbol
-from config.constantes import VALOR_TIPO_JUVENIL
+from config.constantes.calidad import VALOR_TIPO_JUVENIL
 from tests.censo.conftest import arbol_de_ejemplo
 
 RUTA_SCRIPT = Path(__file__).resolve().parents[2] / "scripts" / "validar_contrato.py"

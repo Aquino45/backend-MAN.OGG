@@ -8,7 +8,7 @@ from django.urls import reverse
 from apps.censo.admin import ArbolAdmin
 from apps.censo.admin_catalogos import EspecieAdmin
 from apps.censo.models import Especie, ValorCatalogo
-from config.constantes import FORMA_ARBOL, FORMA_PALMA, TEXTO_ORIGEN_SIN_DATO
+from config.constantes.catalogos import FORMA_ARBOL, FORMA_PALMA, TEXTO_ORIGEN_SIN_DATO
 from tests.censo.conftest import arbol_evaluado
 
 pytestmark = pytest.mark.django_db

@@ -20,16 +20,16 @@ from apps.censo.servicios.calidad_registro import (
 )
 from apps.censo.servicios.capsulas import normalizar
 from apps.censo.servicios.resolver_campos import texto_de
-from config.constantes import (
-    CAMPOS_CATALOGADOS,
+from config.constantes.calidad import (
     CAMPOS_OBLIGATORIOS_CALIDAD,
     CAMPOS_OPCIONALES_CALIDAD,
     ESTADO_REGISTRO_EN_REVISION,
     ESTADO_REGISTRO_PUBLICADO,
-    SRID_UTM_CENSO,
-    TOLERANCIA_FUERA_DE_SECTOR_M,
     VALOR_TIPO_JUVENIL,
 )
+from config.constantes.catalogos import CAMPOS_CATALOGADOS
+from config.constantes.general import SRID_UTM_CENSO
+from config.constantes.geometrias import TOLERANCIA_FUERA_DE_SECTOR_M
 from tests.censo.conftest import (
     arbol_en_memoria_con_textos,
     arbol_evaluado,
@@ -402,7 +402,7 @@ def test_el_comando_recalcular_calidad_imprime_el_reporte(sectores):
     assert "Catálogo sin cargar en: " in texto
 
 
-# --- CO₂ simulado (BE-015) ---------------------------------------------------------------------
+# --- CO₂ simulado ---------------------------------------------------------------------
 
 
 def aplicado(**cambios):

@@ -6,7 +6,7 @@ Son solo contenedores de datos; `carga_planilla` los llena y la consola y el pan
 from dataclasses import dataclass, field
 
 from apps.censo.servicios.calidad_registro import Motivo
-from config.constantes import (
+from config.constantes.carga import (
     CLASIFICACION_CAMPOS_VACIOS,
     CLASIFICACION_DUPLICADO,
     CLASIFICACION_INCONSISTENTE,

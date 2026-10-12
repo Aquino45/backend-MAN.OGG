@@ -14,7 +14,7 @@ from apps.censo.models import Arbol
 from apps.censo.servicios.cargar_demo import cargar_demo
 from apps.censo.servicios.completar_ejemplo import completar_ejemplo
 from apps.censo.servicios.resolver_campos import texto_de
-from config.constantes import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
+from config.constantes.calidad import ESTADO_REGISTRO_EN_REVISION, ESTADO_REGISTRO_PUBLICADO
 from tests.censo.conftest import arbol_de_ejemplo, arbol_evaluado
 
 RAIZ = Path(__file__).resolve().parents[2]
