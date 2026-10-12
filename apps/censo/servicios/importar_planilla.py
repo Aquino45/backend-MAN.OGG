@@ -15,8 +15,8 @@ from apps.censo.servicios.carga_planilla import (
     ValorNoValido,
     aplicar_decisiones,
     evaluar,
-    leer,
 )
+from apps.censo.servicios.lectura_planilla import leer
 from config.constantes import DECISION_CONSERVAR, DECISION_DESCARTAR
 
 

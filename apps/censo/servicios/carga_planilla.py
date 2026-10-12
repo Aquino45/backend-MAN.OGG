@@ -1,25 +1,17 @@
 """Carga de la planilla de la brigada en tres pasos que comparten la consola y el panel.
 
-`leer` abre el .xlsx en memoria y devuelve las filas tal como vienen. `evaluar` les aplica la regla
+`lectura_planilla.leer` abre el .xlsx en memoria. `evaluar` les aplica la regla
 de calidad (`calidad_registro`) y busca duplicados, sin escribir nada. `aplicar_decisiones` guarda
-las filas que entran. Entre un paso y otro, el panel guarda las filas del lote (`FilaCarga`) para
-preguntar fila por fila; el archivo nunca se guarda.
+las filas que entran. El panel guarda el lote entre un paso y otro (`lote_carga`).
 """
 
-import hashlib
 import re
 from dataclasses import dataclass, field
-from datetime import date, datetime
-from decimal import Decimal, InvalidOperation
-from io import BytesIO
-from pathlib import Path
 
 from django.contrib.gis.geos import Point
-from django.db import models, transaction
-from openpyxl import load_workbook
-from openpyxl.utils.cell import range_boundaries
+from django.db import transaction
 
-from apps.censo.models import Arbol, FilaCarga, LoteCarga, Sector, ValorCatalogo
+from apps.censo.models import Arbol, Sector, ValorCatalogo
 from apps.censo.servicios.calidad_registro import (
     Motivo,
     aplicar,
@@ -27,10 +19,16 @@ from apps.censo.servicios.calidad_registro import (
     buscar_duplicado_por_ubicacion,
     cargar_catalogo,
 )
+from apps.censo.servicios.lectura_planilla import (
+    ENCABEZADO_POR_CAMPO,
+    entero_sector,
+    fecha_de,
+    numero_de,
+    texto_de,
+)
 from config.constantes import (
     CAMPOS_CATALOGADOS,
     CAMPOS_CON_NOTA_PLANILLA,
-    CAMPOS_DE_UBICACION_PLANILLA,
     CAMPOS_NUMERICOS_PLANILLA,
     CLASIFICACION_CAMPOS_VACIOS,
     CLASIFICACION_DUPLICADO,
@@ -40,20 +38,11 @@ from config.constantes import (
     CO2_PLANILLA_ES_SIMULADO,
     COLUMNAS_PLANILLA,
     DECISION_CONSERVAR,
-    DECISION_DESCARTAR,
-    ESTADO_LOTE_CONFIRMADO,
-    ESTADO_LOTE_VALIDADO,
     ESTADO_REGISTRO_EN_REVISION,
     ETIQUETAS_CAMPOS_CALIDAD,
-    FILA_ENCABEZADOS_PLANILLA,
     FORMATO_CODIGO_CALCULADO,
-    FORMATO_CODIGO_EXISTENTE_NO_ACTUALIZADO,
-    FORMATO_CODIGO_NUEVO_NO_INCORPORADO,
     FORMATO_NOTA_PLANILLA,
-    FORMATOS_FECHA_PLANILLA,
     HOJA_PLANILLA,
-    MENSAJE_CARGA_LOTE_CERRADO,
-    MENSAJE_CARGA_MUCHAS_FILAS,
     MENSAJE_CODIGO_EN_PAPELERA,
     MOTIVO_DUPLICADO_CODIGO,
     MOTIVO_DUPLICADO_UBICACION,
@@ -62,9 +51,6 @@ from config.constantes import (
     SEPARADOR_DE_LINEAS,
     SEPARADOR_NOTAS,
     SRID_UTM_CENSO,
-    TIPO_CAMPO_LISTA,
-    TIPO_CAMPO_NUMERO,
-    TIPO_CAMPO_TEXTO,
 )
 
 CAMPOS_SIN_COPIA_DIRECTA = frozenset(
@@ -76,26 +62,6 @@ CAMPOS_TEXTO = (
     frozenset(COLUMNAS_PLANILLA.values()) - CAMPOS_NUMERICOS_PLANILLA - CAMPOS_SIN_COPIA_DIRECTA
 )
 """Campos de texto que se copian tal cual (sin espacios en los bordes) al modelo."""
-
-CAMPOS_CORREGIBLES = frozenset(COLUMNAS_PLANILLA.values()) - {
-    "codigo",
-    "sector",
-    "control_registro",
-}
-"""Campos que la pantalla de revisión deja corregir."""
-
-CAMPOS_DECIMALES = {
-    campo.name: campo
-    for campo in Arbol._meta.get_fields()
-    if isinstance(campo, models.DecimalField)
-}
-"""Campos decimales del modelo: de ellos salen los límites de dígitos (`max_digits`, etc.)."""
-
-LARGO_NOMBRE_ARCHIVO = LoteCarga._meta.get_field("nombre_archivo").max_length
-"""Cuántos caracteres del nombre del archivo caben en la bitácora."""
-
-ENCABEZADO_POR_CAMPO = {campo: encabezado for encabezado, campo in COLUMNAS_PLANILLA.items()}
-"""Inverso de COLUMNAS_PLANILLA, para nombrar la columna en los reportes."""
 
 
 @dataclass
@@ -122,15 +88,6 @@ class RegistroEnRevision:
 
     codigo: str
     motivos: list[str]
-
-
-@dataclass
-class PlanillaLeida:
-    """Las filas de la hoja como vienen: `[(número de fila, {campo: valor})]`."""
-
-    nombre_archivo: str
-    filas: list
-    catalogos: dict = field(default_factory=dict)
 
 
 @dataclass
@@ -206,90 +163,6 @@ class ResultadoCarga:
         }
 
 
-# --- paso 1: leer ------------------------------------------------------------
-
-
-def leer(origen, nombre_archivo=None, filas_maximas=None):
-    """Lee la hoja de la brigada desde una ruta o desde bytes (`bytes` o `BytesIO`).
-
-    Solo mira los valores guardados: no se evalúa ninguna fórmula ni macro. Lanza ValueError con un
-    mensaje claro si el archivo no sirve o declara más de `filas_maximas` filas.
-    """
-    if isinstance(origen, (str, Path)):
-        ruta = Path(origen)
-        if not ruta.is_file():
-            raise ValueError(f"No existe el archivo: {ruta}")
-        contenido, nombre = ruta.read_bytes(), nombre_archivo or ruta.name
-    else:
-        contenido = origen.getvalue() if isinstance(origen, BytesIO) else bytes(origen)
-        nombre = nombre_archivo or ""
-    hoja_formulas, hoja_valores = _abrir_hojas(contenido, nombre)
-    declaradas = hoja_formulas.max_row - FILA_ENCABEZADOS_PLANILLA
-    if filas_maximas is not None and declaradas > filas_maximas:
-        raise ValueError(MENSAJE_CARGA_MUCHAS_FILAS.format(filas=declaradas, maximo=filas_maximas))
-    columnas = _ubicar_columnas(hoja_formulas)
-    return PlanillaLeida(
-        nombre_archivo=nombre,
-        filas=_leer_filas(hoja_formulas, hoja_valores, columnas),
-        catalogos=_leer_catalogos(hoja_formulas, columnas),
-    )
-
-
-def _abrir_hojas(contenido, nombre):
-    """Abre el libro dos veces: con fórmulas (y validaciones) y con los valores guardados."""
-    try:
-        libro_formulas = load_workbook(BytesIO(contenido), data_only=False)
-        libro_valores = load_workbook(BytesIO(contenido), data_only=True)
-    except Exception as error:  # openpyxl lanza tipos distintos según qué esté roto
-        raise ValueError(f"No se pudo abrir {nombre} como planilla de Excel: {error}") from error
-    if HOJA_PLANILLA not in libro_formulas.sheetnames:
-        raise ValueError(f"La planilla no tiene la hoja «{HOJA_PLANILLA}».")
-    return libro_formulas[HOJA_PLANILLA], libro_valores[HOJA_PLANILLA]
-
-
-def _ubicar_columnas(hoja):
-    """Devuelve {campo: número de columna} buscando los encabezados por nombre."""
-    posicion_por_encabezado = {
-        str(celda.value).strip(): celda.column
-        for celda in hoja[FILA_ENCABEZADOS_PLANILLA]
-        if celda.value is not None
-    }
-    faltan = [e for e in COLUMNAS_PLANILLA if e not in posicion_por_encabezado]
-    if faltan:
-        raise ValueError("Faltan columnas en la planilla: " + ", ".join(faltan))
-    return {campo: posicion_por_encabezado[enc] for enc, campo in COLUMNAS_PLANILLA.items()}
-
-
-def _leer_catalogos(hoja, columnas):
-    """Lee las listas de las validaciones de datos: {campo: {valores permitidos}}."""
-    campo_por_columna = {columna: campo for campo, columna in columnas.items()}
-    catalogos = {}
-    for validacion in hoja.data_validations.dataValidation:
-        formula = (validacion.formula1 or "").strip()
-        if validacion.type != "list" or not (formula.startswith('"') and formula.endswith('"')):
-            continue  # solo se leen las listas escritas dentro de la validación
-        valores = {valor.strip() for valor in formula.strip('"').split(",") if valor.strip()}
-        for rango in str(validacion.sqref).split():
-            primera_columna, _, ultima_columna, _ = range_boundaries(rango)
-            for columna in range(primera_columna, ultima_columna + 1):
-                if columna in campo_por_columna:
-                    catalogos.setdefault(campo_por_columna[columna], set()).update(valores)
-    return catalogos
-
-
-def _leer_filas(hoja_formulas, hoja_valores, columnas):
-    """Devuelve [(número de fila, {campo: valor guardado})] de las filas que tienen Sector."""
-    filas = []
-    for numero_fila in range(FILA_ENCABEZADOS_PLANILLA + 1, hoja_formulas.max_row + 1):
-        fila = {
-            campo: hoja_valores.cell(row=numero_fila, column=columna).value
-            for campo, columna in columnas.items()
-        }
-        if _texto(fila["sector"]) is not None:
-            filas.append((numero_fila, fila))
-    return filas
-
-
 # --- paso 2: evaluar ------------------------------------------------------------
 
 
@@ -310,7 +183,7 @@ def evaluar(planilla):
     sectores = _cargar_sectores(planilla.filas)
     orden_en_sector, por_codigo, por_ubicacion = {}, {}, {}
     for numero_fila, datos in planilla.filas:
-        id_sector = _entero_sector(datos["sector"])
+        id_sector = entero_sector(datos["sector"])
         orden_en_sector[id_sector] = orden_en_sector.get(id_sector, 0) + 1
         fila = _evaluar_fila(
             numero_fila, datos, planilla, sectores[id_sector], orden_en_sector, catalogo
@@ -322,7 +195,7 @@ def evaluar(planilla):
 
 def _cargar_sectores(filas):
     """Trae de la BD los sectores que usa la planilla; falla si falta alguno."""
-    ids = {_entero_sector(fila["sector"]) for _, fila in filas}
+    ids = {entero_sector(fila["sector"]) for _, fila in filas}
     sectores = Sector.objects.in_bulk(ids)
     faltan = sorted(ids - set(sectores))
     if faltan:
@@ -336,7 +209,7 @@ def _cargar_sectores(filas):
 
 def _evaluar_fila(numero_fila, datos, planilla, sector, orden_en_sector, catalogo):
     """Convierte una fila en lo que se guardaría y le aplica la regla de calidad."""
-    codigo = _texto(datos["codigo"])
+    codigo = texto_de(datos["codigo"])
     calculado = codigo is None
     if calculado:
         codigo = FORMATO_CODIGO_CALCULADO.format(sector=sector.id, orden=orden_en_sector[sector.id])
@@ -348,18 +221,18 @@ def _evaluar_fila(numero_fila, datos, planilla, sector, orden_en_sector, catalog
         numero_fila, codigo, datos, {}, {}, [], CLASIFICACION_LISTO, codigo_calculado=calculado
     )
     valores = fila.valores
-    valores.update({campo: _texto(datos[campo]) for campo in CAMPOS_TEXTO})
+    valores.update({campo: texto_de(datos[campo]) for campo in CAMPOS_TEXTO})
     for campo in valores.keys() & planilla.catalogos.keys():
         if valores[campo] is not None and valores[campo] not in planilla.catalogos[campo]:
             fila.fuera_de_catalogo.append(
                 ValorNoValido(codigo, ENCABEZADO_POR_CAMPO[campo], valores[campo])
             )
     notas = _leer_numeros(fila)
-    valores["fecha_registro"], texto_fecha = _fecha(datos["fecha_registro"])
+    valores["fecha_registro"], texto_fecha = fecha_de(datos["fecha_registro"])
     if texto_fecha is not None:
         encabezado = ENCABEZADO_POR_CAMPO["fecha_registro"]
         fila.fechas_no_validas.append(ValorNoValido(codigo, encabezado, texto_fecha))
-    partes_observaciones = [_texto(datos["observaciones"]), *notas]
+    partes_observaciones = [texto_de(datos["observaciones"]), *notas]
     valores["observaciones"] = SEPARADOR_NOTAS.join(p for p in partes_observaciones if p) or None
     _poner_ubicacion(fila, sector)
     valores["sector"] = sector
@@ -382,7 +255,7 @@ def _leer_numeros(fila):
     """Pone en `fila.valores` los números; devuelve las notas para `observaciones`."""
     notas = []
     for campo in (c for c in COLUMNAS_PLANILLA.values() if c in CAMPOS_NUMERICOS_PLANILLA):
-        fila.valores[campo], texto = _numero(fila.datos[campo], campo)
+        fila.valores[campo], texto = numero_de(fila.datos[campo], campo)
         if texto is not None:
             encabezado = ENCABEZADO_POR_CAMPO[campo]
             fila.numeros_no_validos.append(ValorNoValido(fila.codigo, encabezado, texto))
@@ -500,9 +373,6 @@ def _guardar_fila(fila, catalogo, resultado):
         resultado.publicados.append(codigo)
 
 
-# --- el lote del panel ------------------------------------------------------------
-
-
 def valores_activos_del_catalogo():
     """`{campo: [valores activos]}` en el orden del catálogo, para las listas de la revisión."""
     activos = {campo: [] for campo in CAMPOS_CATALOGADOS}
@@ -510,219 +380,3 @@ def valores_activos_del_catalogo():
     for campo, valor in filas.values_list("campo", "valor"):
         activos.setdefault(campo, []).append(valor)
     return activos
-
-
-def registrar_lote(usuario, nombre_archivo, contenido, evaluacion):
-    """Guarda el lote (con el hash del archivo, no el archivo) y una fila por registro leído."""
-    cuentas = evaluacion.cuentas()
-    with transaction.atomic():
-        lote = LoteCarga.objects.create(
-            usuario=usuario,
-            nombre_archivo=nombre_archivo[:LARGO_NOMBRE_ARCHIVO],
-            sha256=hashlib.sha256(contenido).hexdigest(),
-            filas_leidas=len(evaluacion.filas),
-            listos=cuentas[CLASIFICACION_LISTO],
-            con_campos_vacios=cuentas[CLASIFICACION_CAMPOS_VACIOS],
-            inconsistentes=cuentas[CLASIFICACION_INCONSISTENTE],
-            duplicados=cuentas[CLASIFICACION_DUPLICADO],
-        )
-        FilaCarga.objects.bulk_create(
-            FilaCarga(
-                lote=lote,
-                numero_fila=fila.numero_fila,
-                codigo=fila.codigo,
-                clasificacion=fila.clasificacion,
-                datos={campo: _a_json(valor) for campo, valor in fila.datos.items()},
-                motivos=[{"campo": m.campo, "porque": m.porque} for m in fila.motivos_a_mostrar],
-            )
-            for fila in evaluacion.filas
-        )
-    return lote
-
-
-def filas_con_problema(lote):
-    """Las filas del lote por las que hay que preguntar, en el orden de la planilla."""
-    return lote.filas.filter(clasificacion__in=CLASIFICACIONES_CON_PROBLEMA)
-
-
-def mensajes_de_no_incorporacion(lote):
-    """Qué pasa, por código, si se confirma sin revisar: un mensaje distinto si ya existe."""
-    codigos = list(dict.fromkeys(filas_con_problema(lote).values_list("codigo", flat=True)))
-    existentes = set(Arbol.todos.filter(codigo__in=codigos).values_list("codigo", flat=True))
-    return [
-        (
-            FORMATO_CODIGO_EXISTENTE_NO_ACTUALIZADO
-            if codigo in existentes
-            else FORMATO_CODIGO_NUEVO_NO_INCORPORADO
-        ).format(codigo=codigo)
-        for codigo in codigos
-    ]
-
-
-def campos_a_corregir(fila, activos):
-    """Los campos de una fila con problema que se pueden editar: `[{campo, etiqueta, ...}]`."""
-    campos = []
-    for motivo in fila.motivos:
-        pedidos = (
-            CAMPOS_DE_UBICACION_PLANILLA if motivo["campo"] == "ubicacion" else (motivo["campo"],)
-        )
-        campos += [c for c in pedidos if c in CAMPOS_CORREGIBLES and c not in campos]
-    return [_describir_campo(campo, fila.datos.get(campo), activos) for campo in campos]
-
-
-def _describir_campo(campo, valor, activos):
-    if campo in CAMPOS_NUMERICOS_PLANILLA:
-        tipo = TIPO_CAMPO_NUMERO
-    elif activos.get(campo):
-        tipo = TIPO_CAMPO_LISTA
-    else:
-        tipo = TIPO_CAMPO_TEXTO
-    return {
-        "campo": campo,
-        "etiqueta": ENCABEZADO_POR_CAMPO[campo],
-        "tipo": tipo,
-        "valor_en_planilla": _texto(valor),
-        "valor": _valor_mostrado(campo, valor, tipo),
-        "opciones": activos.get(campo, []) if tipo == TIPO_CAMPO_LISTA else [],
-    }
-
-
-def _valor_mostrado(campo, valor, tipo):
-    """Lo que trae el control de la pantalla; un texto donde va un número se muestra vacío."""
-    if tipo == TIPO_CAMPO_NUMERO and _numero(valor, campo)[0] is None:
-        return ""
-    return _texto(valor) or ""
-
-
-def ediciones_del_formulario(filas, activos, pedidos):
-    """`{pk de la fila: {campo: valor}}` con lo que el usuario cambió; el resto se ignora.
-
-    `pedidos` es una función `(pk, campo) -> texto o None` que lee el formulario. Solo cuentan los
-    campos que la pantalla ofrece y que cambiaron frente a lo que se mostraba.
-    """
-    ediciones = {}
-    for fila in filas:
-        for descrito in campos_a_corregir(fila, activos):
-            nuevo = pedidos(fila.pk, descrito["campo"])
-            if nuevo is not None and nuevo.strip() != descrito["valor"]:
-                ediciones.setdefault(fila.pk, {})[descrito["campo"]] = nuevo.strip()
-    return ediciones
-
-
-def codigo_con_varias_conservadas(filas, conservadas):
-    """El primer código con más de una fila conservada, o None (se conserva como mucho una)."""
-    vistos = set()
-    for fila in filas:
-        if fila.pk in conservadas:
-            if fila.codigo in vistos:
-                return fila.codigo
-            vistos.add(fila.codigo)
-    return None
-
-
-def confirmar_lote(lote, conservadas=None, ediciones=None):
-    """Evalúa otra vez el lote (con lo corregido), guarda lo que entra y lo cierra.
-
-    Con `conservadas` (los pk de las filas elegidas) las demás filas con problema no entran;
-    sin él, no entra ninguna. Las filas buenas entran siempre. Las filas del lote se borran.
-    Lanza ValueError si el lote ya no está pendiente.
-    """
-    ediciones = ediciones or {}
-    with transaction.atomic():
-        lote = LoteCarga.objects.select_for_update().get(pk=lote.pk)
-        if lote.estado != ESTADO_LOTE_VALIDADO:
-            raise ValueError(MENSAJE_CARGA_LOTE_CERRADO)
-        filas = list(lote.filas.all())
-        planilla = PlanillaLeida(
-            lote.nombre_archivo,
-            [(f.numero_fila, {**f.datos, **ediciones.get(f.pk, {})}) for f in filas],
-        )
-        evaluacion = evaluar(planilla)
-        if conservadas is None:
-            decisiones = {f.numero_fila: DECISION_DESCARTAR for f in evaluacion.con_problema()}
-        else:
-            decisiones = {
-                f.numero_fila: DECISION_CONSERVAR if f.pk in conservadas else DECISION_DESCARTAR
-                for f in filas
-                if f.clasificacion in CLASIFICACIONES_CON_PROBLEMA
-            }
-        for fila in filas:
-            fila.decision = decisiones.get(fila.numero_fila, fila.decision)
-        FilaCarga.objects.bulk_update(filas, ["decision"])
-        resultado = aplicar_decisiones(evaluacion, decisiones)
-        lote.cerrar(ESTADO_LOTE_CONFIRMADO, resultado.como_dict())
-    return resultado
-
-
-# --- conversiones ------------------------------------------------------------
-
-
-def _a_json(valor):
-    """El valor leído de una celda, listo para guardarse como JSON (las fechas, en ISO)."""
-    if isinstance(valor, datetime):
-        return valor.date().isoformat()
-    if isinstance(valor, date):
-        return valor.isoformat()
-    if valor is None or isinstance(valor, (str, int, float, bool)):
-        return valor
-    return str(valor)
-
-
-def _entero_sector(valor):
-    try:
-        return int(Decimal(str(valor).strip()))
-    except (InvalidOperation, ValueError) as error:
-        raise ValueError(f"Sector no válido en la planilla: «{valor}».") from error
-
-
-def _texto(valor):
-    """Texto sin espacios en los bordes; None si está vacío."""
-    if valor is None:
-        return None
-    return str(valor).strip() or None
-
-
-def _numero(valor, campo):
-    """Devuelve (Decimal o None, texto no válido o None). Vacío es None sin aviso.
-
-    No es válido lo que no es número ni cabe en el campo decimal del modelo.
-    """
-    texto = _texto(valor)
-    if texto is None:
-        return None, None
-    try:
-        numero = Decimal(texto.replace(",", "."))
-    except InvalidOperation:
-        return None, texto
-    if isinstance(valor, bool) or not numero.is_finite() or not _cabe(numero, campo):
-        return None, texto
-    return numero, None
-
-
-def _cabe(numero, campo):
-    """True si el número cabe en el DecimalField del modelo (los campos sin modelo, siempre)."""
-    campo_modelo = CAMPOS_DECIMALES.get(campo)
-    if campo_modelo is None:
-        return True
-    try:
-        redondeado = numero.quantize(Decimal(1).scaleb(-campo_modelo.decimal_places))
-    except InvalidOperation:
-        return False
-    return len(redondeado.as_tuple().digits) <= campo_modelo.max_digits
-
-
-def _fecha(valor):
-    """Devuelve (date o None, texto no válido o None). Vacío es None sin aviso."""
-    if isinstance(valor, datetime):
-        return valor.date(), None
-    if isinstance(valor, date):
-        return valor, None
-    texto = _texto(valor)
-    if texto is None:
-        return None, None
-    for formato in FORMATOS_FECHA_PLANILLA:
-        try:
-            return datetime.strptime(texto, formato).date(), None
-        except ValueError:
-            continue
-    return None, texto

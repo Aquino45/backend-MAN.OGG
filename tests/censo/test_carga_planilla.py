@@ -17,11 +17,8 @@ from django.utils import timezone
 from openpyxl import Workbook
 
 from apps.censo.models import Arbol, FilaCarga, LoteCarga, ValorCatalogo
-from apps.censo.servicios.carga_planilla import (
-    evaluar,
-    leer,
-    valores_activos_del_catalogo,
-)
+from apps.censo.servicios.carga_planilla import evaluar, valores_activos_del_catalogo
+from apps.censo.servicios.lectura_planilla import leer
 from config.constantes import (
     CLASIFICACION_CAMPOS_VACIOS,
     CLASIFICACION_DUPLICADO,
