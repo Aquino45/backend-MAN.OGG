@@ -523,3 +523,18 @@ def test_la_migracion_de_permisos_se_repite_sin_duplicar_y_conserva_los_previos(
         esperados = set(PERMISOS_POR_ROL[nombre]) | set(PERMISOS_CAPSULAS_POR_ROL[nombre])
         assert permisos_del_grupo(nombre) == esperados
         assert Group.objects.get(name=nombre).permissions.count() == len(esperados)
+
+
+def test_una_ficha_cuyo_alias_ya_es_de_otra_especie_no_se_guarda(db, tmp_path):
+    crear_ficha("Roystonea regia", nombre_comun="Palma real", alias="Pimiento")
+    ruta = escribir(
+        tmp_path / "c.json",
+        ayuda_campos=[],
+        valores=[],
+        fichas_especie=[ficha_json(alias=["pimiento"])],
+    )
+
+    with pytest.raises(ValueError, match="Pimiento|pimiento"):
+        cargar_capsulas(ruta)
+
+    assert Especie.objects.count() == 1

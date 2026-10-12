@@ -13,6 +13,7 @@ from django.db import transaction
 from apps.censo.models import AyudaCampo, Especie, ValorCatalogo
 from apps.censo.servicios.normalizacion import lineas_de, normalizar
 from apps.censo.servicios.resolver_campos import texto_de
+from apps.censo.servicios.validar_especie import validar_nombres_de_ficha
 from config.constantes import (
     CAMPOS_CATALOGADOS,
     CAMPOS_CON_AYUDA,
@@ -164,6 +165,8 @@ def _guardar_fichas(conteo, fichas, actualizar):
     """
     for datos in fichas:
         especie = Especie.objects.filter(nombre_cientifico=datos["nombre_cientifico"]).first()
+        if especie is None or actualizar:
+            validar_nombres_de_ficha(datos, especie)
         if especie is None:
             Especie.objects.create(**datos)
             conteo.creados += 1

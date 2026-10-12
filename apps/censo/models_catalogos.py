@@ -11,14 +11,12 @@ from django.core.exceptions import ValidationError
 from django.db.models import Q
 from simple_history.models import HistoricalRecords
 
-from apps.censo.servicios.normalizacion import lineas_de, normalizar
 from config.constantes import (
     CAMPO_ORIGEN,
     DECIMALES_DENSIDAD_MADERA,
     DIGITOS_DENSIDAD_MADERA,
     FORMAS_ESPECIE,
     LARGO_TEXTO,
-    MENSAJE_ALIAS_REPETIDO,
     MENSAJE_FICHA_PUBLICADA_INCOMPLETA,
 )
 
@@ -80,7 +78,7 @@ class Especie(models.Model):
         ]
 
     def clean(self):
-        """Los textos opcionales vacíos van como null; un alias no se repite entre especies."""
+        """Los textos opcionales vacíos van como null y la ficha publicada va completa."""
         super().clean()
         for campo in ("nombre_comun", "familia", "forma", "fuente_densidad"):
             setattr(self, campo, (getattr(self, campo) or "").strip() or None)
@@ -89,21 +87,6 @@ class Especie(models.Model):
         completa = self.nombre_comun and self.beneficios.strip() and self.fuente_ficha.strip()
         if self.ficha_publicada and not completa:
             raise ValidationError({"ficha_publicada": MENSAJE_FICHA_PUBLICADA_INCOMPLETA})
-        self._validar_alias()
-
-    def _validar_alias(self):
-        """Ningún alias (comparado normalizado) lo tiene ya otra especie como nombre o alias."""
-        propios = {normalizar(alias) for alias in lineas_de(self.alias)}
-        if not propios:
-            return
-        for otra in Especie.objects.exclude(pk=self.pk):
-            ocupados = {normalizar(otra.nombre_cientifico), *map(normalizar, lineas_de(otra.alias))}
-            repetidos = propios & ocupados
-            if repetidos:
-                alias = next(a for a in lineas_de(self.alias) if normalizar(a) in repetidos)
-                raise ValidationError(
-                    {"alias": MENSAJE_ALIAS_REPETIDO.format(alias=alias, especie=otra)}
-                )
 
     def __str__(self):
         if self.nombre_comun:

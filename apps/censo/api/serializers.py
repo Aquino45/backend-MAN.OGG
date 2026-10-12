@@ -1,15 +1,14 @@
 """DTO de salida del censo: la forma exacta de los schemas del contrato.
 
-Solo leen campos ya cargados por los selectores; no consultan la BD. El único servicio que usan es
-`texto_de`, que lee el texto de un dato desde las tablas ya traídas con el árbol.
+Solo leen campos ya cargados por los selectores; no consultan la BD ni llaman servicios. Los datos
+de texto que viven en otra tabla (especie, catálogo) se aplanan aquí.
 Las coordenadas salen en GeoJSON, `[longitud, latitud]`, con `DECIMALES_COORDENADAS`. La cartilla
 suma las coordenadas UTM tal como están guardadas, en metros, con `DECIMALES_UTM`.
 """
 
 from rest_framework import serializers
 
-from apps.censo.servicios.resolver_campos import texto_de
-from config.constantes import DECIMALES_COORDENADAS, DECIMALES_UTM
+from config.constantes import CAMPO_ORIGEN, CAMPOS_DE_ESPECIE, DECIMALES_COORDENADAS, DECIMALES_UTM
 
 
 def _posicion(longitud, latitud):
@@ -62,7 +61,24 @@ class _TextoDelArbol(serializers.Field):
         super().__init__(**kwargs)
 
     def to_representation(self, arbol):
-        return texto_de(arbol, self.field_name) or None
+        """El texto de las tablas ya traídas con el árbol y, si falta, el que trajo la planilla."""
+        campo = self.field_name
+        texto = self._de_las_tablas(arbol, campo)
+        if not (texto or "").strip():
+            texto = (arbol.valores_originales or {}).get(campo)
+        return texto or None
+
+    @staticmethod
+    def _de_las_tablas(arbol, campo):
+        if campo in CAMPOS_DE_ESPECIE:
+            especie = arbol.especie
+            if especie is None:
+                return None
+            if campo == CAMPO_ORIGEN:
+                return None if especie.origen is None else especie.origen.valor
+            return getattr(especie, campo)
+        catalogado = getattr(arbol, campo)
+        return None if catalogado is None else catalogado.valor
 
 
 class SectorPropiedadesSerializer(serializers.Serializer):

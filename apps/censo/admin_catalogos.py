@@ -6,12 +6,14 @@ También están aquí las piezas que comparten con el panel de árboles: el mapa
 y las columnas que el árbol toma de su especie.
 """
 
+from django import forms
 from django.contrib import admin
 from django.contrib.gis.admin.options import GeoModelAdminMixin
 from simple_history.admin import SimpleHistoryAdmin
 
 from apps.censo.models import Brigada, Especie, GrupoBrigada, Sector
 from apps.censo.servicios.resolver_campos import texto_de_especie
+from apps.censo.servicios.validar_especie import validar_nombres_de_especie
 from config.constantes import (
     CAMPO_ORIGEN,
     MAPA_ADMIN_LAT,
@@ -63,8 +65,39 @@ class _ValidaAlGuardar(SimpleHistoryAdmin):
         super().save_model(request, obj, form, change)
 
 
+class EspecieForm(forms.ModelForm):
+    """Formulario de la especie: sus nombres y alias no pueden chocar con los de otra."""
+
+    class Meta:
+        model = Especie
+        fields = (
+            "nombre_cientifico",
+            "nombre_comun",
+            "alias",
+            "familia",
+            "origen",
+            "forma",
+            "densidad_madera_g_cm3",
+            "fuente_densidad",
+            "beneficios",
+            "dato_curioso",
+            "cuidados",
+            "fuente_ficha",
+            "ficha_publicada",
+            "revisada",
+        )
+
+    def clean(self):
+        datos = super().clean()
+        validar_nombres_de_especie(
+            datos.get("nombre_cientifico"), datos.get("alias"), self.instance.pk
+        )
+        return datos
+
+
 @admin.register(Especie)
 class EspecieAdmin(_ValidaAlGuardar):
+    form = EspecieForm
     list_display = ("nombre_cientifico", "nombre_comun", "origen", "ficha_publicada", "revisada")
     list_filter = ("revisada", "ficha_publicada", "forma")
     search_fields = ("nombre_cientifico", "nombre_comun", "alias")

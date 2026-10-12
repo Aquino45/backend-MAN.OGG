@@ -10,7 +10,9 @@ from django.db import IntegrityError, transaction
 from django.db.models import ProtectedError
 from django.urls import reverse
 
+from apps.censo.admin_catalogos import EspecieForm
 from apps.censo.models import Brigada, Especie, GrupoBrigada, ValorCatalogo
+from apps.censo.servicios.validar_especie import validar_nombres_de_especie
 from config.constantes import (
     FORMA_PALMA,
     NOMBRE_ROL_ADMINISTRADOR,
@@ -66,20 +68,62 @@ def test_el_origen_solo_acepta_valores_del_catalogo_de_origen():
     assert "origen" in error.value.message_dict
 
 
+def validar(nombre_cientifico, alias="", pk=None):
+    validar_nombres_de_especie(nombre_cientifico, alias, pk)
+
+
 def test_un_alias_no_puede_repetirse_entre_especies_ni_chocar_con_otro_nombre():
     crear_especie(alias="Schinus\nPimiento")
 
     with pytest.raises(ValidationError) as error:
-        crear_especie("Otra", alias="  PIMIENTO ").full_clean()
+        validar("Otra", "  PIMIENTO ")
     assert "alias" in error.value.message_dict
     with pytest.raises(ValidationError):
-        crear_especie("Otra 2", alias="schinus MOLLE").full_clean()
-    crear_especie("Otra 3", alias="Pimiento falso").full_clean()
+        validar("Otra 2", "schinus MOLLE")
+    validar("Otra 3", "Pimiento falso")
+
+
+def test_un_alias_no_puede_ser_el_nombre_comun_de_otra_especie():
+    crear_especie(nombre_comun="Molle")
+
+    with pytest.raises(ValidationError) as error:
+        validar("Otra", "  MOLLE ")
+
+    assert "Molle" in str(error.value.message_dict["alias"])
+
+
+def test_un_nombre_cientifico_no_puede_ser_el_alias_ni_el_nombre_comun_de_otra_especie():
+    crear_especie(nombre_comun="Molle", alias="Pimiento")
+
+    for choque in ("pimiento", "  MOLLE", "schinus  Molle"):
+        with pytest.raises(ValidationError) as error:
+            validar(choque)
+        assert "nombre_cientifico" in error.value.message_dict
+    validar("Roystonea regia")
+
+
+def test_una_especie_no_choca_consigo_misma_y_un_nombre_comun_repetido_se_permite():
+    molle = crear_especie(nombre_comun="Molle", alias="Pimiento")
+
+    validar(molle.nombre_cientifico, molle.alias, pk=molle.pk)
+    validar("Otra", "Algo distinto")  # su nombre común puede repetirse: la ingesta lo trata
+
+
+def test_el_formulario_de_la_especie_usa_la_misma_validacion():
+    crear_especie(nombre_comun="Molle", alias="Pimiento")
+
+    malo = EspecieForm(data={"nombre_cientifico": "Pimiento", "alias": "molle", "revisada": True})
+    bueno = EspecieForm(data={"nombre_cientifico": "Roystonea regia", "revisada": True})
+
+    assert not malo.is_valid()
+    assert {"nombre_cientifico", "alias"} <= set(malo.errors)
+    assert bueno.is_valid(), bueno.errors
 
 
 def test_una_especie_puede_repetir_sus_propios_alias_al_guardar_de_nuevo():
     especie = crear_especie(alias="Schinus")
 
+    validar(especie.nombre_cientifico, especie.alias, pk=especie.pk)
     especie.full_clean()
 
 
