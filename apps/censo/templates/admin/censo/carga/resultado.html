@@ -1,0 +1,15 @@
+{% extends "admin/censo/carga/base.html" %}
+{% block content %}
+<h2>{{ textos.titulo_resultado }}</h2>
+<p><strong>{{ resumen }}</strong></p>
+{% for etiqueta, codigos in grupos %}
+<div class="carga-codigos">
+  <h3>{{ etiqueta }} ({{ codigos|length }})</h3>
+  <p>{% if codigos %}{{ codigos|join:", " }}{% else %}{{ textos.texto_sin_registros }}{% endif %}</p>
+</div>
+{% endfor %}
+<p>
+  <a href="{{ enlace_en_revision }}">{{ textos.enlace_a_revision }}</a> ·
+  <a href="{{ url_de_subida }}">{{ textos.titulo }}</a>
+</p>
+{% endblock %}

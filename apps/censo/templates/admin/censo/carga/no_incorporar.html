@@ -1,0 +1,16 @@
+{% extends "admin/censo/carga/base.html" %}
+{% block content %}
+<h2>{{ textos.titulo_no_incorporar }}</h2>
+<div class="carga-alerta" role="alert">
+  <ul>
+    {% for aviso in avisos %}<li>{{ aviso }}</li>{% endfor %}
+  </ul>
+</div>
+<div class="carga-acciones">
+  <form method="post" action="{% url 'admin:censo_lotecarga_confirmar' lote.pk %}">
+    {% csrf_token %}
+    <input type="submit" class="default" value="{{ textos.boton_confirmar }}">
+  </form>
+  <a class="button" href="{% url 'admin:censo_lotecarga_resumen' lote.pk %}">{{ textos.boton_volver }}</a>
+</div>
+{% endblock %}

@@ -22,6 +22,7 @@ from config.constantes import (
     NOMBRE_ROL_ADMINISTRADOR,
     NOMBRE_ROL_EDITOR,
     PERMISOS_CAPSULAS_POR_ROL,
+    PERMISOS_CARGA_POR_ROL,
     PERMISOS_POR_ROL,
     SRID_MAPA,
     TITULO_ADMIN,
@@ -38,6 +39,7 @@ from tests.censo.conftest import (
 MOTIVO = "Se registró dos veces por error"
 MOTIVO_DESTACADO = "Ejemplar de mayor copa del sector"
 MIGRACION_DE_ROLES = "apps.censo.migrations.0004_grupos_de_roles"
+MIGRACION_DE_CARGA = "apps.censo.migrations.0009_carga_de_planilla"
 ROLES = ["cliente_administrador", "cliente_editor"]
 
 
@@ -137,13 +139,45 @@ def test_el_administrador_tiene_todo_y_el_editor_no(usuario_administrador, usuar
 
     assert administrador == set(PERMISOS_POR_ROL[NOMBRE_ROL_ADMINISTRADOR]) | set(
         PERMISOS_CAPSULAS_POR_ROL[NOMBRE_ROL_ADMINISTRADOR]
-    )
+    ) | set(PERMISOS_CARGA_POR_ROL[NOMBRE_ROL_ADMINISTRADOR])
     assert editor == set(PERMISOS_POR_ROL[NOMBRE_ROL_EDITOR]) | set(
         PERMISOS_CAPSULAS_POR_ROL[NOMBRE_ROL_EDITOR]
-    )
+    ) | set(PERMISOS_CARGA_POR_ROL[NOMBRE_ROL_EDITOR])
     assert {"change_sector", "cambiar_demo", "delete_arbolenpapelera"} <= administrador
     assert not {"change_sector", "add_sector", "cambiar_demo", "delete_arbolenpapelera"} & editor
     assert {"add_arbol", "change_arbol", "delete_arbol", "change_arbolenpapelera"} <= editor
+
+
+@pytest.mark.parametrize("rol", ROLES)
+def test_el_indice_enlaza_cargar_planilla_a_cada_rol(rol, request):
+    cliente = request.getfixturevalue(rol)
+
+    cuerpo = cliente.get(reverse("admin:index")).content.decode()
+
+    assert reverse("admin:censo_lotecarga_changelist") in cuerpo
+    assert "Cargar planilla" in cuerpo
+
+
+def test_quien_no_tiene_el_permiso_no_ve_el_enlace_de_cargar_planilla(db):
+    usuario = User.objects.create_user("sin-carga", password="x" * 12, is_staff=True)
+    permiso = Permission.objects.get(codename="view_arbol")
+    usuario.user_permissions.add(permiso)
+
+    cuerpo = cliente_de(usuario).get(reverse("admin:index")).content.decode()
+
+    assert reverse("admin:censo_lotecarga_changelist") not in cuerpo
+
+
+def test_la_migracion_del_permiso_de_carga_se_puede_repetir_sin_duplicar(db):
+    sumar = importlib.import_module(MIGRACION_DE_CARGA).sumar_permiso_de_carga
+
+    sumar(registro_de_apps, None)
+    sumar(registro_de_apps, None)
+
+    for nombre, codigos in PERMISOS_CARGA_POR_ROL.items():
+        grupo = Group.objects.get(name=nombre)
+        asignados = grupo.permissions.filter(codename__in=codigos)
+        assert sorted(asignados.values_list("codename", flat=True)) == sorted(codigos)
 
 
 def test_la_migracion_de_roles_se_puede_repetir_sin_duplicar(db):

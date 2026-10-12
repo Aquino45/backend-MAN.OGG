@@ -511,7 +511,7 @@ def test_el_co2_de_la_planilla_entra_marcado_como_simulado(ruta_planilla, sector
 def test_la_constante_decide_si_el_co2_de_la_planilla_es_simulado(
     ruta_planilla, sectores, monkeypatch
 ):
-    monkeypatch.setattr("apps.censo.servicios.importar_planilla.CO2_PLANILLA_ES_SIMULADO", False)
+    monkeypatch.setattr("apps.censo.servicios.carga_planilla.CO2_PLANILLA_ES_SIMULADO", False)
     crear_planilla(ruta_planilla, [fila(co2_almacenado_kg=120.5, co2_captura_anual_kg=10.25)])
 
     importar_planilla(ruta_planilla)
