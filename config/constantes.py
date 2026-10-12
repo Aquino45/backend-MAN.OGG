@@ -844,3 +844,26 @@ MAPA_ADMIN_ALTO_PX = 480
 RANGO_LATITUD_VALIDA_GRADOS = (-80, 84)
 RANGO_LONGITUD_VALIDA_GRADOS = (-180, 180)
 """Grados que el panel acepta convertir a UTM (los de la proyección UTM)."""
+
+# --- fronteras de los sectores en el panel ------------------------------------------------------
+
+CAMPO_GUARDAR_IGUAL = "guardar_igual"
+ETIQUETA_GUARDAR_IGUAL = "Guardar igual"
+"""Botón que confirma guardar un sector cuyos árboles quedarían fuera."""
+
+MENSAJE_VISTA_PREVIA_SECTOR_UNO = (
+    "{cuantos} árbol quedaría a más de {tolerancia_m} m del sector y pasaría a revisión. "
+    "Corrige el polígono o pulsa «Guardar igual»."
+)
+MENSAJE_VISTA_PREVIA_SECTOR_VARIOS = (
+    "{cuantos} árboles quedarían a más de {tolerancia_m} m del sector y pasarían a revisión. "
+    "Corrige el polígono o pulsa «Guardar igual»."
+)
+MENSAJE_SECTOR_A_REVISION_UNO = "{cuantos} árbol quedó fuera del sector y pasó a revisión."
+MENSAJE_SECTOR_A_REVISION_VARIOS = (
+    "{cuantos} árboles quedaron fuera del sector y pasaron a revisión."
+)
+"""Vista previa antes de guardar la frontera de un sector y aviso después de guardarla."""
+
+MOTIVO_HISTORIAL_FRONTERA_SECTOR = "Recálculo por el cambio de las fronteras del sector {sector_id}"
+"""Razón con que el historial de un árbol anota su cambio de estado por la frontera del sector."""

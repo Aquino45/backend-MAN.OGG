@@ -1,6 +1,6 @@
 # ESTADO — backend-MAN.OGG
 
-Actualizado: 12/10/2026 (ticket BE-014, PR 1).
+Actualizado: 12/10/2026 (ticket BE-017).
 
 ## Dónde estamos
 - El repo levanta con `docker compose up -d --build`: BD PostgreSQL 16 + PostGIS 3.4 (`db`) y API Django 5.2 + DRF + GeoDjango (`api`).
@@ -21,10 +21,12 @@ Actualizado: 12/10/2026 (ticket BE-014, PR 1).
 - Carga web, vacíos (BE-016, en revisión; Issue #32): una fila con campos vacíos cuenta como problema en el panel (alerta, revisión y rama «No»), y una celda vacía de la planilla no borra un dato que ya existe: solo se escriben los campos con valor y la regla de calidad decide publicado o en revisión sobre el resultado. Desde la planilla del panel no se puede vaciar un dato que ya existe; eso se hace en el formulario del árbol. La consola (`importar_planilla`) no cambia. Sin contrato ni migraciones.
 - Especies, estados del catálogo y brigadas (BE-014, PR 1 en revisión; Issue #34): `Especie` (con ficha y alias), `Brigada` y `GrupoBrigada` con historial y CRUD en el panel (`admin_catalogos.py`; el Administrador hace todo, el Editor agrega, edita y ve), `Arbol.especie`, `Arbol.grupo` y los 8 estados como FK a `ValorCatalogo`; `FichaEspecie` desaparece. Migraciones `0010` a `0013` (tablas, datos reversibles, columnas viejas, permisos). La API no cambia (los serializers aplanan; contrato 0.5.0 intacto). La ingesta (`servicios/resolver_campos.py`) resuelve la especie por nombre normalizado o alias (nunca crea una), los estados por el catálogo y «Brigada» + «Grupo» juntos; la columna «Grupo» es opcional y un grupo o una brigada sin resolver solo se informa. La pantalla de revisión ofrece las especies existentes. Los árboles reales quedan sin grupo hasta reimportar `arb3-S01-34.xlsx`. Prueba en la PC pendiente (OK de Cristhian y `pg_dump` primero); el PR 2 (fotos, mediciones y CO₂) queda fuera.
 - BE-014, después de migrar: la `0011` no recalcula `estado_registro`; corre `recalcular_calidad` para que los árboles con un texto que no se resolvió pasen a revisión. `cargar_capsulas --actualizar` pisa los alias de las especies que se editaron en el panel, y los alias gobiernan la ingesta (qué texto de la planilla resuelve a qué especie): revisa los alias antes de actualizar.
+- Editar geometrías en el panel (BE-017, en revisión; Issue #36): el mapa del árbol y del sector (`admin_geometrias.py`, plantilla `admin/censo/mapa/widget.html`, servicio `servicios/geometrias.py`) tiene capas Esri World Imagery (con `ESRI_CLAVE`, opcional) u OpenStreetMap, selector «Satélite | Calles», contexto de solo lectura (sectores y demás árboles), campos UTM Este/Norte editables y latitud/longitud de solo lectura sincronizados con el pin mediante dos rutas JSON del admin, validación «dentro del campus» (`MARGEN_CAMPUS_M`) y árbol nuevo por pin. `Arbol.ubicacion_editada_en_panel` y `fecha_ubicacion_editada` (migración `0014`): al cambiar la ubicación en el panel se marcan y la reimportación (consola y carga web) conserva la del panel con el aviso «Ubicación corregida en el panel; se mantiene». La planilla acepta «Latitud»/«Longitud» (grados o UTM mal rotulado, con aviso en el lote). En el sector, vista previa con «Guardar igual», recálculo de la calidad de sus árboles y aviso con el conteo; solo el Administrador lo edita. No cambia el contrato ni la API. Prueba en la PC pendiente (OK de Cristhian y `pg_dump` primero); el JavaScript del mapa solo se verifica con el navegador.
 - Hito M0 (disciplina) en curso.
 
 ## Último ticket
-- BE-014 — Especies, estados del catálogo y brigadas, PR 1 (EN REVISIÓN; Issue #34). Ficha en `docs/tickets/BE-014.md`.
+- BE-017 — Editar en el panel la ubicación de los árboles y las fronteras de los sectores (EN REVISIÓN; Issue #36). Ficha en `docs/tickets/BE-017.md`.
+- Antes: BE-014 — Especies, estados del catálogo y brigadas, PR 1 (EN REVISIÓN; Issue #34). Ficha en `docs/tickets/BE-014.md`.
 - Antes: BE-016 — Carga web: los vacíos son un problema y una celda vacía no borra un dato existente (mergeado, #33; Issue #32). Ficha en `docs/tickets/BE-016.md`.
 - Antes: BE-013 — Cargar planilla desde el panel, con alerta y revisión (EN REVISIÓN; Issue #30). Ficha en `docs/tickets/BE-013.md`.
 - Antes: BE-015 — CO₂ simulado y CO₂ en la lista (mergeado, #29; Issue #28). Ficha en `docs/tickets/BE-015.md`.

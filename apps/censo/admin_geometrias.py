@@ -6,12 +6,11 @@ Dos endpoints JSON del propio admin convierten coordenadas y entregan el context
 en `servicios/geometrias.py`.
 """
 
-from decimal import Decimal, InvalidOperation
-from urllib.parse import quote
+from decimal import Decimal
 
 from django import forms
 from django.conf import settings
-from django.contrib import messages
+from django.contrib import admin, messages
 from django.contrib.gis.admin.options import GeoModelAdminMixin
 from django.contrib.gis.forms import OpenLayersWidget
 from django.contrib.gis.geos import Point
@@ -20,6 +19,8 @@ from django.http import JsonResponse
 from django.urls import path, reverse
 from django.utils import timezone
 
+from apps.censo.admin_catalogos import SectorAdmin
+from apps.censo.models import Sector
 from apps.censo.servicios import geometrias
 from config import constantes
 
@@ -69,31 +70,9 @@ class MapaEditable(OpenLayersWidget):
             "campos": campos,
         }
 
-    def capas(self):
-        """Las capas de fondo disponibles: satélite si hay clave de Esri, y siempre las calles."""
-        calles = {
-            "id": constantes.ID_CAPA_CALLES,
-            "nombre": constantes.NOMBRE_CAPA_CALLES,
-            "url": constantes.OSM_URL_MOSAICOS,
-            "atribucion": constantes.ATRIBUCION_OSM,
-            "atribucion_url": constantes.ATRIBUCION_OSM_URL,
-        }
-        if not settings.ESRI_CLAVE:
-            return [calles]
-        satelite = {
-            "id": constantes.ID_CAPA_SATELITE,
-            "nombre": constantes.NOMBRE_CAPA_SATELITE,
-            "url": constantes.ESRI_URL_MOSAICOS.replace(
-                "{clave}", quote(settings.ESRI_CLAVE, safe="")
-            ),
-            "atribucion": constantes.ATRIBUCION_ESRI,
-            "atribucion_url": constantes.ATRIBUCION_ESRI_URL,
-        }
-        return [satelite, calles]
-
     def get_context(self, name, value, attrs):
         contexto = super().get_context(name, value, attrs)
-        capas = self.capas()
+        capas = geometrias.capas_de_fondo(settings.ESRI_CLAVE)
         contexto["capas"] = capas
         contexto["id_configuracion"] = f"{contexto['id']}_configuracion"
         contexto["ancho_px"], contexto["alto_px"] = (
@@ -184,22 +163,6 @@ class FormularioDeArbol(forms.ModelForm):
 # --- el admin ----------------------------------------------------------------------------------
 
 
-def _numero(texto):
-    """El texto como número (con coma o punto decimal), o None si falta o no es un número."""
-    try:
-        numero = Decimal((texto or "").strip().replace(",", "."))
-    except InvalidOperation:
-        return None
-    return float(numero) if numero.is_finite() else None
-
-
-def _en_rango(numero, rango, excluye_maximo=False):
-    if numero is None:
-        return False
-    minimo, maximo = rango
-    return minimo <= numero < maximo if excluye_maximo else minimo <= numero <= maximo
-
-
 class MapaEditableAdmin(GeoModelAdminMixin):
     """Mezcla de los admins con mapa: widget, rutas JSON y configuración del widget por registro."""
 
@@ -247,17 +210,17 @@ class MapaEditableAdmin(GeoModelAdminMixin):
     def convertir_coordenadas(self, request):
         """Convierte UTM a grados (o al revés) y dice si el punto cae en el campus."""
         self._exigir_cambio(request)
-        este = _numero(request.GET.get(constantes.CAMPO_UTM_ESTE_ADMIN))
-        norte = _numero(request.GET.get(constantes.CAMPO_UTM_NORTE_ADMIN))
-        latitud = _numero(request.GET.get(constantes.CAMPO_LATITUD_ADMIN))
-        longitud = _numero(request.GET.get(constantes.CAMPO_LONGITUD_ADMIN))
-        if _en_rango(latitud, constantes.RANGO_LATITUD_VALIDA_GRADOS) and _en_rango(
-            longitud, constantes.RANGO_LONGITUD_VALIDA_GRADOS
-        ):
+        este = geometrias.leer_numero(request.GET.get(constantes.CAMPO_UTM_ESTE_ADMIN))
+        norte = geometrias.leer_numero(request.GET.get(constantes.CAMPO_UTM_NORTE_ADMIN))
+        latitud = geometrias.leer_numero(request.GET.get(constantes.CAMPO_LATITUD_ADMIN))
+        longitud = geometrias.leer_numero(request.GET.get(constantes.CAMPO_LONGITUD_ADMIN))
+        if geometrias.en_rango(
+            latitud, constantes.RANGO_LATITUD_VALIDA_GRADOS
+        ) and geometrias.en_rango(longitud, constantes.RANGO_LONGITUD_VALIDA_GRADOS):
             este, norte = geometrias.grados_a_utm(latitud, longitud)
         if not (
-            _en_rango(este, constantes.RANGO_UTM_ESTE_M, True)
-            and _en_rango(norte, constantes.RANGO_UTM_NORTE_M, True)
+            geometrias.en_rango(este, constantes.RANGO_UTM_ESTE_M, True)
+            and geometrias.en_rango(norte, constantes.RANGO_UTM_NORTE_M, True)
         ):
             return JsonResponse({"mensaje": constantes.MENSAJE_COORDENADAS_ILEGIBLES}, status=400)
         descripcion = geometrias.describir_punto(este, norte)
@@ -320,3 +283,65 @@ class UbicacionDelArbolAdmin(MapaEditableAdmin):
             self.message_user(
                 request, constantes.MENSAJE_PUNTO_EN_SECTOR.format(nombre=sector.nombre, **datos)
             )
+
+
+# --- las fronteras del sector --------------------------------------------------------------------
+
+
+class FormularioDeSector(forms.ModelForm):
+    """El sector con vista previa: si el polígono nuevo deja árboles fuera, pide «Guardar igual»."""
+
+    pide_confirmar = False
+
+    def clean(self):
+        datos = super().clean()
+        nuevo = datos.get("geom")
+        if self.instance.pk is None or nuevo is None or "geom" not in self.changed_data:
+            return datos
+        cuantos = geometrias.contar_arboles_fuera(self.instance.pk, nuevo)
+        if cuantos and not self.data.get(constantes.CAMPO_GUARDAR_IGUAL):
+            self.pide_confirmar = True
+            plantilla = (
+                constantes.MENSAJE_VISTA_PREVIA_SECTOR_UNO
+                if cuantos == 1
+                else constantes.MENSAJE_VISTA_PREVIA_SECTOR_VARIOS
+            )
+            tolerancia_m = constantes.TOLERANCIA_FUERA_DE_SECTOR_M
+            raise ValidationError(plantilla.format(cuantos=cuantos, tolerancia_m=tolerancia_m))
+        return datos
+
+
+class SectorConMapaAdmin(MapaEditableAdmin, SectorAdmin):
+    """Los sectores con su frontera editable en el mapa; al guardarla se recalcula su calidad."""
+
+    campo_del_mapa = "geom"
+    parametro_de_contexto = "sector"
+    form = FormularioDeSector
+    change_form_template = "admin/censo/sector/change_form.html"
+
+    def changeform_view(self, request, object_id=None, form_url="", extra_context=None):
+        textos = {
+            "campo_guardar_igual": constantes.CAMPO_GUARDAR_IGUAL,
+            "etiqueta_guardar_igual": constantes.ETIQUETA_GUARDAR_IGUAL,
+        }
+        return super().changeform_view(
+            request, object_id, form_url, {**textos, **(extra_context or {})}
+        )
+
+    def save_model(self, request, obj, form, change):
+        super().save_model(request, obj, form, change)
+        if not change or "geom" not in form.changed_data:
+            return
+        resultado = geometrias.recalcular_calidad_del_sector(obj)
+        if resultado.a_revision:
+            plantilla = (
+                constantes.MENSAJE_SECTOR_A_REVISION_UNO
+                if resultado.a_revision == 1
+                else constantes.MENSAJE_SECTOR_A_REVISION_VARIOS
+            )
+            aviso = plantilla.format(cuantos=resultado.a_revision)
+            self.message_user(request, aviso, messages.WARNING)
+
+
+admin.site.unregister(Sector)
+admin.site.register(Sector, SectorConMapaAdmin)
