@@ -106,6 +106,22 @@ def test_hsts_se_lee_del_entorno_como_entero(monkeypatch):
     assert modulo.SECURE_HSTS_SECONDS == 31536000
 
 
+def test_politica_de_referrer_por_defecto_envia_el_origen_a_otros_sitios(monkeypatch):
+    monkeypatch.delenv("DJANGO_REFERRER_POLICY", raising=False)
+
+    modulo = _cargar_settings_nuevo()
+
+    assert modulo.SECURE_REFERRER_POLICY == "strict-origin-when-cross-origin"
+
+
+def test_politica_de_referrer_se_lee_del_entorno(monkeypatch):
+    monkeypatch.setenv("DJANGO_REFERRER_POLICY", "no-referrer")
+
+    modulo = _cargar_settings_nuevo()
+
+    assert modulo.SECURE_REFERRER_POLICY == "no-referrer"
+
+
 def test_drf_usa_permiso_throttle_y_manejador_del_proyecto():
     assert settings.REST_FRAMEWORK["DEFAULT_PERMISSION_CLASSES"] == [
         "apps.core.seguridad.SoloLectura"

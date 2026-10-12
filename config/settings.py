@@ -16,6 +16,12 @@ SECURE_SSL_REDIRECT = env.bool("DJANGO_SECURE_SSL_REDIRECT")
 SECURE_HSTS_SECONDS = env.int("DJANGO_SECURE_HSTS_SECONDS")
 SESSION_COOKIE_SECURE = env.bool("DJANGO_SESSION_COOKIE_SECURE")
 CSRF_COOKIE_SECURE = env.bool("DJANGO_CSRF_COOKIE_SECURE")
+SECURE_REFERRER_POLICY = env.str(
+    "DJANGO_REFERRER_POLICY", default="strict-origin-when-cross-origin"
+)
+"""Qué Referer mandan las páginas del panel a otros sitios. Con la política por defecto de Django
+(same-origin) el navegador pide los mosaicos del mapa sin Referer y OpenStreetMap los bloquea;
+esta envía solo el origen, nunca la ruta."""
 
 ADMIN_RUTA = env.str("ADMIN_RUTA")
 
